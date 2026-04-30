@@ -1,0 +1,91 @@
+{
+  "name": "fix-my-name-online",
+  "region": "oregon",
+  "repo": "https://github.com/elli35111-png/fix-my-name-online",
+  "branch": "main",
+  "plan": "free",
+  "serviceName": "fix-my-name-online",
+  "services": [
+    {
+      "type": "web",
+      "name": "fmnol-landing",
+      "region": "oregon",
+      "plan": "free",
+      "repo": "https://github.com/elli35111-png/fix-my-name-online",
+      "branch": "main",
+      "buildCommand": "pip install -r requirements.txt",
+      "startCommand": "gunicorn server:app --bind 0.0.0.0:$PORT --access-logfile -",
+      "healthCheckPath": "/health",
+      "envVars": [
+        {
+          "key": "STRIPE_SECRET_KEY",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PUBLISHABLE_KEY",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_WEBHOOK_SECRET",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_SENTINEL",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_STARTER",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_PRO",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_PREMIUM",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_CONCIERGE",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_SENTINEL_ANNUAL",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_STARTER_ANNUAL",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_PRO_ANNUAL",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_PREMIUM_ANNUAL",
+          "sync": false
+        },
+        {
+          "key": "STRIPE_PRICE_CONCIERGE_ANNUAL",
+          "sync": false
+        },
+        {
+          "key": "DOMAIN",
+          "value": "https://fixmynameonline.com"
+        },
+        {
+          "key": "BREVO_API_KEY",
+          "sync": false
+        },
+        {
+          "key": "FPS_WP_USER",
+          "sync": false
+        },
+        {
+          "key": "FPS_WP_APP_PASSWORD",
+          "sync": false
+        }
+      ]
+    }
+  ]
+}

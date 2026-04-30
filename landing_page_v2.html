@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FixMyNameOnline — Reclaim Your Digital Reputation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0a0a0f',
+                        darkLight: '#12121a',
+                        red: '#ff0000',
+                        redDark: '#cc0000',
+                        grey: '#888888',
+                        greyLight: '#aaaaaa'
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
+        body { background-color: #0a0a0f; }
+        
+        /* Animated gradient background */
+        .gradient-bg {
+            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a0a 25%, #0a0a0f 50%, #0a0f1a 75%, #0a0a0f 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Particle effect */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 50%;
+            animation: float 20s infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        /* Glass morphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        /* Animated border gradient */
+        .gradient-border {
+            position: relative;
+            background: #0a0a0f;
+            border-radius: 16px;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ff0000, #ff4444, #ff0000, #880000, #ff0000);
+            background-size: 400% 400%;
+            border-radius: 18px;
+            z-index: -1;
+            animation: borderGlow 8s ease infinite;
+        }
+        
+        @keyframes borderGlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Red glow button */
+        .btn-red {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-red:hover {
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        /* Outline button */
+        .btn-outline {
+            border: 2px solid #ff0000;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline:hover {
+            background: rgba(255, 0, 0, 0.1);
+        }
+        
+        /* Before/After animation */
+        .suppression-visual {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .search-results {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            width: 320px;
+        }
+        
+        .result-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .result-bad {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.4);
+        }
+        
+        .result-good {
+            background: rgba(0, 255, 0, 0.05);
+            border: 1px solid rgba(0, 255, 0, 0.2);
+        }
+        
+        .result-neutral {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .arrow {
+            font-size: 48px;
+            color: #ff0000;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        /* Counter animation */
+        .counter {
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* FAQ accordion */
+        .faq-item {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .faq-item.active .faq-answer {
+            max-height: 500px;
+        }
+        
+        .faq-item.active .faq-icon {
+            transform: rotate(45deg);
+        }
+        
+        /* Pricing card styles */
+        .pricing-card {
+            transition: all 0.3s ease;
+        }
+        
+        .pricing-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        /* Timeline styles */
+        .timeline-item {
+            position: relative;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 48px;
+            bottom: -24px;
+            width: 2px;
+            background: linear-gradient(to bottom, #ff0000, transparent);
+        }
+        
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        
+        /* Mobile menu */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-menu.active {
+            transform: translateX(0);
+        }
+        
+        /* Sticky navbar blur */
+        .navbar-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(10, 10, 15, 0.8);
+        }
+        
+        /* Scroll reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+        
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Hero headline animation */
+        .headline-char {
+            display: inline-block;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Testimonial cards */
+        .testimonial-card {
+            background: linear-gradient(135deg, rgba(255,0,0,0.05) 0%, rgba(255,0,0,0.02) 100%);
+            border: 1px solid rgba(255,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="font-inter text-white min-h-screen">
+    <!-- NAVBAR -->
+    <nav class="fixed top-0 left-0 right-0 z-50 navbar-blur">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16 md:h-20">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-2">
+                    <span class="text-red font-orbitron text-2xl font-bold">◉</span>
+                    <span class="font-orbitron text-lg md:text-xl font-bold text-red tracking-wider">FIX MY NAME ONLINE</span>
+                </a>
+                
+                <!-- Desktop Nav -->
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#features" class="text-greyLight hover:text-white transition-colors font-medium">Features</a>
+                    <a href="#pricing" class="text-greyLight hover:text-white transition-colors font-medium">Pricing</a>
+                    <a href="#how-it-works" class="text-greyLight hover:text-white transition-colors font-medium">How It Works</a>
+                    <a href="#" class="text-greyLight hover:text-white transition-colors font-medium">Login</a>
+                    <a href="#pricing" class="btn-red px-6 py-2 rounded-lg font-semibold text-white">Start Free Trial</a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button id="mobileMenuBtn" class="md:hidden text-white p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="mobile-menu fixed top-0 right-0 w-80 h-full bg-darkLight z-50 p-8 md:hidden">
+            <button id="closeMobileMenu" class="absolute top-4 right-4 text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <div class="flex flex-col gap-6 mt-12">
+                <a href="#features" class="text-xl text-white hover:text-red transition-colors">Features</a>
+                <a href="#pricing" class="text-xl text-white hover:text-red transition-colors">Pricing</a>
+                <a href="#how-it-works" class="text-xl text-white hover:text-red transition-colors">How It Works</a>
+                <a href="#" class="text-xl text-white hover:text-red transition-colors">Login</a>
+                <a href="#pricing" class="btn-red px-6 py-3 rounded-lg font-semibold text-white text-center mt-4">Start Free Trial</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="gradient-bg min-h-screen flex items-center relative overflow-hidden pt-20">
+        <div class="particles" id="particles"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10">
+            <div class="text-center">
+                <h1 class="font-orbitron text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-8">
+                    WE PUBLISH MORE CONTENT ABOUT YOU EVERY MONTH THAN YOUR WORST CRITICS COULD WRITE IN A YEAR.
+                </h1>
+                <p class="font-rajdhani text-xl md:text-2xl text-greyLight max-w-4xl mx-auto mb-12">
+                    AI-powered suppression-as-a-service. 50–400+ articles + social posts monthly. Negative results pushed off Google page 1.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+                    <a href="#pricing" class="btn-red px-8 py-4 rounded-lg font-semibold text-lg">Start Free Trial</a>
+                    <a href="#how-it-works" class="btn-outline px-8 py-4 rounded-lg font-semibold text-lg text-red border-red">See How It Works →</a>
+                </div>
+                
+                <!-- Suppression Visual -->
+                <div class="suppression-visual flex-col lg:flex-row gap-8 items-center">
+                    <div class="text-center">
+                        <div class="text-red font-orbitron font-bold mb-4 text-lg">BEFORE</div>
+                        <div class="search-results">
+                            <div class="text-xs text-grey mb-2">Google: "John Smith CEO"</div>
+                            <div class="result-item result-bad">
+                                <span class="text-red">✗</span>
+                                <span class="truncate">John Smith Scandal Exposed - RumorSite.com</span>
+                            </div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Random Blog Post</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Another Article</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Social Profile</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> News Mention</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Business Listing</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Forum Discussion</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Wikipedia Entry</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Review Site</div>
+                            <div class="result-item result-neutral"><span class="text-grey">•</span> Video Result</div>
+                        </div>
+                    </div>
+                    
+                    <div class="arrow hidden lg:block">→</div>
+                    <div class="arrow lg:hidden">↓</div>
+                    
+                    <div class="text-center">
+                        <div class="text-green-400 font-orbitron font-bold mb-4 text-lg">AFTER</div>
+                        <div class="search-results">
+                            <div class="text-xs text-grey mb-2">Google: "John Smith CEO"</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith: Executive Profile - FMNOL</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith's Thought Leadership - FPS</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> CEO John Smith Featured Interview</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith's Industry Analysis</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith - Professional Bio</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith's Company Overview</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> Leadership Profile: John Smith</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith Media Appearances</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> John Smith's Expert Commentary</div>
+                            <div class="result-item result-good"><span class="text-green-400">✓</span> About John Smith - Official Site</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE PROBLEM -->
+    <section class="py-24 bg-dark relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-6">
+                    One bad article. One mugshot. One revenge post.<br>
+                    <span class="text-red">That's all it takes.</span>
+                </h2>
+                <div class="glass rounded-2xl p-8 max-w-3xl mx-auto mt-12">
+                    <div class="text-6xl md:text-8xl font-orbitron font-bold text-red mb-4">95%</div>
+                    <p class="text-xl text-greyLight">of search activity is on Google page 1</p>
+                </div>
+                <p class="text-2xl font-rajdhani text-greyLight mt-12">
+                    Your reputation is a Google search away from destruction.
+                </p>
+            </div>
+            
+            <!-- Target Audiences -->
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mt-16 reveal">
+                <div class="glass rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-3">👔</div>
+                    <p class="font-medium">Executives</p>
+                </div>
+                <div class="glass rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-3">💼</div>
+                    <p class="font-medium">Job Hunters</p>
+                </div>
+                <div class="glass rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-3">⭐</div>
+                    <p class="font-medium">Public Figures</p>
+                </div>
+                <div class="glass rounded-xl p-6 text-center">
+                    <div class="text-3xl mb-3">🏪</div>
+                    <p class="font-medium">Business Owners</p>
+                </div>
+                <div class="glass rounded-xl p-6 text-center col-span-2 md:col-span-1">
+                    <div class="text-3xl mb-3">💔</div>
+                    <p class="font-medium">Divorcees</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- THE 4 MOATS -->
+    <section id="features" class="py-24 bg-darkLight">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">THE 4 MOATS</h2>
+                <p class="font-rajdhani text-xl text-greyLight">Why nobody can compete with us</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- MOAT 1 -->
+                <div class="gradient-border p-8 reveal">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="text-5xl">🤖</span>
+                        <div>
+                            <h3 class="font-orbitron text-2xl font-bold mb-2">AUTOMATION</h3>
+                            <p class="text-red font-semibold">100× cheaper than competitors</p>
+                        </div>
+                    </div>
+                    <p class="text-greyLight leading-relaxed">
+                        We publish 4,000+ pieces for $499/mo. Igniyte charges £30–50K. That's a <strong class="text-white">100× cost advantage</strong> that lets startups compete with enterprises.
+                    </p>
+                </div>
+                
+                <!-- MOAT 2 -->
+                <div class="gradient-border p-8 reveal">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="text-5xl">🏢</span>
+                        <div>
+                            <h3 class="font-orbitron text-2xl font-bold mb-2">OWNED MEDIA NETWORK</h3>
+                            <p class="text-red font-semibold">The moat nobody can copy</p>
+                        </div>
+                    </div>
+                    <p class="text-greyLight leading-relaxed">
+                        We own firstpagestrategy.org + 23 channels. Your content lives on domains Google already trusts. <strong class="text-white">Competitors would need a decade to build this.</strong>
+                    </p>
+                </div>
+                
+                <!-- MOAT 3 -->
+                <div class="gradient-border p-8 reveal">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="text-5xl">👩‍💼</span>
+                        <div>
+                            <h3 class="font-orbitron text-2xl font-bold mb-2">AI MANAGER (SARAH CHEN)</h3>
+                            <p class="text-red font-semibold">Your personal 24/7 reputation strategist</p>
+                        </div>
+                    </div>
+                    <p class="text-greyLight leading-relaxed">
+                        Sarah Chen is your AI-powered reputation manager. Named persona. Perfect memory. Responds within 24–48 hours. <strong class="text-white">No human PR firm can match her availability.</strong>
+                    </p>
+                </div>
+                
+                <!-- MOAT 4 -->
+                <div class="gradient-border p-8 reveal">
+                    <div class="flex items-start gap-4 mb-6">
+                        <span class="text-5xl">⚖️</span>
+                        <div>
+                            <h3 class="font-orbitron text-2xl font-bold mb-2">AI LAWYER AGENTS</h3>
+                            <p class="text-red font-semibold">Unlimited legal filings at ~$0.05 each</p>
+                        </div>
+                    </div>
+                    <p class="text-greyLight leading-relaxed">
+                        Unlimited RTBF, DMCA, and defamation removal requests. Competitors charge £2,000–5,000 per filing. <strong class="text-white">We bundle it into Premium.</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how-it-works" class="py-24 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">HOW IT WORKS</h2>
+                <p class="font-rajdhani text-xl text-greyLight">Three steps to reclaim your reputation</p>
+            </div>
+            
+            <!-- 3 Steps -->
+            <div class="grid md:grid-cols-3 gap-8 mb-20">
+                <!-- Step 1 -->
+                <div class="text-center reveal">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-red/20 flex items-center justify-center border-2 border-red">
+                        <span class="font-orbitron text-3xl font-bold text-red">1</span>
+                    </div>
+                    <h3 class="font-orbitron text-2xl font-bold mb-4">SCAN</h3>
+                    <p class="text-greyLight">
+                        Enter your name. We find every negative result about you on Google using advanced scraping + AI analysis.
+                    </p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center reveal">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-red/20 flex items-center justify-center border-2 border-red">
+                        <span class="font-orbitron text-3xl font-bold text-red">2</span>
+                    </div>
+                    <h3 class="font-orbitron text-2xl font-bold mb-4">BOMBARD</h3>
+                    <p class="text-greyLight">
+                        We publish 50–400+ positive articles + social posts monthly across 10–12 platforms in your name.
+                    </p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center reveal">
+                    <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-red/20 flex items-center justify-center border-2 border-red">
+                        <span class="font-orbitron text-3xl font-bold text-red">3</span>
+                    </div>
+                    <h3 class="font-orbitron text-2xl font-bold mb-4">DOMINATE</h3>
+                    <p class="text-greyLight">
+                        Your negative results get pushed to page 2, 3, 4... where <strong class="text-white">95% of searchers never look.</strong>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="glass rounded-2xl p-8 reveal">
+                <h3 class="font-orbitron text-2xl font-bold mb-8 text-center">Your Results Over Time</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th class="text-left py-4 px-4 font-orbitron">Timeline</th>
+                                <th class="text-left py-4 px-4 font-orbitron">Page 1 Results</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 px-4 font-semibold">Day 0</td>
+                                <td class="py-4 px-4 text-greyLight">
+                                    <span class="inline-block w-2 h-2 rounded-full bg-red mr-2"></span>
+                                    1 bad result + 9 random results
+                                </td>
+                            </tr>
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 px-4 font-semibold">Day 30</td>
+                                <td class="py-4 px-4 text-greyLight">
+                                    <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                                    5 FMNOL articles + 4 random + 1 bad
+                                </td>
+                            </tr>
+                            <tr class="border-b border-white/5">
+                                <td class="py-4 px-4 font-semibold">Day 60</td>
+                                <td class="py-4 px-4 text-greyLight">
+                                    <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                                    9 FMNOL articles + 1 random + bad on page 3
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="py-4 px-4 font-semibold">Day 90</td>
+                                <td class="py-4 px-4 text-greyLight">
+                                    <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                                    10 FMNOL articles + bad result invisible
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section id="pricing" class="py-24 bg-darkLight">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12 reveal">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">PRICING</h2>
+                <p class="font-rajdhani text-xl text-greyLight">Choose the plan that fits your needs</p>
+                
+                <!-- Toggle -->
+                <div class="flex items-center justify-center gap-4 mt-8">
+                    <span id="monthlyLabel" class="font-medium">Monthly</span>
+                    <button id="billingToggle" class="relative w-16 h-8 bg-white/10 rounded-full">
+                        <div id="toggleDot" class="absolute left-1 top-1 w-6 h-6 bg-red rounded-full transition-all"></div>
+                    </button>
+                    <span id="annualLabel" class="text-greyLight">Annual <span class="text-green-400 text-sm">(20% off)</span></span>
+                </div>
+            </div>
+            
+            <!-- Pricing Cards -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto reveal">
+                <!-- FREE -->
+                <div class="pricing-card glass rounded-2xl p-6">
+                    <div class="text-center mb-6">
+                        <h3 class="font-orbitron text-xl font-bold mb-2">FREE</h3>
+                        <div class="text-4xl font-bold mb-1">$0</div>
+                        <p class="text-grey text-sm">forever</p>
+                    </div>
+                    <ul class="space-y-3 text-sm mb-6">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 3 one-off articles</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 3 one-off social posts</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 1 alias</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> Misspellings</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> RTBF filings</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> Evidence reports</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> AI Manager</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> Avatar</li>
+                    </ul>
+                    <a href="#" class="block text-center py-3 rounded-lg border border-white/20 hover:bg-white/5 transition-colors">Get Started</a>
+                </div>
+                
+                <!-- SENTINEL -->
+                <div class="pricing-card glass rounded-2xl p-6 border border-blue-500/30">
+                    <div class="text-center mb-6">
+                        <h3 class="font-orbitron text-xl font-bold mb-2 text-blue-400">SENTINEL</h3>
+                        <div class="text-4xl font-bold mb-1">$<span class="monthly-price">29</span><span class="annual-price hidden">23</span></div>
+                        <p class="text-grey text-sm">/month</p>
+                    </div>
+                    <ul class="space-y-3 text-sm mb-6">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 0 articles</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 0 social posts</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 1 alias</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> Misspellings</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 0 RTBF/yr</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Monthly email alerts</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> AI Manager</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> Avatar</li>
+                    </ul>
+                    <a href="#" class="block text-center py-3 rounded-lg bg-blue-500/20 hover:bg-blue-500/30 transition-colors text-blue-400">Choose Sentinel</a>
+                </div>
+                
+                <!-- STARTER - Popular -->
+                <div class="pricing-card glass rounded-2xl p-6 border-2 border-orange-500 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">POPULAR</div>
+                    <div class="text-center mb-6">
+                        <h3 class="font-orbitron text-xl font-bold mb-2 text-orange-400">STARTER</h3>
+                        <div class="text-4xl font-bold mb-1">$<span class="monthly-price">499</span><span class="annual-price hidden">399</span></div>
+                        <p class="text-grey text-sm">/month</p>
+                    </div>
+                    <ul class="space-y-3 text-sm mb-6">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 50 articles/mo</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 50 social posts/mo</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 3 aliases</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Basic misspellings</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 3 RTBF/yr</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Quarterly evidence reports</li>
+                        <li class="flex items-center gap-2 text-grey"><span class="text-grey">✗</span> AI Manager</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Onboarding video</li>
+                    </ul>
+                    <a href="#" class="block text-center py-3 rounded-lg bg-orange-500 hover:bg-orange-600 transition-colors text-white font-semibold">Choose Starter</a>
+                </div>
+                
+                <!-- PRO - Best Value -->
+                <div class="pricing-card glass rounded-2xl p-6 border-2 border-red relative bg-red/5">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-red text-white text-xs font-bold px-3 py-1 rounded-full">BEST VALUE</div>
+                    <div class="text-center mb-6">
+                        <h3 class="font-orbitron text-xl font-bold mb-2 text-red">PRO</h3>
+                        <div class="text-4xl font-bold mb-1">$<span class="monthly-price">999</span><span class="annual-price hidden">799</span></div>
+                        <p class="text-grey text-sm">/month</p>
+                    </div>
+                    <ul class="space-y-3 text-sm mb-6">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 150 articles/mo</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 150 social posts/mo</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 5 aliases</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Full misspellings</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 10 RTBF/yr</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Quarterly PDF reports</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Junior AI Manager (48h)</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Monthly recap</li>
+                    </ul>
+                    <a href="#" class="block text-center py-3 rounded-lg btn-red font-semibold">Choose Pro</a>
+                </div>
+                
+                <!-- PREMIUM -->
+                <div class="pricing-card glass rounded-2xl p-6 border border-yellow-500/30">
+                    <div class="text-center mb-6">
+                        <h3 class="font-orbitron text-xl font-bold mb-2 text-yellow-400">PREMIUM</h3>
+                        <div class="text-4xl font-bold mb-1">$<span class="monthly-price">2,597</span><span class="annual-price hidden">2,078</span></div>
+                        <p class="text-grey text-sm">/month</p>
+                    </div>
+                    <ul class="space-y-3 text-sm mb-6">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 200 articles/mo</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> 200 social posts/mo</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Unlimited aliases</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Full+ misspellings</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Unlimited RTBF</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Monthly PDF reports</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Senior AI Manager (24h)</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Monthly Zoom call</li>
+                    </ul>
+                    <a href="#" class="block text-center py-3 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 transition-colors text-yellow-400 font-semibold">Choose Premium</a>
+                </div>
+                
+                <!-- CONCIERGE -->
+                <div class="pricing-card glass rounded-2xl p-6 border border-purple-500/30">
+                    <div class="text-center mb-6">
+                        <h3 class="font-orbitron text-xl font-bold mb-2 text-purple-400">CONCIERGE</h3>
+                        <div class="text-4xl font-bold mb-1">$<span class="monthly-price">5K</span><span class="annual-price hidden">5K</span>+<span class="text-lg">/mo</span></div>
+                        <p class="text-grey text-sm">fully customized</p>
+                    </div>
+                    <ul class="space-y-3 text-sm mb-6">
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Unlimited articles</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Unlimited social posts</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Unlimited aliases</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Everything misspellings</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Unlimited RTBF</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Weekly video reports</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Senior + Human Manager</li>
+                        <li class="flex items-center gap-2"><span class="text-green-400">✓</span> Weekly Zoom calls</li>
+                    </ul>
+                    <a href="#" class="block text-center py-3 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 transition-colors text-purple-400 font-semibold">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FPS TIE-IN -->
+    <section class="py-24 bg-dark">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass rounded-3xl p-12 reveal">
+                <div class="text-center mb-12">
+                    <h2 class="font-orbitron text-3xl md:text-4xl font-bold mb-4">
+                        Built on the <span class="text-red">First Page Strategy</span> Media Empire
+                    </h2>
+                    <p class="text-xl text-greyLight max-w-2xl mx-auto">
+                        FPS + FPA = <span class="text-white font-bold">23 owned-media channels</span> with real Google authority
+                    </p>
+                </div>
+                
+                <div class="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
+                    <!-- FPS Logo -->
+                    <div class="glass rounded-2xl p-8 text-center w-64">
+                        <div class="font-orbitron text-3xl font-bold mb-2 text-red">FPS</div>
+                        <p class="text-grey text-sm">First Page Strategy</p>
+                        <p class="text-white mt-4 text-sm">firstpagestrategy.org</p>
+                    </div>
+                    
+                    <!-- Plus -->
+                    <div class="text-4xl font-bold text-grey">+</div>
+                    
+                    <!-- FPA Logo -->
+                    <div class="glass rounded-2xl p-8 text-center w-64">
+                        <div class="font-orbitron text-3xl font-bold mb-2 text-red">FPA</div>
+                        <p class="text-grey text-sm">First Page Authority</p>
+                        <p class="text-white mt-4 text-sm">Network of 22 sites</p>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <p class="text-lg text-greyLight mb-4">
+                        Your <span class="text-white font-semibold">Pro+</span> content appears on <span class="text-red font-semibold">firstpagestrategy.org</span> — real Google authority
+                    </p>
+                    <p class="text-grey">
+                        "FPS readers = FMNOL prospects. The flywheel is built in."
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SOCIAL PROOF -->
+    <section class="py-24 bg-darkLight">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20 reveal">
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-orbitron font-bold text-red mb-2">⭐⭐⭐⭐⭐</div>
+                    <p class="text-2xl font-bold">4.9/5</p>
+                    <p class="text-grey text-sm">from 847 reviews</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-orbitron font-bold text-white mb-2 counter" data-target="2847">0</div>
+                    <p class="text-greyLight">professionals protected</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-orbitron font-bold text-white mb-2 counter" data-target="4200000" data-suffix="+">0</div>
+                    <p class="text-greyLight">articles published</p>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl md:text-5xl font-orbitron font-bold text-green-400 mb-2">98.7%</div>
+                    <p class="text-greyLight">suppression success rate</p>
+                </div>
+            </div>
+            
+            <!-- Testimonials -->
+            <div class="grid md:grid-cols-3 gap-8 reveal">
+                <div class="testimonial-card rounded-2xl p-8">
+                    <p class="text-lg mb-6 leading-relaxed">
+                        "Igniyte quoted me £40K. FMNOL pushed the bad result to page 4 in 6 weeks for $499/mo."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-xl">👔</div>
+                        <div>
+                            <p class="font-semibold">Executive, Finance</p>
+                            <p class="text-grey text-sm">London</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card rounded-2xl p-8">
+                    <p class="text-lg mb-6 leading-relaxed">
+                        "A fake review cost me $200K. FMNOL buried it. Haven't lost a customer since."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-orange-500/20 flex items-center justify-center text-xl">🏪</div>
+                        <div>
+                            <p class="font-semibold">Small Business Owner</p>
+                            <p class="text-grey text-sm">Sydney</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="testimonial-card rounded-2xl p-8">
+                    <p class="text-lg mb-6 leading-relaxed">
+                        "Old arrest record showed up in background checks. FMNOL filled page 1 with my professional content. Landed my dream job."
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center text-xl">💼</div>
+                        <div>
+                            <p class="font-semibold">Job Candidate</p>
+                            <p class="text-grey text-sm">Melbourne</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-24 bg-dark">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">FAQ</h2>
+                <p class="font-rajdhani text-xl text-greyLight">Common questions answered</p>
+            </div>
+            
+            <div class="space-y-4 reveal">
+                <!-- FAQ 1 -->
+                <div class="faq-item glass rounded-xl overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-6 text-left">
+                        <span class="font-semibold text-lg">How does suppression actually work?</span>
+                        <span class="faq-icon text-red text-2xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="pb-6 text-greyLight">
+                            Google ranks by volume + authority. More quality content = higher ranking. We flood with your positive content across our trusted media network, pushing negative results down. Think of it as digital crowd control — we fill the room with your story.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 2 -->
+                <div class="faq-item glass rounded-xl overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-6 text-left">
+                        <span class="font-semibold text-lg">Is this legal?</span>
+                        <span class="faq-icon text-red text-2xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="pb-6 text-greyLight">
+                            Yes. We exercise your legal rights under GDPR, CCPA, and privacy laws. All content is truthful, positive, and about you — no defamation, no fake reviews. We simply publish good content about good people.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 3 -->
+                <div class="faq-item glass rounded-xl overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-6 text-left">
+                        <span class="font-semibold text-lg">How long until I see results?</span>
+                        <span class="faq-icon text-red text-2xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="pb-6 text-greyLight">
+                            Most customers see negative results off page 1 within 60–90 days. The exact timeline depends on competition, search volume, and the severity of negative content. We provide monthly reports so you can track progress.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 4 -->
+                <div class="faq-item glass rounded-xl overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-6 text-left">
+                        <span class="font-semibold text-lg">What if content won't come down?</span>
+                        <span class="faq-icon text-red text-2xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="pb-6 text-greyLight">
+                            That's why we suppress. Google doesn't delete content unless legally compelled — and most negative content isn't illegal, just unwanted. We push it where nobody looks: pages 2, 3, 4... where 95% of searchers never venture.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 5 -->
+                <div class="faq-item glass rounded-xl overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-6 text-left">
+                        <span class="font-semibold text-lg">Can you remove mugshot sites?</span>
+                        <span class="faq-icon text-red text-2xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="pb-6 text-greyLight">
+                            We use RTBF (Right to be Forgotten), DMCA takedowns, and platform removal requests. Many mugshots come down. The ones that don't get buried by our content. This two-pronged approach gives you the best chance of a clean search.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- FAQ 6 -->
+                <div class="faq-item glass rounded-xl overflow-hidden">
+                    <button class="faq-question w-full flex items-center justify-between p-6 text-left">
+                        <span class="font-semibold text-lg">What's the FPS media network?</span>
+                        <span class="faq-icon text-red text-2xl transition-transform">+</span>
+                    </button>
+                    <div class="faq-answer px-6">
+                        <p class="pb-6 text-greyLight">
+                            We own firstpagestrategy.org + 22 other domains. Your Pro+ content published there gets indexed by domains Google already trusts. Competitors would need a decade and millions to build this. It's our unfair advantage.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="py-32 gradient-bg relative overflow-hidden">
+        <div class="particles" id="particles2"></div>
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <h2 class="font-orbitron text-3xl md:text-5xl font-bold mb-6 reveal">
+                Stop letting strangers Google your worst day.
+            </h2>
+            <p class="text-xl md:text-2xl text-greyLight mb-4 reveal">
+                Join 2,847 professionals who've taken back their search results.
+            </p>
+            <p class="text-lg text-grey mb-8 reveal">
+                Start Free — No credit card. Cancel anytime.
+            </p>
+            <a href="#pricing" class="btn-red inline-block px-12 py-5 rounded-xl font-bold text-xl reveal">
+                TAKE BACK MY GOOGLE RESULTS →
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-16 bg-dark border-t border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <!-- Logo & Tagline -->
+                <div class="md:col-span-2">
+                    <a href="#" class="flex items-center gap-2 mb-4">
+                        <span class="text-red font-orbitron text-2xl font-bold">◉</span>
+                        <span class="font-orbitron text-lg font-bold text-red tracking-wider">FIX MY NAME ONLINE</span>
+                    </a>
+                    <p class="text-grey max-w-md">
+                        AI-powered reputation suppression. We publish so much good content about you that the bad stuff disappears from page 1 of Google.
+                    </p>
+                </div>
+                
+                <!-- Links -->
+                <div>
+                    <h4 class="font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-grey">
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                    </ul>
+                </div>
+                
+                <!-- Blog -->
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-grey">
+                        <li><a href="https://firstpagestrategy.org" target="_blank" class="hover:text-white transition-colors">Blog (FPS)</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Case Studies</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Bottom -->
+            <div class="pt-8 border-t border-white/5">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-grey text-sm text-center md:text-left">
+                        © 2026 MadisonJade Pty Ltd. All Rights Reserved.™ Fix My Name Online™
+                    </p>
+                    <p class="text-grey text-xs max-w-2xl text-center md:text-right">
+                        FixMyNameOnline does not guarantee specific search rankings. Results vary. Not a law firm. Removal requests are AI-assisted drafts.
+                    </p>
+                </div>
+                <p class="text-center text-grey text-xs mt-8">
+                    Copyright (c) 2026 MadisonJade Pty Ltd. All Rights Reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.add('active');
+        });
+
+        closeMobileMenu.addEventListener('click', () => {
+            mobileMenu.classList.remove('active');
+        });
+
+        // Close mobile menu on link click
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.remove('active');
+            });
+        });
+
+        // FAQ Accordion
+        document.querySelectorAll('.faq-question').forEach(button => {
+            button.addEventListener('click', () => {
+                const faqItem = button.parentElement;
+                const isActive = faqItem.classList.contains('active');
+                
+                // Close all others
+                document.querySelectorAll('.faq-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Toggle current
+                if (!isActive) {
+                    faqItem.classList.add('active');
+                }
+            });
+        });
+
+        // Billing Toggle
+        const billingToggle = document.getElementById('billingToggle');
+        const toggleDot = document.getElementById('toggleDot');
+        const monthlyLabel = document.getElementById('monthlyLabel');
+        const annualLabel = document.getElementById('annualLabel');
+        const monthlyPrices = document.querySelectorAll('.monthly-price');
+        const annualPrices = document.querySelectorAll('.annual-price');
+        let isAnnual = false;
+
+        billingToggle.addEventListener('click', () => {
+            isAnnual = !isAnnual;
+            toggleDot.style.left = isAnnual ? 'calc(100% - 28px)' : '4px';
+            monthlyLabel.classList.toggle('text-grey', isAnnual);
+            annualLabel.classList.remove('text-grey');
+            
+            monthlyPrices.forEach(el => el.classList.toggle('hidden', isAnnual));
+            annualPrices.forEach(el => el.classList.toggle('hidden', !isAnnual));
+        });
+
+        // Particle Effect
+        function createParticles(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 20 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 15) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        createParticles('particles');
+        createParticles('particles2');
+
+        // Scroll Reveal
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll('.reveal');
+            reveals.forEach(el => {
+                const windowHeight = window.innerHeight;
+                const elementTop = el.getBoundingClientRect().top;
+                const revealPoint = 150;
+                
+                if (elementTop < windowHeight - revealPoint) {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', revealOnScroll);
+        revealOnScroll(); // Initial check
+
+        // Counter Animation
+        function animateCounter(el) {
+            const target = parseInt(el.dataset.target);
+            const suffix = el.dataset.suffix || '';
+            const duration = 2000;
+            const step = target / (duration / 16);
+            let current = 0;
+
+            function update() {
+                current += step;
+                if (current < target) {
+                    el.textContent = Math.floor(current).toLocaleString() + suffix;
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = target.toLocaleString() + suffix;
+                }
+            }
+
+            update();
+        }
+
+        const counters = document.querySelectorAll('.counter');
+        const observerOptions = {
+            threshold: 0.5
+   };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+                    entry.target.classList.add('counted');
+                    animateCounter(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        counters.forEach(counter => observer.observe(counter));
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
