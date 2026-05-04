@@ -798,7 +798,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v5-worker-agents', 'domain': DOMAIN})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v5-worker-agents', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
