@@ -62,3 +62,6 @@ STRIPE_PRICE_IDS=
 # Test files
 test_*.py
 *_test.py
+
+# Generated Stripe payment link export
+fmno_payment_links_live.json
