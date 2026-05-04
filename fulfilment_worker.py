@@ -29,6 +29,10 @@ from fulfilment_engine import (
     next_actions,
 )
 
+DEFAULT_OPERATOR_JURISDICTION = "au"
+DEFAULT_OPERATOR_NAME = "MadisonJade Pty Ltd / FixMyNameOnline™"
+SERVICE_SCOPE = "worldwide"
+
 
 def utc_now() -> str:
     return datetime.utcnow().isoformat() + "Z"
@@ -191,7 +195,9 @@ def _evidence_agent(case, task, source, customer):
             "evidence_id": f"EV-{idx:03d}",
             "url_or_term": link,
             "platform_or_source": platform,
-            "jurisdiction_guess": detect_jurisdiction_from_url(link) if detect_jurisdiction_from_url and link.startswith("http") else "worldwide",
+            "jurisdiction_guess": _resolve_target_jurisdiction(link, source),
+            "operator_jurisdiction": DEFAULT_OPERATOR_JURISDICTION,
+            "service_scope": SERVICE_SCOPE,
             "captured_at": now,
             "capture_status": "metadata_record_created__screenshot_still_required" if link.startswith("http") else "search_term_record_created__manual_search_required",
             "required_capture_fields": ["title", "source/platform", "date seen", "snippet/review text", "screenshot path", "archive URL if available", "operator notes"],
@@ -202,7 +208,9 @@ def _evidence_agent(case, task, source, customer):
             "evidence_id": "EV-001",
             "url_or_term": customer.get("name") or "customer name",
             "platform_or_source": "baseline search",
-            "jurisdiction_guess": "worldwide",
+            "jurisdiction_guess": source.get("jurisdiction") or DEFAULT_OPERATOR_JURISDICTION,
+            "operator_jurisdiction": DEFAULT_OPERATOR_JURISDICTION,
+            "service_scope": SERVICE_SCOPE,
             "captured_at": now,
             "capture_status": "baseline_search_snapshot_required",
             "required_capture_fields": ["top results", "risk results", "positive assets", "screenshots", "date seen", "operator notes"],
@@ -313,7 +321,7 @@ def _removal_review_draft_pack(case, task, source, customer):
     context = source.get("context") or source.get("goal") or "Client requested a private removal review."
     generated_requests = []
     for idx, link in enumerate(links, start=1):
-        jurisdiction = detect_jurisdiction_from_url(link) if detect_jurisdiction_from_url and link.startswith("http") else "worldwide"
+        jurisdiction = _resolve_target_jurisdiction(link, source)
         law_type = _suggest_law_type(link, context, jurisdiction)
         description = (
             f"Target {idx}: {link}\n"
@@ -337,13 +345,16 @@ def _removal_review_draft_pack(case, task, source, customer):
         generated_requests.append({
             "target": link,
             "jurisdiction_guess": jurisdiction,
+            "operator_jurisdiction": DEFAULT_OPERATOR_JURISDICTION,
+            "service_scope": SERVICE_SCOPE,
             "suggested_pathway": law_type,
             "draft_letter": letter,
             "submission_status": "draft_only_not_sent",
         })
     client_summary = (
         "We prepared draft request material for private review. These drafts are not legal advice, "
-        "are not guarantees of removal, and must not be sent until evidence, QC, and client approval are complete."
+        "are not guarantees of removal, and must not be sent until evidence, jurisdiction review, QC, and client approval are complete. "
+        "FixMyNameOnline™ is operated from Australia and can prepare worldwide pathway drafts based on target jurisdiction."
     )
     return {
         "type": "removal_review_pack",
@@ -355,6 +366,24 @@ def _removal_review_draft_pack(case, task, source, customer):
         "safety_gate": "draft_only__requires_evidence_qc_client_approval_before_send",
         "public_text_check": validate_public_text(json.dumps(generated_requests, ensure_ascii=False)),
     }
+
+
+def _resolve_target_jurisdiction(link: str, source: Dict[str, Any]) -> str:
+    explicit = (source.get("jurisdiction") or source.get("target_jurisdiction") or "").strip().lower()
+    if explicit:
+        return explicit
+    low = str(link).lower()
+    country_tld_map = {
+        ".co.uk": "uk", ".org.uk": "uk", ".net.uk": "uk", ".gov.uk": "uk",
+        ".de": "eu", ".fr": "eu", ".it": "eu", ".es": "eu", ".nl": "eu", ".eu": "eu",
+        ".com.au": "au", ".org.au": "au", ".net.au": "au", ".gov.au": "au",
+        ".ca": "ca", ".qc.ca": "ca", ".jp": "jp", ".br": "br",
+    }
+    for tld, jurisdiction in country_tld_map.items():
+        if tld in low:
+            return jurisdiction
+    # Generic .com/.net/.org are worldwide, not automatically US. FMNO is AU-based by default.
+    return DEFAULT_OPERATOR_JURISDICTION
 
 
 def _suggest_law_type(link: str, context: str, jurisdiction: str) -> str:
@@ -458,6 +487,8 @@ Next step:
 Review the prepared pack, confirm any requested changes, and approve only if you are comfortable with the proposed wording/action path.
 
 Important disclaimer:
+FixMyNameOnline™ is operated from Australia and prepares private reputation/review/removal support for worldwide matters. The target platform, publisher, client location, and URL may affect which pathway is appropriate.
+
 FixMyNameOnline™ does not guarantee removals, rankings, de-indexing, platform decisions, or search-engine outcomes. Legal advice must be obtained from a qualified lawyer.
 """
     return {
