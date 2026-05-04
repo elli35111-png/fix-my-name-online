@@ -42,6 +42,8 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
+SEO_DESCRIPTION = 'Private reputation repair and search protection for individuals, professionals, businesses and public figures. Australia-based, worldwide service by MadisonJade Pty Ltd.'
+SEO_IMAGE = DOMAIN + '/og-image.png'
 DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
 DATA_DIR.mkdir(exist_ok=True)
 LEADS_FILE = DATA_DIR / 'snapshot_leads.jsonl'
@@ -116,8 +118,11 @@ def safe(value):
     return html.escape(str(value or ''), quote=True)
 
 
-def page(title, body):
-    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™ · MADISONJADE PTY LTD</div>{body}</div></body></html>"""
+def page(title, body, description=None, canonical_path=None):
+    desc = description or SEO_DESCRIPTION
+    path = canonical_path or request.path or '/'
+    canonical = DOMAIN + (path if path.startswith('/') else '/' + path)
+    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta name=\"twitter:card\" content=\"summary\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\"><style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™ · MADISONJADE PTY LTD</div>{body}</div></body></html>"""
 
 
 def append_jsonl(path, payload):
@@ -343,22 +348,48 @@ def send_onboarding_emails(data, queue_item):
 
 @app.route('/')
 def landing():
-    return send_from_directory('.', 'landing_page_v2.html')
+    html_text = Path('landing_page_v2.html').read_text(encoding='utf-8')
+    return Response(html_text, mimetype='text/html')
+
+
+@app.route('/robots.txt')
+def robots_txt():
+    return Response(f"User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n", mimetype='text/plain')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    urls = ['/', '/app', '/contact', '/about', '/services', '/privacy', '/terms']
+    urlset = ''.join(f"<url><loc>{DOMAIN}{u}</loc><changefreq>{'weekly' if u == '/' else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else '0.7'}</priority></url>" for u in urls)
+    xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
+    return Response(xml, mimetype='application/xml')
+
+
+@app.route('/about')
+def about():
+    body = """<div class=\"card\"><h1>About FixMyNameOnline™</h1><p class=\"sub\">FixMyNameOnline™ is an Australia-based, worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.</p><p>We help individuals, professionals, business owners and public figures understand what appears around their name, document risk signals, review removal or platform-reporting pathways where appropriate, and build accurate positive assets over time.</p><p class=\"note\">We are not a law firm and do not provide legal advice. No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed.</p></div>"""
+    return page('About — FixMyNameOnline™', body, 'About FixMyNameOnline™, an Australia-based worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.')
+
+
+@app.route('/services')
+def services():
+    body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>Sentinel Alert™ for monitoring</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p class=\"note\">Search engines and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
+    return page('Services — FixMyNameOnline™', body, 'Private reputation repair, search protection, removal review support, Google review defence and positive asset planning by FixMyNameOnline™.')
 
 
 @app.route('/pricing')
 def pricing():
-    return redirect('/#pricing')
+    return redirect('/#pricing', code=301)
 
 
 @app.route('/how-it-works')
 def how_it_works():
-    return redirect('/#how-it-works')
+    return redirect('/#how-it-works', code=301)
 
 
 @app.route('/faq')
 def faq():
-    return redirect('/#faq')
+    return redirect('/#faq', code=301)
 
 
 @app.route('/app')
@@ -974,7 +1005,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v8-export-backups', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v9-seo-foundation', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
