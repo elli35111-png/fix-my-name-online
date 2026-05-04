@@ -123,7 +123,7 @@ def append_jsonl(path, payload):
 
 def admin_authorized():
     token = os.environ.get('FMNO_ADMIN_TOKEN', '')
-    supplied = request.headers.get('X-FMNO-Admin-Token') or request.args.get('token', '')
+    supplied = request.headers.get('X-FMNO-Admin-Token') or request.args.get('token', '') or request.form.get('token', '')
     return bool(token and supplied and supplied == token)
 
 
@@ -489,6 +489,197 @@ def webhook():
     return '', 200
 
 
+
+def status_badge(status):
+    colors = {
+        'new': '#9aa2b6',
+        'intake_ready': '#6aa9ff',
+        'mapped': '#6aa9ff',
+        'evidence_ready': '#6aa9ff',
+        'drafting': '#d7a328',
+        'qc_pending': '#d7a328',
+        'client_approval_pending': '#d7a328',
+        'approved_for_execution': '#31d07a',
+        'executing': '#31d07a',
+        'monitoring': '#31d07a',
+        'complete': '#31d07a',
+        'blocked': '#ff6f85',
+        'cancelled': '#9aa2b6',
+        'ready': '#6aa9ff',
+        'pending': '#9aa2b6',
+        'in_progress': '#d7a328',
+        'approved': '#31d07a',
+        'done': '#31d07a',
+    }
+    color = colors.get(status, '#9aa2b6')
+    return f'<span style="display:inline-block;border:1px solid {color};color:{color};border-radius:999px;padding:4px 8px;font-size:12px;font-weight:800">{safe(status)}</span>'
+
+
+def dashboard_page(title, body):
+    css = """
+    :root{--dark:#070911;--panel:#111521;--panel2:#171d2b;--red:#d91f3d;--muted:#9aa2b6;--ok:#31d07a;--warn:#d7a328;--bad:#ff6f85;--line:rgba(255,255,255,.11)}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 10% 0,rgba(217,31,61,.18),transparent 25%),var(--dark);color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;padding:22px;line-height:1.45}
+    a{color:#ff4d66;text-decoration:none}.wrap{max-width:1280px;margin:0 auto}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:20px}.brand{font-weight:950;letter-spacing:.12em;color:var(--red)}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:rgba(255,255,255,.055);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.20)}
+    .casegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:14px}.muted{color:var(--muted)}.small{font-size:12px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;word-break:break-all}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.btn,button{background:linear-gradient(135deg,var(--red),#a81229);border:0;color:white;border-radius:10px;padding:9px 11px;font-weight:800;cursor:pointer}.btn2{background:transparent;border:1px solid var(--line)}
+    input,select,textarea{background:#0c1019;color:white;border:1px solid var(--line);border-radius:10px;padding:9px;width:100%;font:inherit}textarea{min-height:82px}.task{border-left:3px solid var(--line);padding:12px;margin:10px 0;background:rgba(255,255,255,.035);border-radius:12px}.danger{border-color:rgba(255,111,133,.5);background:rgba(255,111,133,.08)}.okbox{border-color:rgba(49,208,122,.5);background:rgba(49,208,122,.08)}
+    @media(max-width:850px){.grid{grid-template-columns:1fr 1fr}.top{display:block}}
+    """
+    return f"""<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>{safe(title)}</title><style>{css}</style></head><body><div class='wrap'><div class='top'><div><div class='brand'>FMNO™ FULFILMENT COMMAND</div><div class='muted small'>MadisonJade private operations · QC-gated execution</div></div><div class='row'><a class='btn btn2' href='/'>Public site</a></div></div>{body}</div></body></html>"""
+
+
+def token_qs():
+    token = request.args.get('token') or request.form.get('token') or ''
+    return f'token={safe(token)}'
+
+
+def case_counts(cases):
+    counts = {'total': len(cases), 'blocked': 0, 'qc_pending': 0, 'client_approval': 0, 'ready': 0}
+    for case in cases:
+        if case.get('status') == 'blocked':
+            counts['blocked'] += 1
+        for task_obj in case.get('tasks', []):
+            if task_obj.get('status') == 'qc_pending':
+                counts['qc_pending'] += 1
+            if task_obj.get('requires_client_approval') and task_obj.get('status') not in ['approved', 'done', 'cancelled']:
+                counts['client_approval'] += 1
+            if task_obj.get('status') == 'ready':
+                counts['ready'] += 1
+    return counts
+
+
+@app.route('/admin/fulfilment')
+def fulfilment_dashboard():
+    if not admin_authorized():
+        body = """
+        <div class='card' style='max-width:560px;margin:80px auto'><h1>Admin token required</h1><p class='muted'>Enter the FMNO admin token to open the fulfilment dashboard.</p>
+        <form method='get'><input name='token' type='password' placeholder='FMNO_ADMIN_TOKEN'><p><button>Open dashboard</button></p></form></div>
+        """
+        return dashboard_page('FMNO Fulfilment Login', body), 401
+    if not list_cases:
+        return dashboard_page('FMNO Fulfilment', "<div class='card'><h1>Fulfilment engine unavailable</h1></div>"), 500
+    status = request.args.get('status') or ''
+    plan = request.args.get('plan') or ''
+    cases = list_cases(status=status or None, plan=plan or None, limit=100)
+    all_cases = list_cases(limit=500)
+    counts = case_counts(all_cases)
+    cards = []
+    for case in cases:
+        ready = [t for t in case.get('tasks', []) if t.get('status') in ['ready', 'in_progress', 'qc_pending', 'blocked']]
+        flags = ''.join([f"<span style='color:#ff6f85'>⚠ {safe(f)}</span> " for f in case.get('risk_flags', [])])
+        cards.append(f"""
+        <div class='card'>
+          <div class='row'>{status_badge(case.get('status'))}<span class='muted small'>{safe(case.get('priority'))}</span></div>
+          <h2 style='margin-bottom:4px'>{safe(case.get('plan_name'))}</h2>
+          <div class='muted'>{safe(case.get('customer', {}).get('name') or 'Unnamed')} · {safe(case.get('customer', {}).get('email'))}</div>
+          <div class='mono' style='margin-top:8px'>{safe(case.get('id'))}</div>
+          <p class='small muted'>{safe(case.get('description'))}</p>
+          <div>{flags}</div>
+          <p><strong>{len(ready)}</strong> active/ready task(s) · <strong>{len(case.get('tasks', []))}</strong> total</p>
+          <a class='btn' href='/admin/fulfilment/case/{safe(case.get('id'))}?{token_qs()}'>Open case →</a>
+        </div>
+        """)
+    body = f"""
+    <div class='grid'>
+      <div class='card'><div class='muted small'>Total cases</div><h1>{counts['total']}</h1></div>
+      <div class='card'><div class='muted small'>Ready tasks</div><h1>{counts['ready']}</h1></div>
+      <div class='card'><div class='muted small'>QC pending</div><h1>{counts['qc_pending']}</h1></div>
+      <div class='card'><div class='muted small'>Blocked</div><h1>{counts['blocked']}</h1></div>
+    </div>
+    <div class='card' style='margin:16px 0'><form method='get' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><select name='status'><option value=''>All statuses</option><option>blocked</option><option>intake_ready</option><option>executing</option><option>qc_pending</option><option>complete</option></select><select name='plan'><option value=''>All plans</option><option>sentinel</option><option>removal-review</option><option>review-defence</option><option>starter</option><option>pro</option><option>premium</option><option>concierge</option></select><button>Filter</button><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>Reset</a></form></div>
+    <div class='card' style='margin:16px 0'><h2>QC text safety check</h2><form method='post' action='/admin/fulfilment/check-text'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><textarea name='text' placeholder='Paste draft public copy, responses, articles, or platform request text here before approval...'></textarea><p><button>Check draft safety</button></p></form></div>
+    <div class='casegrid'>{''.join(cards) if cards else "<div class='card'><h2>No cases yet</h2><p class='muted'>Paid onboarding or Stripe checkout will create cases automatically.</p></div>"}</div>
+    """
+    return dashboard_page('FMNO Fulfilment Dashboard', body)
+
+
+@app.route('/admin/fulfilment/case/<case_id>')
+def fulfilment_case_dashboard(case_id):
+    if not admin_authorized():
+        return redirect('/admin/fulfilment')
+    case = get_case(case_id) if get_case else None
+    if not case:
+        return dashboard_page('Case not found', f"<div class='card'><h1>Case not found</h1><a href='/admin/fulfilment?{token_qs()}'>Back</a></div>"), 404
+    active = next_actions(case_id) if next_actions else []
+    task_html = []
+    for task_obj in case.get('tasks', []):
+        sensitive = task_obj.get('execution_sensitive') or task_obj.get('requires_client_approval')
+        css = 'task danger' if task_obj.get('status') == 'blocked' or sensitive else 'task'
+        gates = ' '.join([f"<span class='small' style='border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 7px'>{safe(g)}</span>" for g in task_obj.get('gates', [])])
+        notes = task_obj.get('qc', {}).get('notes', [])[-2:]
+        notes_html = ''.join([f"<div class='small muted'>• {safe(n.get('note'))} — {safe(n.get('author'))}</div>" for n in notes])
+        actions = f"""
+        <form method='post' action='/admin/fulfilment/action' class='row'>
+          <input type='hidden' name='token' value='{safe(request.args.get('token'))}'><input type='hidden' name='case_id' value='{safe(case_id)}'><input type='hidden' name='task_id' value='{safe(task_obj.get('id'))}'>
+          <input name='note' placeholder='QC note optional' style='max-width:280px'>
+          <button name='action' value='in_progress'>Start</button><button name='action' value='qc_pending'>QC pending</button><button name='action' value='approve'>Approve</button><button name='action' value='done'>Done</button><button name='action' value='blocked'>Block</button>
+        </form>
+        """
+        task_html.append(f"""
+        <div class='{css}'>
+          <div class='row'>{status_badge(task_obj.get('status'))}<strong>{safe(task_obj.get('id'))}</strong><span>{safe(task_obj.get('agent'))}</span></div>
+          <h3>{safe(task_obj.get('title'))}</h3><p class='muted small'>{safe(task_obj.get('description'))}</p>
+          <div class='row'>{gates}</div>
+          <div class='small muted'>Depends on: {safe(', '.join(task_obj.get('depends_on', [])) or 'none')} · Client approval: {safe(task_obj.get('requires_client_approval'))} · Sensitive execution: {safe(task_obj.get('execution_sensitive'))}</div>
+          {notes_html}{actions}
+        </div>
+        """)
+    source = safe(json.dumps(case.get('source', {}), indent=2, ensure_ascii=False))
+    notes = ''.join([f"<div class='small muted'>• {safe(n.get('note'))} — {safe(n.get('author'))} / {safe(n.get('type'))}</div>" for n in case.get('notes', [])[-8:]])
+    active_html = ''.join([f"<li>{safe(a.get('task_id'))}: {safe(a.get('title'))} — {safe(a.get('agent'))}</li>" for a in active]) or '<li>No active tasks</li>'
+    body = f"""
+    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>← Back</a>{status_badge(case.get('status'))}<span class='mono'>{safe(case_id)}</span></div>
+    <div class='grid' style='grid-template-columns:2fr 1fr 1fr 1fr'>
+      <div class='card'><h1>{safe(case.get('plan_name'))}</h1><p class='muted'>{safe(case.get('description'))}</p></div>
+      <div class='card'><div class='muted small'>Customer</div><strong>{safe(case.get('customer', {}).get('name') or 'Unnamed')}</strong><div class='small muted'>{safe(case.get('customer', {}).get('email'))}</div></div>
+      <div class='card'><div class='muted small'>Priority</div><h2>{safe(case.get('priority'))}</h2></div>
+      <div class='card'><div class='muted small'>Trigger</div><h2>{safe(case.get('trigger'))}</h2></div>
+    </div>
+    <div class='card' style='margin-top:14px'><h2>Next actions</h2><ul>{active_html}</ul></div>
+    <div class='card' style='margin-top:14px'><h2>Add case note</h2><form method='post' action='/admin/fulfilment/action' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><input type='hidden' name='case_id' value='{safe(case_id)}'><input type='hidden' name='action' value='case_note'><input name='note' placeholder='Internal note'><button>Add note</button></form>{notes}</div>
+    <div class='card' style='margin-top:14px'><h2>Tasks / QC gates</h2>{''.join(task_html)}</div>
+    <div class='card' style='margin-top:14px'><h2>Source intake</h2><pre class='mono'>{source}</pre></div>
+    """
+    return dashboard_page(f"FMNO Case {case_id}", body)
+
+
+
+@app.route('/admin/fulfilment/check-text', methods=['POST'])
+def fulfilment_check_text_page():
+    if not admin_authorized():
+        return dashboard_page('Unauthorized', "<div class='card'><h1>Unauthorized</h1></div>"), 401
+    draft = request.form.get('text', '')
+    result = validate_public_text(draft) if validate_public_text else {'ok': False, 'blocked_terms': []}
+    box_class = 'card okbox' if result.get('ok') else 'card danger'
+    terms = ', '.join(result.get('blocked_terms', [])) or 'none'
+    verdict = 'PASS — no blocked phrases found' if result.get('ok') else 'BLOCK — fix before approval'
+    body = f"""
+    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment?token={safe(request.form.get('token'))}'>← Back to dashboard</a></div>
+    <div class='{box_class}'><h1>{safe(verdict)}</h1><p><strong>Blocked terms:</strong> {safe(terms)}</p></div>
+    <div class='card' style='margin-top:14px'><h2>Checked draft</h2><pre class='mono'>{safe(draft)}</pre></div>
+    """
+    return dashboard_page('FMNO QC Text Safety Check', body)
+
+@app.route('/admin/fulfilment/action', methods=['POST'])
+def fulfilment_dashboard_action():
+    if not admin_authorized():
+        return dashboard_page('Unauthorized', "<div class='card'><h1>Unauthorized</h1></div>"), 401
+    case_id = request.form.get('case_id', '')
+    task_id = request.form.get('task_id', '')
+    action = request.form.get('action', '')
+    note = request.form.get('note', '')
+    if action == 'case_note':
+        if add_case_note and note:
+            add_case_note(case_id, note, 'Elli/Hermes', 'operator')
+    elif action == 'approve':
+        if approve_task:
+            approve_task(case_id, task_id, 'QCJohnny', note)
+    elif action in ['in_progress', 'qc_pending', 'done', 'blocked', 'cancelled', 'ready']:
+        if update_task_status:
+            update_task_status(case_id, task_id, action, note, 'Elli/Hermes')
+    return redirect(f"/admin/fulfilment/case/{case_id}?token={request.form.get('token', '')}")
+
+
 @app.route('/admin/fulfilment/cases')
 def admin_fulfilment_cases():
     unauthorized = require_admin_json()
@@ -570,7 +761,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v3-fulfilment-pipeline', 'domain': DOMAIN})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v4-fulfilment-dashboard', 'domain': DOMAIN})
 
 
 if __name__ == '__main__':
