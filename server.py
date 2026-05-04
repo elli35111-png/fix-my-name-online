@@ -15,7 +15,7 @@ from pathlib import Path
 
 import stripe
 import requests
-from flask import Flask, request, jsonify, send_from_directory, redirect
+from flask import Flask, request, jsonify, send_from_directory, redirect, Response
 
 try:
     from fulfilment_engine import (
@@ -702,6 +702,7 @@ def fulfilment_dashboard():
       <div class='card'><div class='muted small'>QC pending</div><h1>{counts['qc_pending']}</h1></div>
       <div class='card'><div class='muted small'>Blocked</div><h1>{counts['blocked']}</h1></div>
     </div>
+    <div class='card' style='margin:16px 0'><h2>Backup / export</h2><p class='muted small'>Render free storage is not a long-term database. Export cases regularly until we add Postgres.</p><div class='row'><a class='btn' href='/admin/fulfilment/export/cases.json?{token_qs()}'>Download all cases JSON</a><a class='btn btn2' href='/admin/fulfilment/export/backup.json?{token_qs()}'>Download full backup JSON</a></div></div>
     <div class='card' style='margin:16px 0'><form method='get' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><select name='status'><option value=''>All statuses</option><option>blocked</option><option>intake_ready</option><option>executing</option><option>qc_pending</option><option>complete</option></select><select name='plan'><option value=''>All plans</option><option>sentinel</option><option>removal-review</option><option>review-defence</option><option>starter</option><option>pro</option><option>premium</option><option>concierge</option></select><button>Filter</button><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>Reset</a></form></div>
     <div class='card' style='margin:16px 0'><h2>QC text safety check</h2><form method='post' action='/admin/fulfilment/check-text'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><textarea name='text' placeholder='Paste draft public copy, responses, articles, or platform request text here before approval...'></textarea><p><button>Check draft safety</button></p></form></div>
     <div class='casegrid'>{''.join(cards) if cards else "<div class='card'><h2>No cases yet</h2><p class='muted'>Paid onboarding or Stripe checkout will create cases automatically.</p></div>"}</div>
@@ -747,7 +748,7 @@ def fulfilment_case_dashboard(case_id):
     notes = ''.join([f"<div class='small muted'>• {safe(n.get('note'))} — {safe(n.get('author'))} / {safe(n.get('type'))}</div>" for n in case.get('notes', [])[-8:]])
     active_html = ''.join([f"<li>{safe(a.get('task_id'))}: {safe(a.get('title'))} — {safe(a.get('agent'))}</li>" for a in active]) or '<li>No active tasks</li>'
     body = f"""
-    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>← Back</a>{status_badge(case.get('status'))}<span class='mono'>{safe(case_id)}</span></div>
+    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>← Back</a><a class='btn btn2' href='/admin/fulfilment/export/case/{safe(case_id)}.json?{token_qs()}'>Export case JSON</a>{status_badge(case.get('status'))}<span class='mono'>{safe(case_id)}</span></div>
     <div class='grid' style='grid-template-columns:2fr 1fr 1fr 1fr'>
       <div class='card'><h1>{safe(case.get('plan_name'))}</h1><p class='muted'>{safe(case.get('description'))}</p></div>
       <div class='card'><div class='muted small'>Customer</div><strong>{safe(case.get('customer', {}).get('name') or 'Unnamed')}</strong><div class='small muted'>{safe(case.get('customer', {}).get('email'))}</div></div>
@@ -803,6 +804,69 @@ def fulfilment_dashboard_action():
         if update_task_status:
             update_task_status(case_id, task_id, action, note, 'Elli/Hermes')
     return redirect(f"/admin/fulfilment/case/{case_id}?token={request.form.get('token', '')}")
+
+
+
+def json_download(payload, filename):
+    body = json.dumps(payload, indent=2, ensure_ascii=False, default=str)
+    return Response(body, mimetype='application/json', headers={'Content-Disposition': f'attachment; filename="{filename}"'})
+
+
+def read_jsonl_records(path):
+    if not path.exists():
+        return []
+    records = []
+    with path.open('r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                records.append(json.loads(line))
+            except Exception:
+                records.append({'raw': line, 'parse_error': True})
+    return records
+
+
+@app.route('/admin/fulfilment/export/cases.json')
+def admin_export_cases_json():
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    cases = list_cases(limit=10000) if list_cases else []
+    payload = {'exported_at': utc_now(), 'service': 'FixMyNameOnline™', 'type': 'cases', 'case_count': len(cases), 'cases': cases}
+    return json_download(payload, f'fmno-cases-{datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}.json')
+
+
+@app.route('/admin/fulfilment/export/case/<case_id>.json')
+def admin_export_single_case_json(case_id):
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    case = get_case(case_id) if get_case else None
+    if not case:
+        return jsonify({'ok': False, 'error': 'Case not found'}), 404
+    payload = {'exported_at': utc_now(), 'service': 'FixMyNameOnline™', 'type': 'single_case', 'case': case, 'next_actions': next_actions(case_id) if next_actions else []}
+    return json_download(payload, f'fmno-case-{case_id}.json')
+
+
+@app.route('/admin/fulfilment/export/backup.json')
+def admin_export_full_backup_json():
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    cases = list_cases(limit=10000) if list_cases else []
+    payload = {
+        'exported_at': utc_now(),
+        'service': 'FixMyNameOnline™',
+        'type': 'full_backup',
+        'case_count': len(cases),
+        'cases': cases,
+        'snapshot_leads': read_jsonl_records(LEADS_FILE),
+        'onboarding_submissions': read_jsonl_records(ONBOARDING_FILE),
+        'fulfilment_queue': read_jsonl_records(FULFILMENT_QUEUE_FILE),
+    }
+    return json_download(payload, f'fmno-full-backup-{datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}.json')
 
 
 @app.route('/admin/fulfilment/cases')
@@ -910,7 +974,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v7-real-deliverables', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v8-export-backups', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
