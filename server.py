@@ -15,6 +15,21 @@ import stripe
 import requests
 from flask import Flask, request, jsonify, send_from_directory, redirect
 
+try:
+    from fulfilment_engine import (
+        create_fulfilment_case,
+        list_cases,
+        get_case,
+        next_actions,
+        update_task_status,
+        approve_task,
+        add_case_note,
+        validate_public_text,
+    )
+except Exception:
+    create_fulfilment_case = None
+    list_cases = get_case = next_actions = update_task_status = approve_task = add_case_note = validate_public_text = None
+
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
@@ -104,6 +119,28 @@ def append_jsonl(path, payload):
     with path.open('a', encoding='utf-8') as f:
         f.write(json.dumps(payload, ensure_ascii=False) + '\n')
     return payload
+
+
+def admin_authorized():
+    token = os.environ.get('FMNO_ADMIN_TOKEN', '')
+    supplied = request.headers.get('X-FMNO-Admin-Token') or request.args.get('token', '')
+    return bool(token and supplied and supplied == token)
+
+
+def require_admin_json():
+    if not admin_authorized():
+        return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
+    return None
+
+
+def safe_create_fulfilment_case(plan, customer, source, trigger):
+    if not create_fulfilment_case:
+        return None
+    try:
+        return create_fulfilment_case(plan, customer, source=source, trigger=trigger)
+    except Exception as exc:
+        app.logger.warning('Fulfilment case creation failed: %s', exc)
+        return None
 
 
 def send_telegram_alert(title, payload):
@@ -356,9 +393,11 @@ def submit_onboarding():
     queue_item = make_queue_item('private_onboarding', data, triage)
     append_jsonl(ONBOARDING_FILE, {**data, 'queue_id': queue_item['id']})
     append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
+    case = safe_create_fulfilment_case(data.get('plan') or 'starter', data, {**data, 'queue_id': queue_item['id']}, 'onboarding')
 
     send_telegram_alert('FMNO paid/private onboarding', {
         'queue_id': queue_item['id'],
+        'case_id': case.get('id') if case else '',
         'plan': plan_label,
         'name': data.get('name'),
         'email': data.get('email'),
@@ -368,7 +407,7 @@ def submit_onboarding():
     email_status = send_onboarding_emails(data, queue_item)
     app.logger.info('Onboarding %s email status: %s', queue_item['id'], email_status)
 
-    body = f"""<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><p class="note">Private reference: {safe(queue_item['id'])}</p><a class="btn" href="/">Back to site</a></div>"""
+    body = f"""<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}</p><a class="btn" href="/">Back to site</a></div>"""
     return page('Onboarding received — FixMyNameOnline™', body)
 
 
@@ -443,13 +482,95 @@ def webhook():
         return 'Invalid signature', 400
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        send_telegram_alert('FMNO checkout completed', {'customer_email': session.get('customer_email'), 'tier': session.get('metadata', {}).get('tier'), 'session': session.get('id')})
+        tier = session.get('metadata', {}).get('tier') or 'starter'
+        customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email', '')
+        case = safe_create_fulfilment_case(tier, {'email': customer_email}, {'stripe_session_id': session.get('id'), 'tier': tier}, 'stripe_checkout')
+        send_telegram_alert('FMNO checkout completed', {'customer_email': customer_email, 'tier': tier, 'session': session.get('id'), 'case_id': case.get('id') if case else ''})
     return '', 200
+
+
+@app.route('/admin/fulfilment/cases')
+def admin_fulfilment_cases():
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    if not list_cases:
+        return jsonify({'ok': False, 'error': 'Fulfilment engine unavailable'}), 500
+    cases = list_cases(status=request.args.get('status'), plan=request.args.get('plan'), limit=int(request.args.get('limit', 50)))
+    return jsonify({'ok': True, 'cases': cases})
+
+
+@app.route('/admin/fulfilment/cases/<case_id>')
+def admin_fulfilment_case(case_id):
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    if not get_case:
+        return jsonify({'ok': False, 'error': 'Fulfilment engine unavailable'}), 500
+    case = get_case(case_id)
+    if not case:
+        return jsonify({'ok': False, 'error': 'Case not found'}), 404
+    return jsonify({'ok': True, 'case': case, 'next_actions': next_actions(case_id) if next_actions else []})
+
+
+@app.route('/admin/fulfilment/cases', methods=['POST'])
+def admin_create_fulfilment_case():
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    payload = request.get_json(silent=True) or {}
+    case = safe_create_fulfilment_case(payload.get('plan', 'starter'), payload.get('customer', {}), payload.get('source', payload), 'admin')
+    if not case:
+        return jsonify({'ok': False, 'error': 'Case creation failed'}), 500
+    return jsonify({'ok': True, 'case': case}), 201
+
+
+@app.route('/admin/fulfilment/cases/<case_id>/tasks/<task_id>', methods=['POST'])
+def admin_update_fulfilment_task(case_id, task_id):
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    if not update_task_status:
+        return jsonify({'ok': False, 'error': 'Fulfilment engine unavailable'}), 500
+    payload = request.get_json(silent=True) or {}
+    action = payload.get('action', 'status')
+    try:
+        if action == 'approve':
+            case = approve_task(case_id, task_id, payload.get('approved_by', 'QCJohnny'), payload.get('note', ''))
+        else:
+            case = update_task_status(case_id, task_id, payload.get('status', 'in_progress'), payload.get('note', ''), payload.get('author', 'admin'))
+    except ValueError as exc:
+        return jsonify({'ok': False, 'error': str(exc)}), 400
+    if not case:
+        return jsonify({'ok': False, 'error': 'Case or task not found'}), 404
+    return jsonify({'ok': True, 'case': case, 'next_actions': next_actions(case_id) if next_actions else []})
+
+
+@app.route('/admin/fulfilment/cases/<case_id>/notes', methods=['POST'])
+def admin_add_fulfilment_note(case_id):
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    payload = request.get_json(silent=True) or {}
+    case = add_case_note(case_id, payload.get('note', ''), payload.get('author', 'admin'), payload.get('type', 'note')) if add_case_note else None
+    if not case:
+        return jsonify({'ok': False, 'error': 'Case not found'}), 404
+    return jsonify({'ok': True, 'case': case})
+
+
+@app.route('/admin/fulfilment/validate-text', methods=['POST'])
+def admin_validate_public_text():
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    payload = request.get_json(silent=True) or {}
+    result = validate_public_text(payload.get('text', '')) if validate_public_text else {'ok': False, 'blocked_terms': []}
+    return jsonify({'ok': True, 'result': result})
 
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v2-automation', 'domain': DOMAIN})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v3-fulfilment-pipeline', 'domain': DOMAIN})
 
 
 if __name__ == '__main__':
