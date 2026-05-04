@@ -1,796 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FixMyNameOnline — Reclaim Your Digital Reputation</title>
-    <meta name="description" content="AI-powered reputation suppression. We publish 50–400+ positive articles about you so negative results disappear from Google page 1.">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#0a0a0f',
-                        darkLight: '#12121a',
-                        darkCard: '#1a1a2e',
-                        red: '#ff0000',
-                        redDark: '#cc0000',
-                        grey: '#888888',
-                        greyLight: '#aaaaaa'
-                    },
-                    fontFamily: {
-                        orbitron: ['Orbitron', 'sans-serif'],
-                        rajdhani: ['Rajdhani', 'sans-serif'],
-                        inter: ['Inter', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        html { scroll-behavior: smooth; }
-        body { background-color: #0a0a0f; font-family: 'Inter', sans-serif; }
-        
-        .gradient-bg {
-            background: linear-gradient(135deg, #0a0a0f 0%, #1a0a0a 25%, #0a0a0f 50%, #0a0f1a 75%, #0a0a0f 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-        }
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .particles { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
-        .particle {
-            position: absolute; width: 3px; height: 3px;
-            background: rgba(255, 0, 0, 0.4); border-radius: 50%;
-            animation: float 25s infinite;
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
-        }
-        
-        .glass {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.04);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            transition: all 0.3s ease;
-        }
-        .glass-card:hover {
-            border-color: rgba(255, 0, 0, 0.4);
-            transform: translateY(-4px);
-            box-shadow: 0 20px 60px rgba(255, 0, 0, 0.15);
-        }
-        
-        .btn-red {
-            background: linear-gradient(135deg, #ff0000, #cc0000);
-            transition: all 0.3s ease;
-        }
-        .btn-red:hover {
-            background: linear-gradient(135deg, #ff2222, #dd0000);
-            box-shadow: 0 8px 30px rgba(255, 0, 0, 0.4);
-            transform: translateY(-2px);
-        }
-        
-        .suppression-visual {
-            position: relative;
-        }
-        .result-item {
-            padding: 10px 16px; border-radius: 8px; margin: 6px 0;
-            font-size: 14px; font-family: 'Rajdhani', sans-serif;
-            transition: all 0.3s ease;
-        }
-        .result-bad {
-            background: rgba(255, 0, 0, 0.1);
-            border-left: 3px solid #ff4444;
-            color: #ff8888;
-            animation: slideIn 0.5s ease forwards;
-        }
-        .result-good {
-            background: rgba(0, 255, 100, 0.08);
-            border-left: 3px solid #00ff64;
-            color: #88ffaa;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-        
-        .pricing-card {
-            transition: all 0.3s ease;
-        }
-        .pricing-card:hover {
-            transform: translateY(-6px);
-        }
-        
-        .section-reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s ease;
-        }
-        .section-reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .tier-badge {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 10px;
-            letter-spacing: 2px;
-        }
-        
-        .checkout-link {
-            transition: all 0.3s ease;
-        }
-        .checkout-link:hover {
-            transform: scale(1.02);
-        }
-        
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0f; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FixMyNameOnline™ — Private Reputation Repair & Search Protection</title>
+  <meta name="description" content="Private online reputation repair for everyday people, professionals, business owners, and public figures dealing with bad Google results, old news articles, associated names, or malicious reviews.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: { extend: {
+        colors: { dark:'#08090f', darkLight:'#11131c', darkCard:'#191c2b', red:'#d91f3d', redDark:'#a81229', grey:'#8d94a7', greyLight:'#c4cad8', gold:'#d9b56d' },
+        fontFamily: { orbitron:['Orbitron','sans-serif'], rajdhani:['Rajdhani','sans-serif'], inter:['Inter','sans-serif'] }
+      }}
+    }
+  </script>
+  <style>
+    html{scroll-behavior:smooth} body{background:#08090f;font-family:'Inter',sans-serif}.gradient-bg{background:radial-gradient(circle at 20% 10%,rgba(255,31,61,.18),transparent 30%),radial-gradient(circle at 80% 20%,rgba(217,181,109,.10),transparent 28%),linear-gradient(135deg,#08090f 0%,#11131c 50%,#08090f 100%)}.glass{background:rgba(255,255,255,.045);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.09)}.glass-card{background:rgba(255,255,255,.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.09);transition:.25s}.glass-card:hover{border-color:rgba(255,31,61,.35);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.28)}.btn-red{background:linear-gradient(135deg,#ff1f3d,#c90f28);transition:.25s}.btn-red:hover{box-shadow:0 8px 30px rgba(255,31,61,.35);transform:translateY(-2px)}.result-item{padding:10px 16px;border-radius:8px;margin:6px 0;font-size:14px;font-family:'Rajdhani',sans-serif}.result-risk{background:rgba(255,31,61,.10);border-left:3px solid #ff5a70;color:#ff9aa8}.result-trust{background:rgba(33,214,128,.08);border-left:3px solid #21d680;color:#a7f3c8}.tier-badge{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px}.pricing-card{transition:.25s}.pricing-card:hover{transform:translateY(-5px)}::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#08090f}::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+
+    .fmno-logo-panel{background:linear-gradient(135deg,rgba(10,10,16,.92) 0%,rgba(26,26,46,.75) 50%,rgba(10,10,16,.92) 100%);border:1px solid rgba(217,31,61,.28);box-shadow:0 0 28px rgba(217,31,61,.12);}
+    .fmno-wordmark{font-family:'Orbitron',sans-serif;font-weight:900;letter-spacing:.12em;background:linear-gradient(90deg,#ff3653,#d91f3d,#ff6b7d);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 16px rgba(217,31,61,.30));}
+    .fmno-submark{font-family:'Rajdhani',sans-serif;letter-spacing:.42em;text-transform:uppercase;color:#8d94a7;}
+    .fmno-rule{height:2px;background:linear-gradient(90deg,transparent,#d91f3d,transparent);}
+
+    @media (max-width:640px){
+      html,body{max-width:100%;overflow-x:hidden!important;}
+      section,nav,footer,.max-w-7xl,.max-w-6xl,.max-w-5xl,.max-w-4xl,.max-w-3xl{max-width:100vw!important;overflow-x:hidden;}
+      h1{font-size:2.15rem!important;line-height:1.08!important;letter-spacing:-.02em;overflow-wrap:normal;word-break:normal;}
+      h2{font-size:1.75rem!important;line-height:1.15!important;overflow-wrap:break-word;}
+      p,li,a,span,div{overflow-wrap:break-word;}
+      .fmno-wordmark{letter-spacing:.045em;}
+      .result-item{white-space:normal;overflow-wrap:break-word;}
+      .glass-card,.glass{max-width:100%;}
+    }
+  </style>
 </head>
 <body class="text-white overflow-x-hidden">
+  <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-3"><div class="w-10 h-10 fmno-logo-panel rounded-xl flex items-center justify-center"><span class="fmno-wordmark text-sm tracking-widest">FM</span></div><div class="leading-tight"><span class="fmno-wordmark text-base md:text-lg">FIXMYNAMEONLINE</span><div class="fmno-submark text-[9px] hidden sm:block">Reputation Management</div></div></a>
+      <div class="hidden md:flex items-center gap-8"><a href="#how-it-works" class="text-greyLight hover:text-white transition-colors font-medium text-sm">How It Works</a><a href="#pricing" class="text-greyLight hover:text-white transition-colors font-medium text-sm">Pricing</a><a href="#faq" class="text-greyLight hover:text-white transition-colors font-medium text-sm">FAQ</a><a href="/app" class="text-greyLight hover:text-white transition-colors font-medium text-sm">Login</a><a href="/app" class="btn-red px-5 py-2 rounded-lg font-semibold text-sm text-white">Start Free Snapshot</a></div>
+    </div></div>
+  </nav>
 
-    <!-- NAV -->
-    <nav class="fixed top-0 left-0 right-0 z-50 glass border-b border-white/5">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <a href="#" class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-red rounded-lg flex items-center justify-center font-orbitron font-bold text-sm">FM</div>
-                    <span class="font-orbitron font-bold text-lg tracking-wider">FIXMYNAME<span class="text-red">ONLINE</span></span>
-                </a>
-                <div class="hidden md:flex items-center gap-8">
-                    <a href="#how-it-works" class="text-greyLight hover:text-white transition-colors font-medium text-sm">How It Works</a>
-                    <a href="#pricing" class="text-greyLight hover:text-white transition-colors font-medium text-sm">Pricing</a>
-                    <a href="#faq" class="text-greyLight hover:text-white transition-colors font-medium text-sm">FAQ</a>
-                    <a href="/app" class="text-greyLight hover:text-white transition-colors font-medium text-sm">Login</a>
-                    <a href="#pricing" class="btn-red px-5 py-2 rounded-lg font-semibold text-sm text-white">Choose Your Plan</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+  <section class="gradient-bg min-h-screen flex items-center justify-center relative pt-16">
+    <div class="max-w-6xl mx-auto px-4 text-center relative z-10 py-20">
+      <div class="inline-flex items-center justify-center gap-2 glass rounded-full px-4 py-2 mb-8 max-w-[92vw]"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span><span class="text-xs sm:text-sm text-greyLight whitespace-normal text-center">Private Reputation Repair for Real Life Search Problems</span></div>
+      <div class="max-w-2xl mx-auto mb-8 fmno-logo-panel rounded-2xl px-5 py-4 hidden md:block"><div class="fmno-wordmark text-2xl lg:text-3xl">FIX MY NAME ONLINE</div><div class="fmno-submark text-xs mt-2">Reputation Management</div><div class="fmno-rule w-44 mx-auto mt-3"></div></div>
+      <h1 class="font-orbitron text-4xl sm:text-5xl md:text-7xl font-black mb-6 leading-tight break-words">People Look<br class="sm:hidden"> You Up<br><span class="text-red">Before They<br class="sm:hidden"> Trust You</span></h1>
+      <p class="text-lg sm:text-xl md:text-2xl text-greyLight max-w-4xl mx-auto mb-4 leading-relaxed">Private help for everyday people, professionals, business owners, and public figures dealing with bad Google results, old news articles, associated names, damaging search terms, or malicious reviews.</p>
+      <p class="text-base sm:text-lg text-grey mb-12 max-w-3xl mx-auto">When search shows the worst version of your story, we help map the risk, prepare removal or review-response pathways where possible, and build a stronger positive footprint around the full truth.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center mb-6"><a href="/app" class="btn-red px-7 sm:px-10 py-4 rounded-xl font-bold text-base sm:text-lg text-white">Start Free Search Snapshot™ →</a><a href="#case-types" class="glass px-7 sm:px-10 py-4 rounded-xl font-semibold text-base sm:text-lg text-white border border-white/20 hover:border-white/40 transition-colors">See What We Handle</a></div><p class="text-sm text-grey mb-16">No pressure. Start with a private snapshot of what people may see when they search your name, business, associated names, or reviews.</p>
+      <div class="max-w-4xl mx-auto"><p class="text-sm text-grey mb-4 font-medium">Example search presence map — risk signals vs stronger positive assets</p><div class="grid md:grid-cols-2 gap-8 mb-6"><div class="glass-card rounded-2xl p-6"><div class="flex items-center justify-between mb-4"><span class="text-red text-sm font-medium">RISK SIGNALS</span><span class="text-xs text-grey/60">What people may find</span></div><div class="space-y-2"><div class="result-item result-risk">Old news article or court mention</div><div class="result-item result-risk">Associated name or business dispute</div><div class="result-item result-risk">Fake or malicious Google review</div><div class="result-item result-risk">Complaint, forum, or allegation page</div><div class="result-item result-risk">Outdated snippet with no current context</div></div></div><div class="glass-card rounded-2xl p-6 border border-green-500/20"><div class="flex items-center justify-between mb-4"><span class="text-green-400 text-sm font-medium">TRUST FOOTPRINT</span><span class="text-xs text-grey/60">The fuller story</span></div><div class="space-y-2"><div class="result-item result-trust">Current biography and credentials</div><div class="result-item result-trust">Business / professional proof assets</div><div class="result-item result-trust">Helpful articles and profile pages</div><div class="result-item result-trust">Review response and evidence record</div><div class="result-item result-trust">Verified social and business profiles</div></div></div></div><p class="text-sm text-grey">No one can guarantee search rankings, removals, or third-party platform decisions. We focus on careful, documented, quality-first reputation repair.</p></div>
+    </div>
+  </section>
 
-    <!-- HERO -->
-    <section class="gradient-bg min-h-screen flex items-center justify-center relative pt-16">
-        <div class="particles" id="particles"></div>
-        <div class="max-w-6xl mx-auto px-4 text-center relative z-10 py-20">
-            
-            <!-- Badge -->
-            <div class="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8">
-                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                <span class="text-sm text-greyLight">AI-Powered Reputation Suppression</span>
-            </div>
-            
-            <h1 class="font-orbitron text-5xl md:text-7xl font-black mb-6 leading-tight">
-                Take Back<br><span class="text-red">Your Google Results</span>
-            </h1>
-            
-            <p class="text-xl md:text-2xl text-greyLight max-w-3xl mx-auto mb-4 leading-relaxed">
-                Negative articles about you on Google? We'll push them off page 1 forever.
-            </p>
-            <p class="text-lg text-grey mb-12">
-                We publish 50–400+ positive articles about you monthly — so the bad stuff disappears.
-            </p>
-            
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mb-20">
-                <a href="#pricing" class="btn-red px-10 py-4 rounded-xl font-bold text-lg text-white">
-                    Choose Your Plan →
-                </a>
-                <a href="#how-it-works" class="glass px-10 py-4 rounded-xl font-semibold text-lg text-white border border-white/20 hover:border-white/40 transition-colors">
-                    See How It Works
-                </a>
-            </div>
-            
-            <!-- Suppression Visual -->
-            <div class="suppression-visual max-w-4xl mx-auto">
-                <p class="text-sm text-grey mb-4 font-medium">Live suppression demo — enter your name to see the before/after</p>
-                
-                <div class="grid md:grid-cols-2 gap-8 mb-6">
-                    <!-- BEFORE -->
-                    <div class="glass-card rounded-2xl p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-grey text-sm font-medium">❌ BEFORE</span>
-                            <span class="text-xs text-grey/50">Google Search</span>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="result-item result-bad" style="animation-delay: 0.1s">❌ John Smith Mugshot — NewsSite.com</div>
-                            <div class="result-item result-bad" style="animation-delay: 0.2s">❌ John Smith Arrest Record — BackgroundCheck.net</div>
-                            <div class="result-item result-bad" style="animation-delay: 0.3s">❌ John Smith Fraud Allegation — BlogPost.xyz</div>
-                            <div class="result-item result-bad" style="animation-delay: 0.4s">❌ John Smith DUI Charge — LocalPaper.com</div>
-                            <div class="result-item result-bad" style="animation-delay: 0.5s">❌ John Smith Scam Alert — RipOffReport.net</div>
-                        </div>
-                    </div>
-                    
-                    <!-- AFTER -->
-                    <div class="glass-card rounded-2xl p-6 border border-green-500/20">
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-green-400 text-sm font-medium">✅ AFTER FMNOL</span>
-                            <span class="text-xs text-grey/50">Google Search</span>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="result-item result-good">✓ John Smith — Senior Financial Advisor, Goldman Sachs</div>
-                            <div class="result-item result-good">✓ John Smith — LinkedIn Profile</div>
-                            <div class="result-item result-good">✓ John Smith — Featured in First Page Strategy</div>
-                            <div class="result-item result-good">✓ John Smith — CEO, Smith Financial Group</div>
-                            <div class="result-item result-good">✓ John Smith — Professional Bio & Credentials</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <p class="text-sm text-grey">⚡ Results typically visible within 60–90 days of active suppression</p>
-            </div>
-        </div>
-    </section>
+  <section class="py-12 bg-darkLight border-y border-white/5"><div class="max-w-7xl mx-auto px-4"><div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center"><div><div class="font-orbitron text-3xl md:text-4xl font-bold text-red">Names</div><div class="text-grey text-sm mt-1">Legal, old, associated</div></div><div><div class="font-orbitron text-3xl md:text-4xl font-bold text-red">Reviews</div><div class="text-grey text-sm mt-1">Fake or malicious attacks</div></div><div><div class="font-orbitron text-3xl md:text-4xl font-bold text-red">Links</div><div class="text-grey text-sm mt-1">Removal pathways reviewed</div></div><div><div class="font-orbitron text-3xl md:text-4xl font-bold text-red">Trust</div><div class="text-grey text-sm mt-1">Positive assets built carefully</div></div></div></div></section>
 
-    <!-- SOCIAL PROOF -->
-    <section class="py-12 bg-darkLight border-y border-white/5">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                <div>
-                    <div class="font-orbitron text-3xl md:text-4xl font-bold text-red">2,847+</div>
-                    <div class="text-grey text-sm mt-1">Professionals Protected</div>
-                </div>
-                <div>
-                    <div class="font-orbitron text-3xl md:text-4xl font-bold text-red">94%</div>
-                    <div class="text-grey text-sm mt-1">Suppression Success Rate</div>
-                </div>
-                <div>
-                    <div class="font-orbitron text-3xl md:text-4xl font-bold text-red">23</div>
-                    <div class="text-grey text-sm mt-1">FPS Owned-Media Channels</div>
-                </div>
-                <div>
-                    <div class="font-orbitron text-3xl md:text-4xl font-bold text-red">50–400+</div>
-                    <div class="text-grey text-sm mt-1">Articles Published Monthly</div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <section id="how-it-works" class="py-24 bg-dark"><div class="max-w-7xl mx-auto px-4"><div class="text-center mb-16"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">HOW IT WORKS</h2><p class="text-xl text-greyLight">A private, structured repair process for names, links, reviews, and search trust.</p></div><div class="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto"><div class="glass-card rounded-2xl p-7 text-center"><div class="w-14 h-14 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="font-orbitron text-xl font-bold text-red">1</span></div><h3 class="font-orbitron text-lg font-bold mb-3">Private Search Review</h3><p class="text-greyLight text-sm leading-relaxed">We map your full name, previous names, nicknames, business names, associated people, locations, and high-risk search phrases.</p></div><div class="glass-card rounded-2xl p-7 text-center"><div class="w-14 h-14 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="font-orbitron text-xl font-bold text-red">2</span></div><h3 class="font-orbitron text-lg font-bold mb-3">Removal Pathway Check</h3><p class="text-greyLight text-sm leading-relaxed">For specific articles, links, snippets, images, or reviews, we assess possible correction, de-indexing, platform reporting, or escalation routes.</p></div><div class="glass-card rounded-2xl p-7 text-center"><div class="w-14 h-14 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="font-orbitron text-xl font-bold text-red">3</span></div><h3 class="font-orbitron text-lg font-bold mb-3">Build Positive Assets</h3><p class="text-greyLight text-sm leading-relaxed">We create approved biographies, business pages, authority articles, profiles, and trust assets that show the fuller current story.</p></div><div class="glass-card rounded-2xl p-7 text-center"><div class="w-14 h-14 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-5"><span class="font-orbitron text-xl font-bold text-red">4</span></div><h3 class="font-orbitron text-lg font-bold mb-3">Monitor & Report</h3><p class="text-greyLight text-sm leading-relaxed">We track movement, new risks, review attacks, and search changes so you know what changed and what happens next.</p></div></div><div class="text-center mt-12"><p class="text-grey mb-6">The goal: people see a more accurate, current, trust-building picture before they make a decision about you.</p><a href="/app" class="btn-red px-8 py-3 rounded-xl font-semibold text-white inline-block">Start Free Search Snapshot™ →</a></div></div></section>
 
-    <!-- HOW IT WORKS -->
-    <section id="how-it-works" class="py-24 bg-dark">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">HOW IT WORKS</h2>
-                <p class="text-xl text-greyLight">3 steps to reclaim your Google results</p>
-            </div>
-            
-            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <!-- Step 1 -->
-                <div class="glass-card rounded-2xl p-8 text-center">
-                    <div class="w-16 h-16 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <span class="font-orbitron text-2xl font-bold text-red">1</span>
-                    </div>
-                    <h3 class="font-orbitron text-xl font-bold mb-4">Choose Your Plan</h3>
-                    <p class="text-greyLight text-sm leading-relaxed">
-                        Pick the tier that matches your needs. Sentinel for monitoring, Starter for publishing, Pro+ for FPS owned-media access.
-                    </p>
-                </div>
-                
-                <!-- Step 2 -->
-                <div class="glass-card rounded-2xl p-8 text-center">
-                    <div class="w-16 h-16 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <span class="font-orbitron text-2xl font-bold text-red">2</span>
-                    </div>
-                    <h3 class="font-orbitron text-xl font-bold mb-4">AI Generates Content</h3>
-                    <p class="text-greyLight text-sm leading-relaxed">
-                        Our AI creates 20–400+ professionally-crafted articles about you — professional bios, industry insights, social posts, and more.
-                    </p>
-                </div>
-                
-                <!-- Step 3 -->
-                <div class="glass-card rounded-2xl p-8 text-center">
-                    <div class="w-16 h-16 bg-red/10 border border-red/30 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <span class="font-orbitron text-2xl font-bold text-red">3</span>
-                    </div>
-                    <h3 class="font-orbitron text-xl font-bold mb-4">We Publish Everything</h3>
-                    <p class="text-greyLight text-sm leading-relaxed">
-                        Content goes live across 10–20 platforms including Medium, Quora, Substack, Reddit, firstpagestrategy.org, and more.
-                    </p>
-                </div>
-            </div>
-            
-            <div class="text-center mt-12">
-                <p class="text-grey mb-6">The result? Your positive content dominates Google page 1. Negative results? Buried.</p>
-                <a href="#pricing" class="btn-red px-8 py-3 rounded-xl font-semibold text-white inline-block">Start Suppressing →</a>
-            </div>
-        </div>
-    </section>
+  <section id="case-types" class="py-24 bg-darkLight"><div class="max-w-7xl mx-auto px-4"><div class="text-center mb-14"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">WHAT WE HANDLE</h2><p class="text-xl text-greyLight max-w-3xl mx-auto">This is for normal people and high-profile people — because everyone gets searched before they get trusted.</p></div><div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Old Google Results</h3><p class="text-greyLight text-sm leading-relaxed">Old news articles, court mentions, outdated allegations, directory pages, snippets, images, and results that keep following you years later.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Everyday Life Checks</h3><p class="text-greyLight text-sm leading-relaxed">Jobs, rentals, dating, parenting circles, clients, licensing, finance, partnerships, and people quietly searching before they trust you.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Business & Review Damage</h3><p class="text-greyLight text-sm leading-relaxed">Fake Google reviews, competitor attacks, ex-employee or ex-partner posts, complaint pages, bad snippets, and trust issues that cost calls or bookings.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Associated Names</h3><p class="text-greyLight text-sm leading-relaxed">Previous names, maiden names, nicknames, misspellings, business names, associated companies, family links, partners, directors, and location-based searches.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Public Figures & Big Cases</h3><p class="text-greyLight text-sm leading-relaxed">Founders, executives, investors, agents, lawyers, doctors, creators, public personalities, and sensitive clients who need discretion and stronger control.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Search Terms That Hurt</h3><p class="text-greyLight text-sm leading-relaxed">Name plus terms like news, court, complaint, review, scam, arrest, allegations, business dispute, suburb, company, or old article title.</p></div></div></div></section>
 
-    <!-- THE 4 MOATS -->
-    <section class="py-24 bg-darkLight">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-16">
-                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">THE 4 MOATS</h2>
-                <p class="text-xl text-greyLight">Why FMNOL is the hardest reputation system to compete against</p>
-            </div>
-            
-            <div class="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                <!-- MOAT 1 -->
-                <div class="glass-card rounded-2xl p-8">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-red/10 rounded-xl flex items-center justify-center shrink-0">
-                            <span class="text-2xl">🏰</span>
-                        </div>
-                        <div>
-                            <h3 class="font-orbitron text-lg font-bold mb-2">1. FPS Owned Media Network</h3>
-                            <p class="text-greyLight text-sm leading-relaxed">
-                                Pro+ plans publish to <strong class="text-white">firstpagestrategy.org</strong> and <strong class="text-white">firstpageacademy.org</strong> — real news sites with real Google domain authority. 23 channels. This is nearly impossible to replicate.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- MOAT 2 -->
-                <div class="glass-card rounded-2xl p-8">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-red/10 rounded-xl flex items-center justify-center shrink-0">
-                            <span class="text-2xl">🤖</span>
-                        </div>
-                        <div>
-                            <h3 class="font-orbitron text-lg font-bold mb-2">2. AI Bombardment Engine</h3>
-                            <p class="text-greyLight text-sm leading-relaxed">
-                                We publish 50–400+ pieces of content about you monthly. More content = more Google real estate = negative results pushed down. No human PR firm can match this volume.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- MOAT 3 -->
-                <div class="glass-card rounded-2xl p-8">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-red/10 rounded-xl flex items-center justify-center shrink-0">
-                            <span class="text-2xl">⚖️</span>
-                        </div>
-                        <div>
-                            <h3 class="font-orbitron text-lg font-bold mb-2">3. 4-Jurisdiction AI Lawyer Network</h3>
-                            <p class="text-greyLight text-sm leading-relaxed">
-                                <strong class="text-white">James Whitfield</strong> (UK), <strong class="text-white">Marcus Reilly</strong> (US), <strong class="text-white">David Chen</strong> (AU), <strong class="text-white">Sophia Müller</strong> (EU). AI agents that draft RTBF, DCMA, and GDPR removal requests automatically.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- MOAT 4 -->
-                <div class="glass-card rounded-2xl p-8">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-red/10 rounded-xl flex items-center justify-center shrink-0">
-                            <span class="text-2xl">📊</span>
-                        </div>
-                        <div>
-                            <h3 class="font-orbitron text-lg font-bold mb-2">4. Named AI Reputation Manager</h3>
-                            <p class="text-greyLight text-sm leading-relaxed">
-                                <strong class="text-white">Sarah Chen</strong> is your AI-powered reputation manager. Named persona. Perfect memory. Tracks your suppression score, manages bombardment, delivers video evidence packs. No human PR firm can match her availability.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <section class="py-24 bg-dark"><div class="max-w-7xl mx-auto px-4"><div class="text-center mb-14"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">WHAT WE ACTUALLY DO</h2><p class="text-xl text-greyLight max-w-3xl mx-auto">Plain English: we check what people see, look for valid ways to challenge bad results, then build better truthful results around your name.</p></div><div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6"><div class="glass-card rounded-2xl p-7"><div class="w-12 h-12 bg-red/10 border border-red/30 rounded-xl flex items-center justify-center mb-5"><span class="font-orbitron text-lg font-bold text-red">1</span></div><h3 class="font-orbitron text-lg font-bold mb-3">We search like other people search</h3><p class="text-greyLight text-sm leading-relaxed">We check your name, old names, business names, locations, reviews, and the words people may type before hiring, dating, renting, buying, or trusting you.</p></div><div class="glass-card rounded-2xl p-7"><div class="w-12 h-12 bg-red/10 border border-red/30 rounded-xl flex items-center justify-center mb-5"><span class="font-orbitron text-lg font-bold text-red">2</span></div><h3 class="font-orbitron text-lg font-bold mb-3">We look for removal options</h3><p class="text-greyLight text-sm leading-relaxed">If a link, article, image, snippet, or review may break a platform rule or privacy/outdated-content pathway, we help prepare the request properly.</p></div><div class="glass-card rounded-2xl p-7"><div class="w-12 h-12 bg-red/10 border border-red/30 rounded-xl flex items-center justify-center mb-5"><span class="font-orbitron text-lg font-bold text-red">3</span></div><h3 class="font-orbitron text-lg font-bold mb-3">We build better results</h3><p class="text-greyLight text-sm leading-relaxed">If the bad result cannot be removed, we create truthful, approved pages, profiles, articles, and business content that better represent who you are now.</p></div><div class="glass-card rounded-2xl p-7"><div class="w-12 h-12 bg-red/10 border border-red/30 rounded-xl flex items-center justify-center mb-5"><span class="font-orbitron text-lg font-bold text-red">4</span></div><h3 class="font-orbitron text-lg font-bold mb-3">We track what changes</h3><p class="text-greyLight text-sm leading-relaxed">We monitor the important searches and reviews, then show what improved, what appeared, what still hurts, and what to do next.</p></div></div><div class="max-w-4xl mx-auto mt-12 glass rounded-2xl p-7 text-center"><p class="text-lg text-greyLight leading-relaxed">Some results can be challenged. Some cannot. When they cannot, the next best move is to build stronger, truthful results around your name so people see more than the bad link.</p></div></div></section>
 
-    <!-- PRICING -->
-    <section id="pricing" class="py-24 bg-dark">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-12">
-                <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">PRICING</h2>
-                <p class="font-rajdhani text-xl text-greyLight">Choose the plan that fits your reputation needs</p>
-                
-                <!-- Toggle -->
-                <div class="flex items-center justify-center gap-4 mt-8">
-                    <span id="monthlyLabel" class="font-medium text-sm">Monthly</span>
-                    <button id="billingToggle" class="relative w-14 h-7 bg-white/10 rounded-full transition-colors">
-                        <div id="toggleDot" class="absolute left-0.5 top-0.5 w-6 h-6 bg-red rounded-full transition-all shadow-lg"></div>
-                    </button>
-                    <span id="annualLabel" class="text-greyLight text-sm">Annual <span class="text-green-400 text-xs">(Save 20%)</span></span>
-                </div>
-            </div>
-            
-            <!-- Pricing Cards -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-                
-                <!-- FREE -->
-                <div class="pricing-card glass rounded-2xl p-6 flex flex-col">
-                    <div class="text-center mb-5">
-                        <div class="tier-badge text-grey mb-2">FREE TIER</div>
-                        <h3 class="font-orbitron text-xl font-bold mb-1">FREE</h3>
-                        <div class="text-4xl font-bold">$0</div>
-                        <div class="text-grey text-sm">forever</div>
-                    </div>
-                    <ul class="space-y-2.5 text-sm flex-1 mb-6">
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 3 content pieces/month</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 3 social posts/month</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 1 alias</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Dashboard access</li>
-                        <li class="flex items-start gap-2 text-grey"><span class="shrink-0 mt-0.5">✗</span> No reports</li>
-                        <li class="flex items-start gap-2 text-grey"><span class="shrink-0 mt-0.5">✗</span> No AI Lawyer agents</li>
-                        <li class="flex items-start gap-2 text-grey"><span class="shrink-0 mt-0.5">✗</span> No FPS owned-media</li>
-                    </ul>
-                    <a href="/app" class="checkout-link block text-center py-3 rounded-lg border border-white/20 hover:bg-white/5 transition-colors font-semibold text-sm">Get Started Free</a>
-                </div>
-                
-                <!-- SENTINEL -->
-                <div class="pricing-card glass rounded-2xl p-6 border border-blue-500/30 flex flex-col relative">
-                    <div class="text-center mb-5">
-                        <div class="tier-badge text-blue-400 mb-2">MONITORING ONLY</div>
-                        <h3 class="font-orbitron text-xl font-bold mb-1 text-blue-400">SENTINEL</h3>
-                        <div class="text-4xl font-bold">$<span class="monthly-price">97</span><span class="annual-price hidden">78</span></div>
-                        <div class="text-grey text-sm">/month</div>
-                    </div>
-                    <ul class="space-y-2.5 text-sm flex-1 mb-6">
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>DIY</strong> — no content generation</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Unlimited keyword tracking</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 40+ platform monitoring</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Real-time Google alerts</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> RTBF letter generator (UK/EU)</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> DCMA template generator (US)</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Monthly email evidence pack</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 4 AI Lawyer agents (UK/US/AU/EU)</li>
-                    </ul>
-                    <a href="/checkout/sentinel" class="checkout-link block text-center py-3 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 transition-colors text-blue-400 font-semibold text-sm">Choose Sentinel</a>
-                </div>
-                
-                <!-- STARTER — POPULAR -->
-                <div class="pricing-card glass rounded-2xl p-6 border-2 border-orange-500 flex flex-col relative bg-orange-500/5">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">MOST POPULAR</div>
-                    <div class="text-center mb-5">
-                        <div class="tier-badge text-orange-400 mb-2">CONTENT + PUBLISHING</div>
-                        <h3 class="font-orbitron text-xl font-bold mb-1 text-orange-400">STARTER</h3>
-                        <div class="text-4xl font-bold">$<span class="monthly-price">297</span><span class="annual-price hidden">238</span></div>
-                        <div class="text-grey text-sm">/month</div>
-                    </div>
-                    <ul class="space-y-2.5 text-sm flex-1 mb-6">
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>Everything in Sentinel</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>20 content pieces/month</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Auto-publish: Medium, Quora, Substack, WordPress, Reddit, Tumblr, Pinterest</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 3 aliases</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Basic misspellings covered</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Quarterly PDF evidence pack</li>
-                        <li class="flex items-start gap-2 text-grey"><span class="shrink-0 mt-0.5">✗</span> No FPS owned-media</li>
-                    </ul>
-                    <a href="/checkout/starter" class="checkout-link block text-center py-3 rounded-lg bg-orange-500 hover:bg-orange-600 transition-colors text-white font-semibold text-sm">Choose Starter</a>
-                </div>
-                
-                <!-- PRO — BEST VALUE -->
-                <div class="pricing-card glass rounded-2xl p-6 border-2 border-red flex flex-col relative bg-red/5 lg:col-span-1">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-red text-white text-xs font-bold px-3 py-1 rounded-full">BEST VALUE</div>
-                    <div class="text-center mb-5">
-                        <div class="tier-badge text-red mb-2">FPS OWNED MEDIA</div>
-                        <h3 class="font-orbitron text-xl font-bold mb-1 text-red">PRO</h3>
-                        <div class="text-4xl font-bold">$<span class="monthly-price">997</span><span class="annual-price hidden">798</span></div>
-                        <div class="text-grey text-sm">/month</div>
-                    </div>
-                    <ul class="space-y-2.5 text-sm flex-1 mb-6">
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>Everything in Starter</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>50 content pieces/month</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong class="text-red">FPS owned-media</strong> — firstpagestrategy.org</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong class="text-red">FPA owned-media</strong> — firstpageacademy.org</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> 5 aliases</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Full misspellings coverage</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Bi-monthly PDF evidence pack</li>
-                    </ul>
-                    <a href="/checkout/pro" class="checkout-link block text-center py-3 rounded-lg btn-red font-semibold text-sm text-white">Choose Pro</a>
-                </div>
-                
-                <!-- PREMIUM -->
-                <div class="pricing-card glass rounded-2xl p-6 border border-yellow-500/30 flex flex-col relative">
-                    <div class="text-center mb-5">
-                        <div class="tier-badge text-yellow-400 mb-2">DEDICATED RESEARCHER</div>
-                        <h3 class="font-orbitron text-xl font-bold mb-1 text-yellow-400">PREMIUM</h3>
-                        <div class="text-4xl font-bold">$<span class="monthly-price">1,997</span><span class="annual-price hidden">1,598</span></div>
-                        <div class="text-grey text-sm">/month</div>
-                    </div>
-                    <ul class="space-y-2.5 text-sm flex-1 mb-6">
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>Everything in Pro</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>150 content pieces/month</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Dedicated researcher (2 per Premium client)</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Dedicated bombardment schedule</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Manual outreach & contact management</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Monthly PDF evidence pack</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Direct researcher access</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Unlimited aliases</li>
-                    </ul>
-                    <a href="/checkout/premium" class="checkout-link block text-center py-3 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 transition-colors text-yellow-400 font-semibold text-sm">Choose Premium</a>
-                </div>
-                
-                <!-- CONCIERGE -->
-                <div class="pricing-card glass rounded-2xl p-6 border border-purple-500/30 flex flex-col relative">
-                    <div class="text-center mb-5">
-                        <div class="tier-badge text-purple-400 mb-2">WHITE-GLOVE SERVICE</div>
-                        <h3 class="font-orbitron text-xl font-bold mb-1 text-purple-400">CONCIERGE</h3>
-                        <div class="text-4xl font-bold">$<span class="monthly-price">4,997</span><span class="annual-price hidden">3,998</span></div>
-                        <div class="text-grey text-sm">/month</div>
-                    </div>
-                    <ul class="space-y-2.5 text-sm flex-1 mb-6">
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong>Everything in Premium</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong class="text-purple-400">Unlimited content pieces</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> <strong class="text-purple-400">Sarah Chen — weekly video reports</strong></li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Named account manager</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Direct WhatsApp support</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Crisis response team (48hr SLA)</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> Quarterly strategy calls</li>
-                        <li class="flex items-start gap-2"><span class="text-green-400 shrink-0 mt-0.5">✓</span> White-glove service</li>
-                    </ul>
-                    <a href="/checkout/concierge" class="checkout-link block text-center py-3 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 transition-colors text-purple-400 font-semibold text-sm">Choose Concierge</a>
-                </div>
-                
-            </div>
-            
-            <!-- Plan comparison note -->
-            <div class="text-center mt-10 text-sm text-grey">
-                <p>All paid plans include a 30-day money-back guarantee. Cancel anytime.</p>
-                <p class="mt-1">Annual billing saves 20%. All prices in USD.</p>
-            </div>
-        </div>
-    </section>
+  <section class="py-24 bg-dark"><div class="max-w-7xl mx-auto px-4"><div class="grid lg:grid-cols-2 gap-8"><div class="glass-card rounded-3xl p-8 md:p-10 border border-red/20"><div class="tier-badge text-red mb-3">REMOVAL APPLICATIONS</div><h2 class="font-orbitron text-3xl md:text-4xl font-bold mb-4">When a result may qualify for action, we prepare the path properly.</h2><p class="text-greyLight mb-6 leading-relaxed">Some links, reviews, images, snippets, or articles may have a valid basis for a platform report, correction request, privacy request, outdated content request, de-indexing request, or legal escalation. We help assess and prepare the material.</p><ul class="space-y-3 text-sm text-greyLight"><li>✓ URL and evidence review</li><li>✓ Eligibility and platform-policy check</li><li>✓ Draft request or reporting pathway where appropriate</li><li>✓ Screenshot/evidence pack</li><li>✓ Clear next-step recommendation if removal is not realistic</li></ul><p class="text-xs text-grey mt-6">No removal outcome is guaranteed. Third-party platforms, publishers, search engines, and courts make their own decisions.</p></div><div class="glass-card rounded-3xl p-8 md:p-10 border border-blue-500/20"><div class="tier-badge text-blue-400 mb-3">GOOGLE REVIEW DEFENCE</div><h2 class="font-orbitron text-3xl md:text-4xl font-bold mb-4">Bad reviews can cost real money.</h2><p class="text-greyLight mb-6 leading-relaxed">Fake, malicious, or unfair reviews can stop calls, bookings, referrals, and trust. We help identify, document, report, and respond to reviews that may breach platform policies — while rebuilding the trust signals around your business.</p><ul class="space-y-3 text-sm text-greyLight"><li>✓ Fake or malicious review audit</li><li>✓ Competitor, ex-employee, ex-partner, or review-bombing patterns</li><li>✓ Google Business Profile reporting support</li><li>✓ Calm public response drafts</li><li>✓ Review recovery and monitoring plan</li></ul><p class="text-xs text-grey mt-6">We do not promise Google will remove reviews. We prepare stronger reports, responses, and recovery systems.</p></div></div></div></section>
 
-    <!-- FPS TIE-IN -->
-    <section class="py-24 bg-darkLight">
-        <div class="max-w-5xl mx-auto px-4">
-            <div class="glass rounded-3xl p-10 md:p-14 text-center">
-                <div class="mb-8">
-                    <div class="tier-badge text-red mb-3">THE FPS MEDIA NETWORK</div>
-                    <h2 class="font-orbitron text-3xl md:text-4xl font-bold mb-4">
-                        Built on the <span class="text-red">First Page Strategy</span> Media Empire
-                    </h2>
-                    <p class="text-xl text-greyLight max-w-2xl mx-auto">
-                        Pro+ plans get access to <strong class="text-white">firstpagestrategy.org</strong> and <strong class="text-white">firstpageacademy.org</strong> — real news sites with real Google authority.
-                    </p>
-                </div>
-                
-                <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-10">
-                    <div class="glass-card rounded-xl p-6">
-                        <div class="font-orbitron text-2xl font-bold mb-1 text-red">FPS</div>
-                        <div class="text-sm text-greyLight mb-3">firstpagestrategy.org</div>
-                        <div class="text-xs text-grey">23+ channels · 10M+ monthly impressions</div>
-                    </div>
-                    <div class="glass-card rounded-xl p-6">
-                        <div class="font-orbitron text-2xl font-bold mb-1 text-red">FPA</div>
-                        <div class="text-sm text-greyLight mb-3">firstpageacademy.org</div>
-                        <div class="text-xs text-grey">Education · Authority content</div>
-                    </div>
-                </div>
-                
-                <p class="text-sm text-grey max-w-xl mx-auto">
-                    "FPS readers = FMNOL prospects. The flywheel is built in. Your positive content appears alongside real journalism — and Google trusts it because FPS has earned that trust."
-                </p>
-            </div>
-        </div>
-    </section>
+  <section class="py-24 bg-darkLight"><div class="max-w-7xl mx-auto px-4"><div class="text-center mb-16"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">WHAT YOU GET</h2><p class="text-xl text-greyLight max-w-3xl mx-auto">Clear deliverables, not mystery work.</p></div><div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Free Snapshot</h3><p class="text-greyLight text-sm leading-relaxed">A simple starting check so you know what type of problem you have: search result, review issue, article/link issue, associated-name issue, or bigger repair case.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-blue-400">Alerts</h3><p class="text-greyLight text-sm leading-relaxed">Automated watchlist and monthly scan summary so you know when new name, review, business, or risk-term problems appear.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-cyan-400">Removal Review</h3><p class="text-greyLight text-sm leading-relaxed">We review the link or result, tell you if a challenge looks realistic, and prepare the evidence/request pathway where appropriate.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-emerald-400">Review Defence</h3><p class="text-greyLight text-sm leading-relaxed">We audit bad Google reviews, identify possible policy issues, prepare reporting notes, and draft calm owner responses.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-orange-400">Repair Plans</h3><p class="text-greyLight text-sm leading-relaxed">We build approved positive pages, profiles, articles, and business assets so people see a fuller and more current picture.</p></div><div class="glass-card rounded-2xl p-7"><h3 class="font-orbitron text-lg font-bold mb-3 text-yellow-400">Monthly Evidence</h3><p class="text-greyLight text-sm leading-relaxed">You see what was checked, what was created, what was submitted, what changed, and what the next move is.</p></div></div></div></section>
 
-    <!-- TESTIMONIALS -->
-    <section class="py-24 bg-dark">
-        <div class="max-w-5xl mx-auto px-4">
-            <div class="text-center mb-12">
-                <h2 class="font-orbitron text-3xl md:text-4xl font-bold">REAL RESULTS</h2>
-            </div>
-            
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex gap-1 mb-3">
-                        <span class="text-yellow-400">★★★★★</span>
-                    </div>
-                    <p class="text-greyLight text-sm mb-4 leading-relaxed">
-                        "Old arrest record showed up in background checks. FMNOL filled page 1 with my professional content. Landed my dream job at a Fortune 500."
-                    </p>
-                    <div class="text-xs text-grey">— Verified Client, Finance Professional</div>
-                </div>
-                
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex gap-1 mb-3">
-                        <span class="text-yellow-400">★★★★★</span>
-                    </div>
-                    <p class="text-greyLight text-sm mb-4 leading-relaxed">
-                        "Defamation case from 5 years ago kept showing up. After 4 months with FMNOL, it's on page 3. Client inquiries have tripled."
-                    </p>
-                    <div class="text-xs text-grey">— Verified Client, Attorney</div>
-                </div>
-                
-                <div class="glass-card rounded-2xl p-6">
-                    <div class="flex gap-1 mb-3">
-                        <span class="text-yellow-400">★★★★★</span>
-                    </div>
-                    <p class="text-greyLight text-sm mb-4 leading-relaxed">
-                        "Sarah Chen and the bombardment approach actually works. 200+ articles later, my name is synonymous with my industry expertise."
-                    </p>
-                    <div class="text-xs text-grey">— Verified Client, SaaS Founder</div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <section id="pricing" class="py-24 bg-dark"><div class="max-w-7xl mx-auto px-4"><div class="text-center mb-12"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">START WITH A FREE SEARCH SNAPSHOT™</h2><p class="font-rajdhani text-xl text-greyLight max-w-3xl mx-auto">Most people do not know exactly what is hurting them until they see the pattern. Start free, then choose alerts, removal review, review defence, or a repair plan only if you need it.</p></div><div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+    <div class="pricing-card glass rounded-2xl p-6 flex flex-col border-2 border-red/60 relative bg-red/5"><div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-red text-white text-xs font-bold px-3 py-1 rounded-full">START HERE</div><div class="text-center mb-5"><div class="tier-badge text-red mb-2">FREE FIRST STEP</div><h3 class="font-orbitron text-xl font-bold mb-1 text-red">SEARCH SNAPSHOT™</h3><div class="text-4xl font-bold">$0</div><div class="text-grey text-sm">private starting point</div></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ Check your name and obvious search risks</li><li>✓ Include business or associated names</li><li>✓ Spot review, article, or complaint issues</li><li>✓ See which pathway fits: alert, removal, review defence, or repair</li><li class="text-grey">✗ No obligation to continue</li></ul><a href="/app" class="checkout-link block text-center py-3 rounded-lg btn-red font-semibold text-sm text-white">Start Free Search Snapshot</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border border-blue-500/30 flex flex-col"><div class="text-center mb-5"><div class="tier-badge text-blue-400 mb-2">ALERTS ONLY</div><h3 class="font-orbitron text-xl font-bold mb-1 text-blue-400">SENTINEL ALERT™</h3><div class="text-4xl font-bold">$29</div><div class="text-grey text-sm">/month</div><p class="text-xs text-greyLight mt-2">For people who want early warning before a problem grows.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ We keep checking your name online</li><li>✓ Watch your names, business and risky words</li><li>✓ Get an alert if something new appears</li><li>✓ Monthly simple scan summary</li><li>✓ Simple checklist showing what to watch</li><li class="text-grey">✗ No human review included</li><li class="text-grey">✗ No repair work included</li></ul><a href="/checkout/sentinel" class="checkout-link block text-center py-3 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 transition-colors text-blue-400 font-semibold text-sm">Choose Sentinel Alert</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border border-cyan-500/30 flex flex-col"><div class="text-center mb-5"><div class="tier-badge text-cyan-400 mb-2">ONE-TIME</div><h3 class="font-orbitron text-xl font-bold mb-1 text-cyan-400">REMOVAL REVIEW™</h3><div class="text-4xl font-bold">$297</div><div class="text-grey text-sm">one-time</div><p class="text-xs text-greyLight mt-2">For specific links, articles, images or results you want checked.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ We review up to 3 bad links or results</li><li>✓ We tell you if a removal request is realistic</li><li>✓ We show which request/report path to use</li><li>✓ We list the proof you need</li><li class="text-grey">✗ No removal promise</li></ul><a href="/checkout/removal-review" class="checkout-link block text-center py-3 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 transition-colors text-cyan-400 font-semibold text-sm">Choose Removal Review</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border border-emerald-500/30 flex flex-col"><div class="text-center mb-5"><div class="tier-badge text-emerald-400 mb-2">ONE-TIME</div><h3 class="font-orbitron text-xl font-bold mb-1 text-emerald-400">REVIEW DEFENCE™</h3><div class="text-4xl font-bold">$497</div><div class="text-grey text-sm">one-time</div><p class="text-xs text-greyLight mt-2">For businesses hit by unfair, fake or malicious Google reviews.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ We check up to 25 bad Google reviews</li><li>✓ We find possible Google policy issues</li><li>✓ We draft calm public replies</li><li>✓ We prepare a simple evidence and recovery plan</li><li class="text-grey">✗ Google makes the final decision</li></ul><a href="/checkout/review-defence" class="checkout-link block text-center py-3 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 transition-colors text-emerald-400 font-semibold text-sm">Choose Review Defence</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border-2 border-orange-500 flex flex-col relative bg-orange-500/5"><div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">BEST START</div><div class="text-center mb-5"><div class="tier-badge text-orange-400 mb-2">START FIXING</div><h3 class="font-orbitron text-xl font-bold mb-1 text-orange-400">STARTER™</h3><div class="text-4xl font-bold">$499</div><div class="text-grey text-sm">/month</div><p class="text-xs text-greyLight mt-2">For starting a real clean-up around your name or business.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ Private plan for your name or business</li><li>✓ We check old names, nicknames and related names</li><li>✓ 4 approved positive pages/articles each month</li><li>✓ 8 profile or social clean-up/support items</li><li>✓ Monthly report showing what was done</li></ul><a href="/checkout/starter" class="checkout-link block text-center py-3 rounded-lg bg-orange-500 hover:bg-orange-600 transition-colors text-white font-semibold text-sm">Choose Starter</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border-2 border-red flex flex-col relative bg-red/5"><div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-red text-white text-xs font-bold px-3 py-1 rounded-full">MOST POPULAR</div><div class="text-center mb-5"><div class="tier-badge text-red mb-2">KEEP FIXING</div><h3 class="font-orbitron text-xl font-bold mb-1 text-red">PRO™</h3><div class="text-4xl font-bold">$997</div><div class="text-grey text-sm">/month</div><p class="text-xs text-greyLight mt-2">For ongoing repair when the problem is bigger or has several angles.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ Clear plan for what needs fixing first</li><li>✓ 8 approved positive pages/articles each month</li><li>✓ Monitor Google, reviews and key searches</li><li>✓ Cover old names, nicknames and misspellings</li><li>✓ Monthly report showing what was done + strategy notes</li></ul><a href="/checkout/pro" class="checkout-link block text-center py-3 rounded-lg btn-red font-semibold text-sm text-white">Choose Pro</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border border-yellow-500/30 flex flex-col"><div class="text-center mb-5"><div class="tier-badge text-yellow-400 mb-2">BIGGER CASES</div><h3 class="font-orbitron text-xl font-bold mb-1 text-yellow-400">PREMIUM™</h3><div class="text-4xl font-bold">$2,497</div><div class="text-grey text-sm">/month</div><p class="text-xs text-greyLight mt-2">For serious cases that need more work, more content and closer review.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ Full map of your name, business and review risks</li><li>✓ 12+ approved positive pages/articles each month</li><li>✓ 30 profile, social or support items each month</li><li>✓ Removal or review-report help where possible</li><li>✓ Priority monthly review and progress report</li></ul><a href="/checkout/premium" class="checkout-link block text-center py-3 rounded-lg bg-yellow-500/15 hover:bg-yellow-500/25 transition-colors text-yellow-400 font-semibold text-sm">Choose Premium</a></div>
+    <div class="pricing-card glass rounded-2xl p-6 border border-purple-500/30 flex flex-col"><div class="text-center mb-5"><div class="tier-badge text-purple-400 mb-2">PRIVATE HELP</div><h3 class="font-orbitron text-xl font-bold mb-1 text-purple-400">CONCIERGE™</h3><div class="text-4xl font-bold">Custom</div><div class="text-grey text-sm">high-risk / urgent cases</div><p class="text-xs text-greyLight mt-2">For sensitive matters that need private handling and custom scope.</p></div><ul class="space-y-2.5 text-sm flex-1 mb-6"><li>✓ Dedicated private case file</li><li>✓ Priority positive content creation</li><li>✓ Multi-name / multi-entity coverage</li><li>✓ Escalation support and evidence packs</li><li>✓ Private contact path</li></ul><a href="mailto:admin@fixmynameonline.com?subject=Private%20Concierge%20Review" class="checkout-link block text-center py-3 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 transition-colors text-purple-400 font-semibold text-sm">Request Private Review</a></div>
+  </div><div class="text-center mt-10 text-sm text-grey"><p>No ranking, removal, or search-engine outcome is guaranteed. Every case depends on search competition, source authority, legal basis, and third-party platform decisions.</p><p class="mt-1">Prices shown in USD for draft review. Billing/currency can be adjusted before launch.</p></div></div></section>
 
-    <!-- FAQ -->
-    <section id="faq" class="py-24 bg-darkLight">
-        <div class="max-w-3xl mx-auto px-4">
-            <div class="text-center mb-12">
-                <h2 class="font-orbitron text-3xl md:text-4xl font-bold">FAQ</h2>
-            </div>
-            
-            <div class="space-y-4">
-                <!-- FAQ 1 -->
-                <div class="glass rounded-xl overflow-hidden">
-                    <button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)">
-                        <span>How does suppression actually work?</span>
-                        <span class="faq-arrow text-grey transition-transform">▼</span>
-                    </button>
-                    <div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">
-                        We publish 50–400+ positive, SEO-optimized articles about you across 10–20 platforms including Medium, Quora, Substack, Reddit, firstpagestrategy.org, and more. Each published piece is indexed by Google. The more positive content exists, the more Google fills page 1 with good results — pushing negative content down or off page 1 entirely.
-                    </div>
-                </div>
-                
-                <!-- FAQ 2 -->
-                <div class="glass rounded-xl overflow-hidden">
-                    <button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)">
-                        <span>How long until I see results?</span>
-                        <span class="faq-arrow text-grey transition-transform">▼</span>
-                    </button>
-                    <div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">
-                        Most customers see negative results off page 1 within 60–90 days. The exact timeline depends on competition, search volume, and the severity of negative content. We provide monthly PDF evidence packs so you can track your suppression score and progress over time.
-                    </div>
-                </div>
-                
-                <!-- FAQ 3 -->
-                <div class="glass rounded-xl overflow-hidden">
-                    <button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)">
-                        <span>What legal tools are included?</span>
-                        <span class="faq-arrow text-grey transition-transform">▼</span>
-                    </button>
-                    <div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">
-                        Sentinel+ plans include our 4 AI Lawyer agents. <strong class="text-white">James Whitfield</strong> (UK) drafts RTBF requests. <strong class="text-white">Marcus Reilly</strong> (US) handles DCMA takedowns. <strong class="text-white">David Chen</strong> (AU) manages ACCC remedies. <strong class="text-white">Sophia Müller</strong> (EU) handles GDPR removals. These AI agents draft legally-sound removal requests in minutes.
-                    </div>
-                </div>
-                
-                <!-- FAQ 4 -->
-                <div class="glass rounded-xl overflow-hidden">
-                    <button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)">
-                        <span>What's the FPS media network?</span>
-                        <span class="faq-arrow text-grey transition-transform">▼</span>
-                    </button>
-                    <div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">
-                        The FPS media network (Pro+ plans) publishes your content to firstpagestrategy.org and firstpageacademy.org — real news sites with genuine Google domain authority. This is the ultimate moat: your content appears alongside legitimate journalism, not on anonymous directories.
-                    </div>
-                </div>
-                
-                <!-- FAQ 5 -->
-                <div class="glass rounded-xl overflow-hidden">
-                    <button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)">
-                        <span>Can you remove the negative content directly?</span>
-                        <span class="faq-arrow text-grey transition-transform">▼</span>
-                    </button>
-                    <div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">
-                        We use RTBF (Right to be Forgotten), DMCA takedowns, and platform removal requests. Many mugshots and defamatory articles do come down. The ones that don't get buried by our content. This two-pronged approach gives you the best chance of a completely clean search.
-                    </div>
-                </div>
-                
-                <!-- FAQ 6 -->
-                <div class="glass rounded-xl overflow-hidden">
-                    <button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)">
-                        <span>What's the difference between Sentinel and Starter?</span>
-                        <span class="faq-arrow text-grey transition-transform">▼</span>
-                    </button>
-                    <div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">
-                        <strong class="text-white">Sentinel ($97/mo)</strong> is DIY monitoring — you track and monitor your reputation, use our AI Lawyers to file removal requests, but you publish manually. <strong class="text-white">Starter ($297/mo)</strong> adds 20 content pieces/month that we auto-publish across Medium, Quora, Substack, WordPress, Reddit, and more. No manual publishing needed.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+  <section class="py-24 bg-darkLight"><div class="max-w-5xl mx-auto px-4"><div class="glass rounded-3xl p-10 md:p-14 text-center"><div class="tier-badge text-red mb-3">MADISONJADE SYSTEMS</div><h2 class="font-orbitron text-3xl md:text-4xl font-bold mb-4">Private infrastructure. Public trust.</h2><p class="text-xl text-greyLight max-w-2xl mx-auto">FixMyNameOnline™ is operated by MadisonJade Pty Ltd and uses private content, search, monitoring, and publishing workflows built for reputation-sensitive cases.</p><p class="text-sm text-grey max-w-xl mx-auto mt-6">We keep the machinery private. Clients see the plan, the approvals, the assets, and the evidence of progress.</p></div></div></section>
 
-    <!-- FINAL CTA -->
-    <section class="py-24 gradient-bg relative">
-        <div class="particles" id="particles2"></div>
-        <div class="max-w-3xl mx-auto px-4 text-center relative z-10">
-            <h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">
-                Take Back Your<br><span class="text-red">Google Results</span>
-            </h2>
-            <p class="text-xl text-greyLight mb-4">
-                Join 2,847 professionals who've reclaimed their search results.
-            </p>
-            <p class="text-grey mb-8">
-                Start FREE or choose any paid plan. No long-term contracts.
-            </p>
-            <a href="#pricing" class="btn-red inline-block px-12 py-4 rounded-xl font-bold text-lg">
-                TAKE BACK MY GOOGLE RESULTS →
-            </a>
-        </div>
-    </section>
+  <section class="py-24 bg-dark"><div class="max-w-6xl mx-auto px-4"><div class="text-center mb-12"><h2 class="font-orbitron text-3xl md:text-4xl font-bold">WE CHECK MORE THAN YOUR NAME</h2><p class="text-greyLight mt-4 max-w-3xl mx-auto">People do not always search one perfect spelling. Real reputation damage often appears through combinations.</p></div><div class="grid md:grid-cols-3 gap-6"><div class="glass-card rounded-2xl p-6"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Personal Name Map</h3><p class="text-greyLight text-sm leading-relaxed">Full legal name, old names, maiden names, nicknames, common misspellings, image results, snippets, and location searches.</p></div><div class="glass-card rounded-2xl p-6"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Associated Name Map</h3><p class="text-greyLight text-sm leading-relaxed">Business names, companies, directors, partners, family associations, previous employers, projects, suburbs, and related entities.</p></div><div class="glass-card rounded-2xl p-6"><h3 class="font-orbitron text-lg font-bold mb-3 text-red">Risk-Term Map</h3><p class="text-greyLight text-sm leading-relaxed">Name plus terms like review, complaint, court, news, scam, arrest, allegations, dispute, article title, business name, or location.</p></div></div></div></section>
 
-    <!-- FOOTER -->
-    <footer class="py-12 bg-dark border-t border-white/5">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-red rounded-lg flex items-center justify-center font-orbitron font-bold text-sm">FM</div>
-                    <div>
-                        <div class="font-orbitron text-sm font-bold">FIXMYNAME<span class="text-red">ONLINE</span></div>
-                        <div class="text-xs text-grey">© 2026 MadisonJade Pty Ltd</div>
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-6 text-sm text-grey">
-                    <a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a>
-                    <a href="/terms" class="hover:text-white transition-colors">Terms of Service</a>
-                    <a href="mailto:support@fixmynameonline.com" class="hover:text-white transition-colors">Contact</a>
-                </div>
-                
-                <div class="text-xs text-grey">
-                    TM™ FixMyNameOnline™ and First Page Strategy™ are trademarks of MadisonJade Pty Ltd
-                </div>
-            </div>
-        </div>
-    </footer>
+  <section id="faq" class="py-24 bg-darkLight"><div class="max-w-3xl mx-auto px-4"><div class="text-center mb-12"><h2 class="font-orbitron text-3xl md:text-4xl font-bold">FAQ</h2></div><div class="space-y-4">
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>Do you guarantee removals or rankings?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">No. Search engines and third-party platforms make their own decisions. We build strong, accurate, approved reputation assets and support appropriate removal/escalation pathways where there is a valid basis.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>How long does reputation repair take?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">Some assets can be created quickly, but search visibility usually takes weeks or months. The timeline depends on your name, the strength of existing results, source authority, and how much positive footprint already exists.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>Is this legal?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">We focus on truthful, approved content, profile improvement, documentation, and platform-appropriate requests. We do not provide legal advice. Where legal advice is needed, you should consult a qualified lawyer.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>Can you remove old news articles or bad links?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">Sometimes there may be a valid pathway for a correction, report, privacy request, outdated content request, or de-indexing request. Sometimes there is not. We review the link, document the facts, and recommend the safest path. No removal outcome is guaranteed.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>Can you help with fake or malicious Google reviews?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">Yes. We can audit the reviews, identify possible policy issues, prepare reporting notes, draft professional owner responses, and build a recovery plan. Google decides whether a review is removed.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>Do you check associated names and old names?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">Yes. We can check legal names, previous names, nicknames, misspellings, business names, associated people, associated companies, locations, and risk-term combinations.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>Will anyone know I am using this?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">The service is designed to be discreet. We do not publicly advertise client cases. Published assets are positioned as normal professional, business, and authority content where appropriate.</div></div>
+    <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>What happens after I choose a plan?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">Start with the free Search Snapshot™. If there is a real issue, we help you understand whether monitoring, removal review, review defence, or a repair plan is the right next step.</div></div>
+  </div></div></section>
 
-    <!-- JAVASCRIPT -->
-    <script>
-        // Billing Toggle
-        const billingToggle = document.getElementById('billingToggle');
-        const toggleDot = document.getElementById('toggleDot');
-        const monthlyPrices = document.querySelectorAll('.monthly-price');
-        const annualPrices = document.querySelectorAll('.annual-price');
-        const monthlyLabel = document.getElementById('monthlyLabel');
-        const annualLabel = document.getElementById('annualLabel');
-        let isAnnual = false;
+  <section class="py-24 gradient-bg relative"><div class="max-w-3xl mx-auto px-4 text-center relative z-10"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">Start with a<br><span class="text-red">Free Search Snapshot™</span></h2><p class="text-xl text-greyLight mb-4">Before the internet defines the story, build the footprint that should have been there already.</p><p class="text-grey mb-8">Start free or choose a private package. No public case disclosure.</p><a href="#pricing" class="btn-red inline-block px-12 py-4 rounded-xl font-bold text-lg">START FREE SEARCH SNAPSHOT™ →</a></div></section>
 
-        billingToggle.addEventListener('click', () => {
-            isAnnual = !isAnnual;
-            toggleDot.style.left = isAnnual ? 'calc(100% - 28px)' : '4px';
-            monthlyLabel.classList.toggle('text-grey', isAnnual);
-            monthlyLabel.classList.toggle('text-white', !isAnnual);
-            annualLabel.classList.remove('text-grey');
-            annualLabel.querySelector('span').classList.toggle('text-green-400', !isAnnual);
-            monthlyPrices.forEach(el => el.classList.toggle('hidden', isAnnual));
-            annualPrices.forEach(el => el.classList.toggle('hidden', !isAnnual));
-        });
+  <footer class="py-12 bg-dark border-t border-white/5"><div class="max-w-7xl mx-auto px-4"><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-red rounded-lg flex items-center justify-center font-orbitron font-bold text-sm">FM</div><div><div class="font-orbitron text-sm font-bold">FIXMYNAME<span class="text-red">ONLINE</span></div><div class="text-xs text-grey">© 2026 MadisonJade Pty Ltd</div></div></div><div class="flex items-center gap-6 text-sm text-grey"><a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a><a href="/terms" class="hover:text-white transition-colors">Terms of Service</a><a href="mailto:admin@fixmynameonline.com" class="hover:text-white transition-colors">Contact</a></div><div class="text-xs text-grey">FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd. All rights reserved.</div></div></div></footer>
 
-        // Particle Effect
-        function createParticles(containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            for (let i = 0; i < 25; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = Math.random() * 100 + '%';
-                p.style.animationDelay = Math.random() * 25 + 's';
-                p.style.animationDuration = (15 + Math.random() * 20) + 's';
-                container.appendChild(p);
-            }
-        }
-        createParticles('particles');
-        createParticles('particles2');
-
-        // FAQ Toggle
-        function toggleFaq(btn) {
-            const content = btn.nextElementSibling;
-            const arrow = btn.querySelector('.faq-arrow');
-            content.classList.toggle('hidden');
-            arrow.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
-        }
-
-        // Scroll reveal
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(e => {
-                if (e.isIntersecting) {
-                    e.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
-        document.querySelectorAll('.section-reveal').forEach(el => observer.observe(el));
-    </script>
+  <script>
+    function toggleFaq(btn){const content=btn.nextElementSibling;const arrow=btn.querySelector('.faq-arrow');content.classList.toggle('hidden');arrow.style.transform=content.classList.contains('hidden')?'':'rotate(180deg)'}
+  </script>
 </body>
 </html>

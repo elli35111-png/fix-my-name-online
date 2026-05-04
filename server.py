@@ -1,364 +1,208 @@
 """
-Fix My Name Online — Flask Web Server
-Serves the FMNOL landing page + Stripe webhook endpoint.
+FixMyNameOnline™ — Flask Web Server
+Landing page, Free Search Snapshot intake, Stripe checkout, and fulfilment-safe onboarding.
 
-For full app functionality (dashboard, bombardment, AI Sarah),
-run the Streamlit app separately with:
-    streamlit run app.py
-
-Copyright (c) 2026 MadisonJade Pty Ltd. All Rights Reserved.
+Copyright (c) 2026 MadisonJade Pty Ltd. All rights reserved.
+FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
 """
-
 import os
-import stripe
-from flask import Flask, request, jsonify, send_from_directory, redirect
-from flask_cors import CORS
+import json
+from datetime import datetime
+from pathlib import Path
 
-# =============================================================================
-# FLASK APP
-# =============================================================================
+import stripe
+import requests
+from flask import Flask, request, jsonify, send_from_directory, redirect
 
 app = Flask(__name__, static_folder='.', static_url_path='')
-CORS(app)
 
-# =============================================================================
-# STRIPE CONFIGURATION
-# =============================================================================
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
+DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
+DATA_DIR.mkdir(exist_ok=True)
+LEADS_FILE = DATA_DIR / 'snapshot_leads.jsonl'
+ONBOARDING_FILE = DATA_DIR / 'onboarding_submissions.jsonl'
 
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', 'sk_test_placeholder')
-STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', 'whsec_placeholder')
-DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com')
-
-# Tier prices (monthly) — match landing page
-TIER_PRICES = {
-    'free': 0,
-    'sentinel': 97,
-    'starter': 297,
-    'pro': 997,
-    'premium': 1997,
-    'concierge': 4997,
+PLANS = {
+    'sentinel': {'name': 'Sentinel Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL'},
+    'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW'},
+    'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE'},
+    'starter': {'name': 'Starter™', 'price': 499, 'mode': 'subscription', 'env': 'STRIPE_PRICE_STARTER'},
+    'pro': {'name': 'Pro™', 'price': 997, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PRO'},
+    'premium': {'name': 'Premium™', 'price': 2497, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PREMIUM'},
 }
 
-# Tier Stripe price IDs (monthly)
-TIER_PRICE_IDS = {
-    'sentinel': os.environ.get('STRIPE_PRICE_SENTINEL', 'price_sentinel'),
-    'starter': os.environ.get('STRIPE_PRICE_STARTER', 'price_starter'),
-    'pro': os.environ.get('STRIPE_PRICE_PRO', 'price_pro'),
-    'premium': os.environ.get('STRIPE_PRICE_PREMIUM', 'price_premium'),
-    'concierge': os.environ.get('STRIPE_PRICE_CONCIERGE', 'price_concierge'),
-}
+BASE_STYLE = """
+:root{--dark:#08090f;--card:#151824;--red:#d91f3d;--grey:#9aa2b6;--light:#e8ecf5;}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 5%,rgba(217,31,61,.16),transparent 28%),var(--dark);color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;line-height:1.5;padding:22px;}
+a{color:#ff4d66}.wrap{max-width:880px;margin:0 auto}.card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.logo{font-weight:900;letter-spacing:.12em;color:var(--red);font-size:15px;margin-bottom:22px}.sub{color:var(--grey)}h1{font-size:clamp(32px,6vw,58px);line-height:1.02;margin:0 0 14px}h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}
+label{display:block;font-weight:700;margin:14px 0 7px}input,select,textarea{width:100%;background:#0d1019;color:white;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:13px 14px;font:inherit}textarea{min-height:105px}.btn{display:inline-block;background:linear-gradient(135deg,var(--red),#a81229);border:0;border-radius:13px;color:white;font-weight:800;padding:14px 20px;text-decoration:none;cursor:pointer;font-size:16px}.btn2{background:transparent;border:1px solid rgba(255,255,255,.22)}.note{font-size:13px;color:var(--grey)}.pill{display:inline-block;border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);padding:7px 10px;border-radius:999px;color:#ffb0bd;font-size:13px;font-weight:700}.ok{color:#31d07a}.err{color:#ff6f85}@media(max-width:720px){body{padding:14px}.grid{grid-template-columns:1fr}.card{padding:20px} }
+"""
 
-# Tier Stripe price IDs (annual)
-TIER_PRICE_IDS_ANNUAL = {
-    'sentinel': os.environ.get('STRIPE_PRICE_SENTINEL_ANNUAL', 'price_sentinel_annual'),
-    'starter': os.environ.get('STRIPE_PRICE_STARTER_ANNUAL', 'price_starter_annual'),
-    'pro': os.environ.get('STRIPE_PRICE_PRO_ANNUAL', 'price_pro_annual'),
-    'premium': os.environ.get('STRIPE_PRICE_PREMIUM_ANNUAL', 'price_premium_annual'),
-    'concierge': os.environ.get('STRIPE_PRICE_CONCIERGE_ANNUAL', 'price_concierge_annual'),
-}
+def page(title, body):
+    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{title}</title><style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™ · MADISONJADE PTY LTD</div>{body}</div></body></html>"""
 
+def append_jsonl(path, payload):
+    payload = dict(payload)
+    payload['created_at'] = datetime.utcnow().isoformat() + 'Z'
+    with path.open('a', encoding='utf-8') as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + '\n')
 
-# =============================================================================
-# LANDING PAGE ROUTES
-# =============================================================================
+def send_telegram_alert(title, payload):
+    token = os.environ.get('FMNO_TELEGRAM_BOT_TOKEN') or os.environ.get('TELEGRAM_BOT_TOKEN')
+    chat_id = os.environ.get('FMNO_TELEGRAM_CHAT_ID') or os.environ.get('TELEGRAM_CHAT_ID')
+    if not token or not chat_id:
+        return False
+    lines = [f"🔴 {title}"] + [f"{k}: {v}" for k, v in payload.items() if v]
+    try:
+        r = requests.post(f'https://api.telegram.org/bot{token}/sendMessage', json={'chat_id': chat_id, 'text': '\n'.join(lines)[:3900]}, timeout=10)
+        return r.ok
+    except Exception:
+        return False
 
 @app.route('/')
 def landing():
-    """Serve the FMNOL landing page."""
     return send_from_directory('.', 'landing_page_v2.html')
-
 
 @app.route('/pricing')
 def pricing():
-    """Redirect to landing page pricing section."""
-    return redirect('/#pricing', code=302)
-
+    return redirect('/#pricing')
 
 @app.route('/how-it-works')
 def how_it_works():
-    """Redirect to landing page how-it-works section."""
-    return redirect('/#how-it-works', code=302)
-
+    return redirect('/#how-it-works')
 
 @app.route('/faq')
 def faq():
-    """Redirect to landing page FAQ section."""
-    return redirect('/#faq', code=302)
+    return redirect('/#faq')
 
+@app.route('/app')
+def free_snapshot_form():
+    body = """
+    <div class="card"><span class="pill">Free first step</span><h1>Start your Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll use this to point you toward the right next step: alerts, removal review, review defence, or repair.</p>
+    <form method="post" action="/submit-snapshot" class="grid">
+      <div><label>Your name</label><input name="name" required autocomplete="name"></div>
+      <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
+      <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
+      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
+      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations..."></textarea></div>
+      <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
+      <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
+      <div class="full"><button class="btn" type="submit">Submit Free Snapshot →</button> <a class="btn btn2" href="/">Back</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
+    </form></div>"""
+    return page('Free Search Snapshot™ — FixMyNameOnline™', body)
 
-@app.route('/contact')
-def contact():
-    """Contact page."""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Contact — Fix My Name Online™</title>
-        <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: white; padding: 40px; }
-            .container { max-width: 600px; margin: 0 auto; text-align: center; }
-            h1 { color: #ff4444; font-size: 2em; margin-bottom: 20px; }
-            .contact-method { background: #1a1a2e; padding: 20px; margin: 15px 0; border-radius: 12px; }
-            a { color: #ff4444; text-decoration: none; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Contact Us</h1>
-            <div class="contact-method">
-                <h3>Email</h3>
-                <p><a href="mailto:support@fixmynameonline.com">support@fixmynameonline.com</a></p>
-            </div>
-            <div class="contact-method">
-                <h3>Live Chat</h3>
-                <p>Available 24/7 via the app dashboard</p>
-            </div>
-            <div class="contact-method">
-                <h3>Telegram Support</h3>
-                <p><a href="https://t.me/fixmynameonline">@FixMyNameOnline</a></p>
-            </div>
-            <p style="color: #888; margin-top: 30px;">© 2026 MadisonJade Pty Ltd. All Rights Reserved.</p>
-        </div>
-    </body>
-    </html>
-    """
+@app.route('/submit-snapshot', methods=['POST'])
+def submit_snapshot():
+    data = {k: request.form.get(k, '').strip() for k in ['name','email','phone','case_type','names_to_check','problem_links','goal']}
+    if not data['name'] or not data['email']:
+        return page('Missing details', '<div class="card"><h1 class="err">Missing details</h1><p>Please enter your name and email.</p><a class="btn" href="/app">Go back</a></div>'), 400
+    append_jsonl(LEADS_FILE, data)
+    send_telegram_alert('FMNO Free Search Snapshot lead', data)
+    body = f"""<div class="card"><span class="pill ok">Received</span><h1>Your Free Search Snapshot™ request is in.</h1><p class="sub">Thanks {data['name']}. We saved your details. The next step is a private review of the names, links, reviews, or search terms you gave us.</p><h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, or repair.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol><p><a class="btn" href="/">Back to site</a></p></div>"""
+    return page('Snapshot received — FixMyNameOnline™', body)
 
+@app.route('/onboarding')
+def onboarding_form():
+    plan = request.args.get('plan', 'starter')
+    plan_label = PLANS.get(plan, {}).get('name', plan.replace('-', ' ').title())
+    body = f"""
+    <div class="card"><span class="pill">Private onboarding</span><h1>{plan_label}</h1><p class="sub">Use this after payment or if we ask for more detail. Give us the links, names, reviews and context we need to start safely.</p>
+    <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="{plan}">
+      <div><label>Name</label><input name="name" required></div><div><label>Email</label><input type="email" name="email" required></div>
+      <div><label>Phone</label><input name="phone"></div><div><label>Business / brand if any</label><input name="business"></div>
+      <div class="full"><label>Names, old names, associated names, business names</label><textarea name="names"></textarea></div>
+      <div class="full"><label>Links/reviews/articles/search terms</label><textarea name="links"></textarea></div>
+      <div class="full"><label>What is the real story / context?</label><textarea name="context"></textarea></div>
+      <div class="full"><label>Anything we must avoid saying publicly?</label><textarea name="avoid"></textarea></div>
+      <div class="full"><button class="btn" type="submit">Submit private onboarding →</button></div>
+    </form></div>"""
+    return page('Private onboarding — FixMyNameOnline™', body)
 
-# =============================================================================
-# STRIPE CHECKOUT ROUTES
-# =============================================================================
+@app.route('/submit-onboarding', methods=['POST'])
+def submit_onboarding():
+    fields = ['plan','name','email','phone','business','names','links','context','avoid']
+    data = {k: request.form.get(k, '').strip() for k in fields}
+    if not data['name'] or not data['email']:
+        return jsonify({'ok': False, 'error': 'Missing name/email'}), 400
+    append_jsonl(ONBOARDING_FILE, data)
+    send_telegram_alert('FMNO paid/private onboarding', data)
+    return page('Onboarding received — FixMyNameOnline™', '<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><a class="btn" href="/">Back to site</a></div>')
 
 @app.route('/checkout/<tier>')
 def checkout(tier):
-    """Redirect to Stripe Checkout for specified tier."""
-    
-    if tier not in TIER_PRICE_IDS or tier == 'free':
-        return jsonify({'error': 'Invalid tier'}), 400
-    
+    if tier == 'free':
+        return redirect('/app')
+    if tier == 'concierge':
+        return redirect('/onboarding?plan=concierge')
+    if tier not in PLANS:
+        return jsonify({'error': 'Invalid plan'}), 400
+    if not stripe.api_key:
+        return jsonify({'error': 'Stripe is not configured'}), 500
+    plan = PLANS[tier]
+    price_id = os.environ.get(plan['env'])
+    if not price_id:
+        return jsonify({'error': f'Missing Stripe price env var: {plan["env"]}'}), 500
     try:
-        billing = request.args.get('billing', 'monthly')
-        if billing == 'annual':
-            price_id = TIER_PRICE_IDS_ANNUAL.get(tier)
-        else:
-            price_id = TIER_PRICE_IDS.get(tier)
-        
-        checkout_session = stripe.checkout.Session.create(
-            mode='subscription',
-            line_items=[{
-                'price': price_id,
-                'quantity': 1,
-            }],
-            success_url=f'{DOMAIN}/success.html?tier={tier}',
+        session = stripe.checkout.Session.create(
+            mode=plan['mode'],
+            line_items=[{'price': price_id, 'quantity': 1}],
+            success_url=f'{DOMAIN}/success.html?tier={tier}&session_id={{CHECKOUT_SESSION_ID}}',
             cancel_url=f'{DOMAIN}/cancel.html',
             allow_promotion_codes=True,
-            subscription_data={
-                'metadata': {
-                    'tier': tier,
-                    'billing': billing,
-                }
-            }
+            metadata={'tier': tier, 'plan_name': plan['name']},
+            subscription_data={'metadata': {'tier': tier, 'plan_name': plan['name']}} if plan['mode'] == 'subscription' else None,
         )
-        
-        return redirect(checkout_session.url, code=302)
-    
+        return redirect(session.url, code=302)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/success.html')
+def success():
+    tier = request.args.get('tier', 'unknown')
+    plan_name = PLANS.get(tier, {}).get('name', tier.replace('-', ' ').title())
+    body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>Welcome to {plan_name}</h1><p class="sub">Your payment has been processed. The important next step is private onboarding so we have the names, links, reviews, and context needed to handle this safely.</p><ol><li>Complete the private onboarding form.</li><li>Paste the links/reviews/search terms you want reviewed.</li><li>Tell us what is true, outdated, unfair, or sensitive.</li></ol><p><a class="btn" href="/onboarding?plan={tier}">Complete private onboarding →</a></p><p class="note">No removal, ranking, or platform outcome is guaranteed. We use careful, documented reputation repair pathways.</p></div>"""
+    return page('Welcome — FixMyNameOnline™', body)
 
-@app.route('/create-portal-session', methods=['POST'])
-def create_portal_session():
-    """Create Stripe billing portal session."""
-    
-    try:
-        data = request.get_json()
-        customer_id = data.get('customer_id')
-        
-        if not customer_id:
-            return jsonify({'error': 'Missing customer_id'}), 400
-        
-        session = stripe.billing_portal.Session.create(
-            customer=customer_id,
-            return_url=f'{DOMAIN}/'
-        )
-        
-        return jsonify({'url': session.url})
-    
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/cancel.html')
+def cancel():
+    return page('Checkout cancelled — FixMyNameOnline™', '<div class="card"><h1>Checkout cancelled</h1><p class="sub">No worries — your payment was not processed. You can still start with the free Search Snapshot™.</p><a class="btn" href="/app">Start Free Search Snapshot™</a> <a class="btn btn2" href="/">Back</a></div>')
 
+@app.route('/contact')
+def contact():
+    return page('Contact — FixMyNameOnline™', '<div class="card"><h1>Contact FixMyNameOnline™</h1><p>Email: <a href="mailto:admin@fixmynameonline.com">admin@fixmynameonline.com</a></p><p class="sub">Private reputation repair operated by MadisonJade Pty Ltd.</p></div>')
 
-# =============================================================================
-# STRIPE WEBHOOK
-# =============================================================================
+@app.route('/privacy')
+def privacy():
+    return page('Privacy Policy — FixMyNameOnline™', '<div class="card"><h1>Privacy Policy</h1><p class="sub">Draft launch policy: information submitted through FixMyNameOnline™ is used to assess and deliver private reputation services, respond to enquiries, process payments, and maintain case records. We do not publicly disclose client cases without consent.</p><p>Contact: admin@fixmynameonline.com</p></div>')
+
+@app.route('/terms')
+def terms():
+    return page('Terms — FixMyNameOnline™', '<div class="card"><h1>Terms & Disclaimer</h1><p class="sub">FixMyNameOnline™ provides reputation review, monitoring, content, documentation, and platform-request support. Search engines, publishers, platforms, and courts make their own decisions. We do not guarantee removals, review removals, rankings, de-indexing, or specific outcomes. Legal advice must be obtained from a qualified lawyer.</p></div>')
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
-    """Handle Stripe webhook events."""
-    
+    if not STRIPE_WEBHOOK_SECRET:
+        return 'Webhook not configured', 500
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
-    
     try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
     except ValueError:
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError:
         return 'Invalid signature', 400
-    
-    # Handle events
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        _handle_checkout_completed(session)
-    
-    elif event['type'] == 'customer.subscription.created':
-        subscription = event['data']['object']
-        _handle_subscription_created(subscription)
-    
-    elif event['type'] == 'customer.subscription.updated':
-        subscription = event['data']['object']
-        _handle_subscription_updated(subscription)
-    
-    elif event['type'] == 'customer.subscription.deleted':
-        subscription = event['data']['object']
-        _handle_subscription_deleted(subscription)
-    
-    elif event['type'] == 'invoice.payment_failed':
-        invoice = event['data']['object']
-        _handle_payment_failed(invoice)
-    
+        send_telegram_alert('FMNO checkout completed', {'customer_email': session.get('customer_email'), 'tier': session.get('metadata', {}).get('tier'), 'session': session.get('id')})
     return '', 200
-
-
-def _handle_checkout_completed(session):
-    """Handle successful checkout."""
-    print(f"Checkout completed: {session.get('customer_email')} - {session.get('metadata', {}).get('tier')}")
-    # In production: activate customer account, send welcome email
-
-
-def _handle_subscription_created(subscription):
-    """Handle new subscription."""
-    print(f"Subscription created: {subscription.get('id')} - {subscription.get('status')}")
-    # In production: activate customer account
-
-
-def _handle_subscription_updated(subscription):
-    """Handle subscription update (upgrade/downgrade)."""
-    print(f"Subscription updated: {subscription.get('id')} - {subscription.get('status')}")
-    # In production: update customer tier
-
-
-def _handle_subscription_deleted(subscription):
-    """Handle subscription cancellation."""
-    print(f"Subscription deleted: {subscription.get('id')}")
-    # In production: downgrade to free tier
-
-
-def _handle_payment_failed(invoice):
-    """Handle failed payment."""
-    print(f"Payment failed: {invoice.get('id')} - {invoice.get('customer_email')}")
-    # In production: notify customer, pause service
-
-
-# =============================================================================
-# SUCCESS / CANCEL PAGES
-# =============================================================================
-
-@app.route('/success.html')
-def success():
-    """Payment success page."""
-    tier = request.args.get('tier', 'unknown')
-    return f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome! — Fix My Name Online™</title>
-        <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: white; padding: 40px; text-align: center; }}
-            .container {{ max-width: 600px; margin: 0 auto; }}
-            h1 {{ color: #00ff00; font-size: 2.5em; margin-bottom: 20px; }}
-            .tier-badge {{ background: #ff0000; padding: 10px 30px; border-radius: 30px; font-size: 1.2em; display: inline-block; margin: 20px 0; }}
-            .next-steps {{ background: #1a1a2e; padding: 30px; border-radius: 12px; margin: 30px 0; text-align: left; }}
-            .next-steps li {{ margin: 10px 0; }}
-            a {{ color: #ff4444; }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>✅ Welcome to Fix My Name Online!</h1>
-            <div class="tier-badge">★ {tier.upper()} TIER ★</div>
-            <p>Your subscription is now active. Welcome to the suppression revolution.</p>
-            <div class="next-steps">
-                <h3>Next Steps:</h3>
-                <ol>
-                    <li>Check your email for login details</li>
-                    <li>Access your dashboard and add your keyword</li>
-                    <li>Start generating and publishing content</li>
-                    <li>Track your suppression score in real-time</li>
-                </ol>
-            </div>
-            <a href="/">← Back to Home</a>
-        </div>
-    </body>
-    </html>
-    """
-
-
-@app.route('/cancel.html')
-def cancel():
-    """Payment cancelled page."""
-    return """
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Cancelled — Fix My Name Online™</title>
-        <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0f; color: white; padding: 40px; text-align: center; }
-            .container { max-width: 600px; margin: 0 auto; }
-            h1 { color: #ffaa00; font-size: 2em; margin-bottom: 20px; }
-            a { color: #ff4444; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>Checkout Cancelled</h1>
-            <p>No worries — your payment wasn't processed.</p>
-            <p>You can always start with our <strong>FREE tier</strong> and upgrade later.</p>
-            <br>
-            <a href="/">← Back to Home</a>
-        </div>
-    </body>
-    </html>
-    """
-
-
-# =============================================================================
-# HEALTH CHECK
-# =============================================================================
 
 @app.route('/health')
 def health():
-    """Health check endpoint."""
-    return jsonify({
-        'status': 'ok',
-        'service': 'fixmynameonline',
-        'version': '1.0.0',
-        'domain': DOMAIN
-    })
-
-
-# =============================================================================
-# MAIN
-# =============================================================================
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v1', 'domain': DOMAIN})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    app.run(host='0.0.0.0', port=port, debug=os.environ.get('FLASK_DEBUG','false').lower()=='true')

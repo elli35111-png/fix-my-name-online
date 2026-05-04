@@ -46,27 +46,11 @@
           "sync": false
         },
         {
-          "key": "STRIPE_PRICE_CONCIERGE",
+          "key": "STRIPE_PRICE_REMOVAL_REVIEW",
           "sync": false
         },
         {
-          "key": "STRIPE_PRICE_SENTINEL_ANNUAL",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_STARTER_ANNUAL",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_PRO_ANNUAL",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_PREMIUM_ANNUAL",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_CONCIERGE_ANNUAL",
+          "key": "STRIPE_PRICE_REVIEW_DEFENCE",
           "sync": false
         },
         {
@@ -78,11 +62,11 @@
           "sync": false
         },
         {
-          "key": "FPS_WP_USER",
+          "key": "FMNO_TELEGRAM_BOT_TOKEN",
           "sync": false
         },
         {
-          "key": "FPS_WP_APP_PASSWORD",
+          "key": "FMNO_TELEGRAM_CHAT_ID",
           "sync": false
         }
       ]
