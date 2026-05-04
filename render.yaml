@@ -1,75 +1,38 @@
-{
-  "name": "fix-my-name-online",
-  "region": "oregon",
-  "repo": "https://github.com/elli35111-png/fix-my-name-online",
-  "branch": "main",
-  "plan": "free",
-  "serviceName": "fix-my-name-online",
-  "services": [
-    {
-      "type": "web",
-      "name": "fmnol-landing",
-      "region": "oregon",
-      "plan": "free",
-      "repo": "https://github.com/elli35111-png/fix-my-name-online",
-      "branch": "main",
-      "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "gunicorn server:app --bind 0.0.0.0:$PORT --access-logfile -",
-      "healthCheckPath": "/health",
-      "envVars": [
-        {
-          "key": "STRIPE_SECRET_KEY",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PUBLISHABLE_KEY",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_WEBHOOK_SECRET",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_SENTINEL",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_STARTER",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_PRO",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_PREMIUM",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_REMOVAL_REVIEW",
-          "sync": false
-        },
-        {
-          "key": "STRIPE_PRICE_REVIEW_DEFENCE",
-          "sync": false
-        },
-        {
-          "key": "DOMAIN",
-          "value": "https://fixmynameonline.com"
-        },
-        {
-          "key": "BREVO_API_KEY",
-          "sync": false
-        },
-        {
-          "key": "FMNO_TELEGRAM_BOT_TOKEN",
-          "sync": false
-        },
-        {
-          "key": "FMNO_TELEGRAM_CHAT_ID",
-          "sync": false
-        }
-      ]
-    }
-  ]
-}
+services:
+  - type: web
+    name: fmnol-landing
+    runtime: python
+    repo: https://github.com/elli35111-png/fix-my-name-online
+    branch: main
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --access-logfile -
+    healthCheckPath: /health
+    envVars:
+      - key: DOMAIN
+        value: https://fixmynameonline.com
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_SENTINEL
+        sync: false
+      - key: STRIPE_PRICE_REMOVAL_REVIEW
+        sync: false
+      - key: STRIPE_PRICE_REVIEW_DEFENCE
+        sync: false
+      - key: STRIPE_PRICE_STARTER
+        sync: false
+      - key: STRIPE_PRICE_PRO
+        sync: false
+      - key: STRIPE_PRICE_PREMIUM
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: FMNO_TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: FMNO_TELEGRAM_CHAT_ID
+        sync: false
