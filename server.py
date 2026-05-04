@@ -127,8 +127,8 @@ def append_jsonl(path, payload):
 
 
 def admin_authorized():
-    token = os.environ.get('FMNO_ADMIN_TOKEN', '')
-    supplied = request.headers.get('X-FMNO-Admin-Token') or request.args.get('token', '') or request.form.get('token', '')
+    token = (os.environ.get('FMNO_ADMIN_TOKEN', '') or '').strip()
+    supplied = (request.headers.get('X-FMNO-Admin-Token') or request.args.get('token', '') or request.form.get('token', '') or '').strip()
     return bool(token and supplied and supplied == token)
 
 
