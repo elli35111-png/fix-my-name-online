@@ -359,7 +359,7 @@ def robots_txt():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    urls = ['/', '/app', '/contact', '/about', '/services', '/privacy', '/terms']
+    urls = ['/', '/app', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
     urlset = ''.join(f"<url><loc>{DOMAIN}{u}</loc><changefreq>{'weekly' if u == '/' else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else '0.7'}</priority></url>" for u in urls)
     xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
     return Response(xml, mimetype='application/xml')
@@ -376,6 +376,98 @@ def services():
     body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>Sentinel Alert™ for monitoring</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p class=\"note\">Search engines and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
     return page('Services — FixMyNameOnline™', body, 'Private reputation repair, search protection, removal review support, Google review defence and positive asset planning by FixMyNameOnline™.')
 
+
+
+
+def acquisition_page(title, eyebrow, headline, subhead, bullets, faq_items, canonical_path, description):
+    bullet_html = ''.join(f"<li>✓ {safe(b)}</li>" for b in bullets)
+    faq_html = ''.join(f"<div class='card'><h2>{safe(q)}</h2><p>{safe(a)}</p></div>" for q, a in faq_items)
+    body = f"""
+    <div class="card">
+      <span class="pill">{safe(eyebrow)}</span>
+      <h1>{safe(headline)}</h1>
+      <p class="sub">{safe(subhead)}</p>
+      <p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">See services</a></p>
+      <h2>What we check</h2>
+      <ul>{bullet_html}</ul>
+      <div class="recommend"><h2>Start private. No pressure.</h2><p>Send your name, business name, review links, article links or search terms. We review the pattern and point you toward alerts, removal review, review defence or a repair plan only if there is a real next step.</p><p><a class="btn" href="/app">Get the Free Snapshot™</a></p></div>
+      <p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. Search engines, publishers, review platforms and third parties make their own decisions. No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed.</p>
+    </div>
+    <div class="grid">{faq_html}</div>
+    """
+    return page(title, body, description=description, canonical_path=canonical_path)
+
+
+@app.route('/google-review-defence')
+def google_review_defence_page():
+    return acquisition_page(
+        'Google Review Defence™ — FixMyNameOnline™',
+        'Google review defence',
+        'Fake or malicious Google reviews can cost real customers.',
+        'Private support for businesses dealing with fake, unfair, competitor, ex-employee, ex-partner or review-bombing attacks on Google.',
+        [
+            'Review pattern and risk audit',
+            'Possible Google policy issues',
+            'Evidence notes for reporting',
+            'Calm owner response drafts',
+            'Recovery plan for stronger business trust signals',
+        ],
+        [
+            ('Can you remove bad Google reviews?', 'Google makes the final decision. We help document the issue, identify possible policy pathways and prepare professional reporting notes or responses.'),
+            ('Who is this for?', 'Business owners, local services, professionals, clinics, trades, agencies, restaurants and anyone losing trust because of unfair or malicious reviews.'),
+            ('What is the first step?', 'Start with the Free Search Snapshot™ and paste the review links or business profile details.'),
+        ],
+        '/google-review-defence',
+        'Google Review Defence™ for businesses hit by fake, unfair or malicious Google reviews. Private audit, evidence notes, reporting support and response drafts.'
+    )
+
+
+@app.route('/remove-bad-google-results')
+def remove_bad_google_results_page():
+    return acquisition_page(
+        'Remove Bad Google Results? Options Explained — FixMyNameOnline™',
+        'Bad Google results',
+        'Bad Google results should not be the only version people see.',
+        'Private review for old articles, outdated snippets, images, complaint pages, associated names, reviews and damaging search terms.',
+        [
+            'URLs, snippets, images and article details',
+            'Whether a correction, outdated-content request, privacy request or platform report may be realistic',
+            'What evidence is needed before any request',
+            'Positive asset strategy if removal is not realistic',
+            'Associated names, old names, locations and risk-term searches',
+        ],
+        [
+            ('Can bad Google results always be removed?', 'No. Some results may have a valid pathway, many do not. We review the facts and recommend the safest realistic next step.'),
+            ('What if removal is not realistic?', 'Then the strategy usually shifts to building accurate positive assets and stronger search trust around your name or business.'),
+            ('Is this confidential?', 'The service is designed to be discreet. We do not publicly advertise client cases.'),
+        ],
+        '/remove-bad-google-results',
+        'Private review for bad Google results, old articles, damaging snippets, associated names and search reputation problems. Australia-based, worldwide support.'
+    )
+
+
+@app.route('/private-reputation-repair')
+def private_reputation_repair_page():
+    return acquisition_page(
+        'Private Reputation Repair — FixMyNameOnline™',
+        'Private reputation repair',
+        'When people search your name, they should see the full story.',
+        'Discreet reputation repair and search protection for individuals, professionals, business owners, public figures and sensitive cases.',
+        [
+            'Personal name, old name and associated-name search mapping',
+            'Bad result, review, article and complaint-page triage',
+            'Removal or reporting pathway review where appropriate',
+            'Approved positive biographies, profiles, pages and articles',
+            'Monthly monitoring and private progress reporting',
+        ],
+        [
+            ('Who uses private reputation repair?', 'Everyday people, professionals, founders, business owners, creators and public figures who are being judged by search results before they can explain the full context.'),
+            ('Do you guarantee rankings?', 'No. We build and improve accurate search assets over time, but search engines make their own ranking decisions.'),
+            ('Where are you based?', 'FixMyNameOnline™ is operated by MadisonJade Pty Ltd in Australia and serves clients worldwide.'),
+        ],
+        '/private-reputation-repair',
+        'Private reputation repair and search protection for individuals, professionals and businesses. Australia-based, worldwide service by MadisonJade Pty Ltd.'
+    )
 
 @app.route('/pricing')
 def pricing():
@@ -1005,7 +1097,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v9-seo-foundation', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v10-customer-acquisition-pages', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
