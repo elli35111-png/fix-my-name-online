@@ -11,8 +11,16 @@ FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
 from __future__ import annotations
 
 import json
+import re
+from urllib.parse import urlparse
 from datetime import datetime
 from typing import Any, Dict, Optional
+
+try:
+    from removal import generate_removal_request, detect_jurisdiction_from_url
+except Exception:
+    generate_removal_request = None
+    detect_jurisdiction_from_url = None
 
 from fulfilment_engine import (
     load_case_state,
@@ -175,22 +183,37 @@ def _evidence_agent(case, task, source, customer):
     raw_links = source.get("links") or source.get("problem_links") or ""
     links = _split_lines(raw_links)
     evidence = []
-    for link in links:
+    now = utc_now()
+    for idx, link in enumerate(links, start=1):
+        parsed = urlparse(link if re.match(r"^https?://", link) else "")
+        platform = parsed.netloc.replace("www.", "") if parsed.netloc else "search/manual"
         evidence.append({
+            "evidence_id": f"EV-{idx:03d}",
             "url_or_term": link,
-            "status": "needs screenshot/manual capture" if link.startswith("http") else "search term needs manual capture",
-            "capture_fields": ["title", "source/platform", "date seen", "snippet/review text", "screenshot path", "notes"],
+            "platform_or_source": platform,
+            "jurisdiction_guess": detect_jurisdiction_from_url(link) if detect_jurisdiction_from_url and link.startswith("http") else "worldwide",
+            "captured_at": now,
+            "capture_status": "metadata_record_created__screenshot_still_required" if link.startswith("http") else "search_term_record_created__manual_search_required",
+            "required_capture_fields": ["title", "source/platform", "date seen", "snippet/review text", "screenshot path", "archive URL if available", "operator notes"],
+            "operator_notes": "Evidence record created by EvidenceAgent. Human/browser screenshot capture still required before external action.",
         })
     if not evidence:
         evidence.append({
+            "evidence_id": "EV-001",
             "url_or_term": customer.get("name") or "customer name",
-            "status": "baseline search snapshot needed",
-            "capture_fields": ["top results", "risk results", "positive assets", "screenshots", "date seen"],
+            "platform_or_source": "baseline search",
+            "jurisdiction_guess": "worldwide",
+            "captured_at": now,
+            "capture_status": "baseline_search_snapshot_required",
+            "required_capture_fields": ["top results", "risk results", "positive assets", "screenshots", "date seen", "operator notes"],
+            "operator_notes": "No target URLs supplied. Capture baseline search manually before drafting external requests.",
         })
     return {
-        "type": "evidence_plan",
+        "type": "evidence_pack",
         "evidence_items": evidence,
-        "qc_warning": "Do not send requests/responses until evidence screenshots or notes are captured.",
+        "evidence_count": len(evidence),
+        "ready_for_external_action": False,
+        "qc_warning": "Do not send requests/responses until evidence screenshots or equivalent notes are attached and QC-approved.",
     }
 
 
@@ -269,7 +292,7 @@ def _drafting_agent(case, task, source, customer):
     if plan == "review-defence":
         draft = f"Thank you for your feedback. We take all genuine customer experiences seriously and have checked our records so we can understand this properly. If you are open to it, please contact us directly so we can review the details and respond appropriately."
     elif plan == "removal-review":
-        draft = "Draft evidence pack: identify the URL, preserve screenshots, note why the content may be inaccurate/outdated/private/policy-relevant, and prepare a careful platform-appropriate request. No legal threats or guarantees included."
+        return _removal_review_draft_pack(case, task, source, customer)
     else:
         draft = f"{name} is building a clear, professional online presence based on accurate information, useful context, and approved public-facing materials."
         if business:
@@ -281,6 +304,74 @@ def _drafting_agent(case, task, source, customer):
         "public_text_check": validate_public_text(draft),
         "notes": "Draft is intentionally conservative. Client/QC approval required before public use.",
     }
+
+
+def _removal_review_draft_pack(case, task, source, customer):
+    name = customer.get("name") or "Client"
+    email = customer.get("email") or "client@example.com"
+    links = _split_lines(source.get("links") or source.get("problem_links") or "") or ["[TARGET URL REQUIRED]"]
+    context = source.get("context") or source.get("goal") or "Client requested a private removal review."
+    generated_requests = []
+    for idx, link in enumerate(links, start=1):
+        jurisdiction = detect_jurisdiction_from_url(link) if detect_jurisdiction_from_url and link.startswith("http") else "worldwide"
+        law_type = _suggest_law_type(link, context, jurisdiction)
+        description = (
+            f"Target {idx}: {link}\n"
+            f"Client context: {context}\n"
+            "Evidence requirement: attach screenshots/snapshot notes before any external submission."
+        )
+        if generate_removal_request:
+            try:
+                letter = generate_removal_request(
+                    jurisdiction=jurisdiction,
+                    law_type=law_type,
+                    content_url=link,
+                    content_description=description,
+                    full_name=name,
+                    email=email,
+                )
+            except Exception as exc:
+                letter = f"Generator error: {exc}. Manual draft required."
+        else:
+            letter = "Removal generator unavailable. Manual draft required."
+        generated_requests.append({
+            "target": link,
+            "jurisdiction_guess": jurisdiction,
+            "suggested_pathway": law_type,
+            "draft_letter": letter,
+            "submission_status": "draft_only_not_sent",
+        })
+    client_summary = (
+        "We prepared draft request material for private review. These drafts are not legal advice, "
+        "are not guarantees of removal, and must not be sent until evidence, QC, and client approval are complete."
+    )
+    return {
+        "type": "removal_review_pack",
+        "client_summary": client_summary,
+        "targets_reviewed": len(generated_requests),
+        "draft_requests": generated_requests,
+        "approval_required": True,
+        "ready_for_submission": False,
+        "safety_gate": "draft_only__requires_evidence_qc_client_approval_before_send",
+        "public_text_check": validate_public_text(json.dumps(generated_requests, ensure_ascii=False)),
+    }
+
+
+def _suggest_law_type(link: str, context: str, jurisdiction: str) -> str:
+    low = f"{link} {context}".lower()
+    if "copyright" in low or "image" in low:
+        return "dmca" if jurisdiction == "us" else "privacy_act"
+    if "defamation" in low or "false" in low or "libel" in low:
+        return "defamation"
+    if jurisdiction in {"eu", "uk"}:
+        return "gdpr_erasure" if jurisdiction == "eu" else "uk_gdpr"
+    if jurisdiction == "au":
+        return "privacy_act"
+    if jurisdiction == "ca":
+        return "pipeda"
+    if jurisdiction == "us":
+        return "ccpa"
+    return "data_deletion"
 
 
 def _qc_johnny(case, task, source, customer):
@@ -345,14 +436,49 @@ def _case_operator(case, task, source, customer):
 def _reporting_agent(case, task, source, customer):
     done = [t for t in case.get("tasks", []) if t.get("status") in {"done", "approved"}]
     pending = [t for t in case.get("tasks", []) if t.get("status") not in {"done", "approved", "cancelled"}]
+    outputs = _collect_outputs(case)
+    evidence_count = sum(len(o.get("evidence_items", [])) for o in outputs if o.get("type") == "evidence_pack")
+    draft_count = sum(len(o.get("draft_requests", [])) for o in outputs if o.get("type") == "removal_review_pack")
+    held_actions = [o for o in outputs if o.get("type") in {"case_operator_hold", "publishing_operator_hold"}]
+    client_report = f"""FixMyNameOnline™ private case update
+
+Case: {case.get('id')}
+Plan: {case.get('plan_name')}
+Client: {customer.get('name') or 'Client'}
+
+What we prepared:
+- Completed internal tasks: {len(done)}
+- Evidence records created: {evidence_count}
+- Draft request/action packs prepared: {draft_count}
+
+Current safety status:
+No public action is taken without QC and client approval. Any platform/removal/review action remains held unless explicitly approved and manually executed.
+
+Next step:
+Review the prepared pack, confirm any requested changes, and approve only if you are comfortable with the proposed wording/action path.
+
+Important disclaimer:
+FixMyNameOnline™ does not guarantee removals, rankings, de-indexing, platform decisions, or search-engine outcomes. Legal advice must be obtained from a qualified lawyer.
+"""
     return {
-        "type": "status_report",
+        "type": "client_ready_status_report",
         "case_id": case.get("id"),
         "plan": case.get("plan_name"),
         "completed_tasks": [f"{t.get('id')} {t.get('title')}" for t in done],
         "pending_tasks": [f"{t.get('id')} {t.get('title')}" for t in pending],
-        "client_summary": "Work is being prepared through the private QC-gated process. No public action is taken without approval.",
+        "evidence_records": evidence_count,
+        "draft_packs": draft_count,
+        "held_actions": len(held_actions),
+        "client_summary": client_report,
+        "ready_to_email_client": True,
     }
+
+
+def _collect_outputs(case: Dict[str, Any]) -> list[Dict[str, Any]]:
+    outputs = []
+    for task_obj in case.get("tasks", []):
+        outputs.extend((task_obj.get("outputs") or {}).values())
+    return outputs
 
 
 def _generic_agent(case, task, source, customer):

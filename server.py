@@ -910,7 +910,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v6-client-approval-portal', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v7-real-deliverables', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
