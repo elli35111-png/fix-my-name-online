@@ -8,6 +8,8 @@ FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
 import html
 import os
 import json
+import hmac
+import hashlib
 from datetime import datetime
 from pathlib import Path
 
@@ -136,6 +138,47 @@ def require_admin_json():
     if not admin_authorized():
         return jsonify({'ok': False, 'error': 'Unauthorized'}), 401
     return None
+
+
+def approval_secret():
+    return (os.environ.get('FMNO_APPROVAL_SECRET') or os.environ.get('FMNO_ADMIN_TOKEN') or 'fmno-local-approval-secret').strip()
+
+
+def make_approval_token(case_id, task_id):
+    raw = f'{case_id}:{task_id}'.encode('utf-8')
+    return hmac.new(approval_secret().encode('utf-8'), raw, hashlib.sha256).hexdigest()
+
+
+def approval_url(case_id, task_id):
+    token = make_approval_token(case_id, task_id)
+    return f'{DOMAIN}/approval/{safe(case_id)}/{safe(task_id)}?approval_token={token}'
+
+
+def valid_approval_token(case_id, task_id, token):
+    expected = make_approval_token(case_id, task_id)
+    return bool(token and hmac.compare_digest(str(token), expected))
+
+
+def get_task_from_case(case, task_id):
+    for task_obj in case.get('tasks', []):
+        if task_obj.get('id') == task_id:
+            return task_obj
+    return None
+
+
+def latest_case_outputs(case, limit=8):
+    items = []
+    for task_obj in case.get('tasks', []):
+        for generated_at, output in (task_obj.get('outputs') or {}).items():
+            items.append({
+                'task_id': task_obj.get('id'),
+                'task_title': task_obj.get('title'),
+                'agent': task_obj.get('agent'),
+                'generated_at': generated_at,
+                'output': output,
+            })
+    items.sort(key=lambda item: item.get('generated_at', ''), reverse=True)
+    return items[:limit]
 
 
 def safe_create_fulfilment_case(plan, customer, source, trigger):
@@ -473,6 +516,74 @@ def terms():
     return page('Terms — FixMyNameOnline™', '<div class="card"><h1>Terms & Disclaimer</h1><p class="sub">FixMyNameOnline™ provides reputation review, monitoring, content, documentation, and platform-request support. Search engines, publishers, platforms, and courts make their own decisions. We do not guarantee removals, review removals, rankings, de-indexing, or specific outcomes. Legal advice must be obtained from a qualified lawyer.</p></div>')
 
 
+
+@app.route('/approval/<case_id>/<task_id>')
+def client_approval_page(case_id, task_id):
+    token = request.args.get('approval_token', '')
+    if not valid_approval_token(case_id, task_id, token):
+        return page('Approval link invalid', '<div class="card"><h1 class="err">Invalid approval link</h1><p>This private approval link is invalid or incomplete.</p></div>'), 401
+    case = get_case(case_id) if get_case else None
+    if not case:
+        return page('Case not found', '<div class="card"><h1 class="err">Case not found</h1></div>'), 404
+    task_obj = get_task_from_case(case, task_id)
+    if not task_obj:
+        return page('Approval item not found', '<div class="card"><h1 class="err">Approval item not found</h1></div>'), 404
+    if not task_obj.get('requires_client_approval'):
+        return page('Approval not required', '<div class="card"><h1>Approval not required</h1><p>This item is not marked for client approval.</p></div>'), 400
+    outputs = latest_case_outputs(case, limit=10)
+    output_blocks = []
+    for item in outputs:
+        output = item.get('output', {})
+        # Do not expose internal source payload wholesale. Show draft/report-ish fields and safe summary.
+        visible = {
+            'task': f"{item.get('task_id')} — {item.get('task_title')}",
+            'agent': item.get('agent'),
+            'generated_at': item.get('generated_at'),
+            'type': output.get('type'),
+            'draft': output.get('draft'),
+            'client_summary': output.get('client_summary'),
+            'recommended_outputs': output.get('recommended_outputs'),
+            'asset_plan': output.get('asset_plan'),
+            'policy_indicators_to_check': output.get('policy_indicators_to_check'),
+            'approval_required': output.get('approval_required'),
+            'gate_result': output.get('gate_result'),
+        }
+        visible = {k: v for k, v in visible.items() if v not in [None, '', []]}
+        output_blocks.append(f"<details open><summary><strong>{safe(visible.get('task'))}</strong></summary><pre class='mono'>{safe(json.dumps(visible, indent=2, ensure_ascii=False))}</pre></details>")
+    body = f"""
+    <div class="card"><span class="pill">Private client approval</span><h1>{safe(case.get('plan_name'))}</h1>
+      <p class="sub">Please review this prepared item. Nothing public should be published, sent, or submitted unless you approve it.</p>
+      <p><strong>Case:</strong> <span class="note">{safe(case_id)}</span><br><strong>Approval item:</strong> {safe(task_obj.get('title'))}</p>
+      <div class="recommend"><h2>Prepared material</h2>{''.join(output_blocks) if output_blocks else '<p class="sub">No draft outputs are attached yet. Please ask us to prepare the material first.</p>'}</div>
+      <form method="post" action="/approval/{safe(case_id)}/{safe(task_id)}" class="grid"><input type="hidden" name="approval_token" value="{safe(token)}">
+        <div class="full"><label>Optional note</label><textarea name="client_note" placeholder="Any changes, concerns, or approval notes..."></textarea></div>
+        <div class="full"><button class="btn" name="decision" value="approve">Approve this item →</button> <button class="btn btn2" name="decision" value="reject">Request changes / do not approve</button></div>
+      </form>
+      <p class="note">No removals, rankings, platform actions, or search outcomes are guaranteed.</p>
+    </div>
+    """
+    return page('Client approval — FixMyNameOnline™', body)
+
+
+@app.route('/approval/<case_id>/<task_id>', methods=['POST'])
+def client_approval_submit(case_id, task_id):
+    token = request.form.get('approval_token', '')
+    if not valid_approval_token(case_id, task_id, token):
+        return page('Approval link invalid', '<div class="card"><h1 class="err">Invalid approval link</h1></div>'), 401
+    case = get_case(case_id) if get_case else None
+    task_obj = get_task_from_case(case, task_id) if case else None
+    if not case or not task_obj:
+        return page('Approval item not found', '<div class="card"><h1 class="err">Approval item not found</h1></div>'), 404
+    decision = request.form.get('decision')
+    client_note = request.form.get('client_note', '').strip()
+    if decision == 'approve':
+        approve_task(case_id, task_id, 'ClientApproval', client_note or 'Client approved via private approval portal.')
+        add_case_note(case_id, client_note or f'Client approved {task_id}.', 'ClientApproval', 'client_approval')
+        return page('Approved — FixMyNameOnline™', '<div class="card"><span class="pill ok">Approved</span><h1>Thank you. This item has been approved.</h1><p class="sub">We recorded your approval and will continue through the private QC-gated process.</p></div>')
+    update_task_status(case_id, task_id, 'blocked', client_note or 'Client requested changes via approval portal.', 'ClientApproval')
+    add_case_note(case_id, client_note or f'Client requested changes for {task_id}.', 'ClientApproval', 'client_rejection')
+    return page('Changes requested — FixMyNameOnline™', '<div class="card"><span class="pill err">Changes requested</span><h1>Thank you. We recorded your request.</h1><p class="sub">This item is blocked until the requested changes are reviewed.</p></div>')
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     if not STRIPE_WEBHOOK_SECRET:
@@ -615,6 +726,7 @@ def fulfilment_case_dashboard(case_id):
         notes_html = ''.join([f"<div class='small muted'>• {safe(n.get('note'))} — {safe(n.get('author'))}</div>" for n in notes])
         latest_output = list((task_obj.get('outputs') or {}).values())[-1] if (task_obj.get('outputs') or {}) else None
         output_html = f"<details style='margin-top:8px'><summary class='small'>Latest agent output</summary><pre class='mono'>{safe(json.dumps(latest_output, indent=2, ensure_ascii=False))}</pre></details>" if latest_output else ""
+        approval_link_html = f"<div style='margin-top:8px' class='small'><strong>Client approval link:</strong> <a href='{approval_url(case_id, task_obj.get('id'))}' target='_blank'>open approval portal</a><div class='mono'>{approval_url(case_id, task_obj.get('id'))}</div></div>" if task_obj.get('requires_client_approval') else ""
         actions = f"""
         <form method='post' action='/admin/fulfilment/action' class='row'>
           <input type='hidden' name='token' value='{safe(request.args.get('token'))}'><input type='hidden' name='case_id' value='{safe(case_id)}'><input type='hidden' name='task_id' value='{safe(task_obj.get('id'))}'>
@@ -628,7 +740,7 @@ def fulfilment_case_dashboard(case_id):
           <h3>{safe(task_obj.get('title'))}</h3><p class='muted small'>{safe(task_obj.get('description'))}</p>
           <div class='row'>{gates}</div>
           <div class='small muted'>Depends on: {safe(', '.join(task_obj.get('depends_on', [])) or 'none')} · Client approval: {safe(task_obj.get('requires_client_approval'))} · Sensitive execution: {safe(task_obj.get('execution_sensitive'))}</div>
-          {notes_html}{output_html}{actions}
+          {notes_html}{output_html}{approval_link_html}{actions}
         </div>
         """)
     source = safe(json.dumps(case.get('source', {}), indent=2, ensure_ascii=False))
@@ -798,7 +910,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v5-worker-agents', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v6-client-approval-portal', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
