@@ -30,6 +30,11 @@ except Exception:
     create_fulfilment_case = None
     list_cases = get_case = next_actions = update_task_status = approve_task = add_case_note = validate_public_text = None
 
+try:
+    from fulfilment_worker import run_task_agent, run_next_ready
+except Exception:
+    run_task_agent = run_next_ready = None
+
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
@@ -608,11 +613,13 @@ def fulfilment_case_dashboard(case_id):
         gates = ' '.join([f"<span class='small' style='border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 7px'>{safe(g)}</span>" for g in task_obj.get('gates', [])])
         notes = task_obj.get('qc', {}).get('notes', [])[-2:]
         notes_html = ''.join([f"<div class='small muted'>• {safe(n.get('note'))} — {safe(n.get('author'))}</div>" for n in notes])
+        latest_output = list((task_obj.get('outputs') or {}).values())[-1] if (task_obj.get('outputs') or {}) else None
+        output_html = f"<details style='margin-top:8px'><summary class='small'>Latest agent output</summary><pre class='mono'>{safe(json.dumps(latest_output, indent=2, ensure_ascii=False))}</pre></details>" if latest_output else ""
         actions = f"""
         <form method='post' action='/admin/fulfilment/action' class='row'>
           <input type='hidden' name='token' value='{safe(request.args.get('token'))}'><input type='hidden' name='case_id' value='{safe(case_id)}'><input type='hidden' name='task_id' value='{safe(task_obj.get('id'))}'>
           <input name='note' placeholder='QC note optional' style='max-width:280px'>
-          <button name='action' value='in_progress'>Start</button><button name='action' value='qc_pending'>QC pending</button><button name='action' value='approve'>Approve</button><button name='action' value='done'>Done</button><button name='action' value='blocked'>Block</button>
+          <button name='action' value='run_agent'>Run Agent</button><button name='action' value='in_progress'>Start</button><button name='action' value='qc_pending'>QC pending</button><button name='action' value='approve'>Approve</button><button name='action' value='done'>Done</button><button name='action' value='blocked'>Block</button>
         </form>
         """
         task_html.append(f"""
@@ -621,7 +628,7 @@ def fulfilment_case_dashboard(case_id):
           <h3>{safe(task_obj.get('title'))}</h3><p class='muted small'>{safe(task_obj.get('description'))}</p>
           <div class='row'>{gates}</div>
           <div class='small muted'>Depends on: {safe(', '.join(task_obj.get('depends_on', [])) or 'none')} · Client approval: {safe(task_obj.get('requires_client_approval'))} · Sensitive execution: {safe(task_obj.get('execution_sensitive'))}</div>
-          {notes_html}{actions}
+          {notes_html}{output_html}{actions}
         </div>
         """)
     source = safe(json.dumps(case.get('source', {}), indent=2, ensure_ascii=False))
@@ -635,7 +642,7 @@ def fulfilment_case_dashboard(case_id):
       <div class='card'><div class='muted small'>Priority</div><h2>{safe(case.get('priority'))}</h2></div>
       <div class='card'><div class='muted small'>Trigger</div><h2>{safe(case.get('trigger'))}</h2></div>
     </div>
-    <div class='card' style='margin-top:14px'><h2>Next actions</h2><ul>{active_html}</ul></div>
+    <div class='card' style='margin-top:14px'><h2>Next actions</h2><ul>{active_html}</ul><form method='post' action='/admin/fulfilment/action'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><input type='hidden' name='case_id' value='{safe(case_id)}'><input type='hidden' name='action' value='run_next'><button>Run next ready agent</button></form></div>
     <div class='card' style='margin-top:14px'><h2>Add case note</h2><form method='post' action='/admin/fulfilment/action' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><input type='hidden' name='case_id' value='{safe(case_id)}'><input type='hidden' name='action' value='case_note'><input name='note' placeholder='Internal note'><button>Add note</button></form>{notes}</div>
     <div class='card' style='margin-top:14px'><h2>Tasks / QC gates</h2>{''.join(task_html)}</div>
     <div class='card' style='margin-top:14px'><h2>Source intake</h2><pre class='mono'>{source}</pre></div>
@@ -671,6 +678,12 @@ def fulfilment_dashboard_action():
     if action == 'case_note':
         if add_case_note and note:
             add_case_note(case_id, note, 'Elli/Hermes', 'operator')
+    elif action == 'run_next':
+        if run_next_ready:
+            run_next_ready(case_id, operator='DashboardWorker')
+    elif action == 'run_agent':
+        if run_task_agent:
+            run_task_agent(case_id, task_id, operator='DashboardWorker')
     elif action == 'approve':
         if approve_task:
             approve_task(case_id, task_id, 'QCJohnny', note)
@@ -737,6 +750,30 @@ def admin_update_fulfilment_task(case_id, task_id):
     return jsonify({'ok': True, 'case': case, 'next_actions': next_actions(case_id) if next_actions else []})
 
 
+@app.route('/admin/fulfilment/cases/<case_id>/tasks/<task_id>/run-agent', methods=['POST'])
+def admin_run_fulfilment_task_agent(case_id, task_id):
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    if not run_task_agent:
+        return jsonify({'ok': False, 'error': 'Fulfilment worker unavailable'}), 500
+    result = run_task_agent(case_id, task_id, operator='APIWorker')
+    status_code = 200 if result.get('ok') else 400
+    return jsonify(result), status_code
+
+
+@app.route('/admin/fulfilment/cases/<case_id>/run-next', methods=['POST'])
+def admin_run_next_fulfilment_task(case_id):
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    if not run_next_ready:
+        return jsonify({'ok': False, 'error': 'Fulfilment worker unavailable'}), 500
+    result = run_next_ready(case_id, operator='APIWorker')
+    status_code = 200 if result.get('ok') else 400
+    return jsonify(result), status_code
+
+
 @app.route('/admin/fulfilment/cases/<case_id>/notes', methods=['POST'])
 def admin_add_fulfilment_note(case_id):
     unauthorized = require_admin_json()
@@ -761,7 +798,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v4-fulfilment-dashboard', 'domain': DOMAIN})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v5-worker-agents', 'domain': DOMAIN})
 
 
 if __name__ == '__main__':
