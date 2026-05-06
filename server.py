@@ -42,7 +42,7 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
-SEO_DESCRIPTION = 'Private reputation repair and search protection for individuals, professionals, businesses and public figures. Australia-based, worldwide service by MadisonJade Pty Ltd.'
+SEO_DESCRIPTION = 'Fix My Name Online™ / FixMyNameOnline™ provides private reputation repair and search protection for individuals, professionals, businesses and public figures. Australia-based, worldwide service by MadisonJade Pty Ltd.'
 SEO_IMAGE = DOMAIN + '/og-image.png'
 DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
 DATA_DIR.mkdir(exist_ok=True)
@@ -459,8 +459,12 @@ def robots_txt():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    urls = ['/', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
-    urlset = ''.join(f"<url><loc>{DOMAIN}{u}</loc><changefreq>{'weekly' if u == '/' else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else '0.7'}</priority></url>" for u in urls)
+    urls = ['/', '/fix-my-name-online', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    urlset = ''.join(
+        f"<url><loc>{DOMAIN}{u}</loc><lastmod>{today}</lastmod><changefreq>{'weekly' if u in ['/', '/fix-my-name-online'] else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else ('0.9' if u == '/fix-my-name-online' else '0.7')}</priority></url>"
+        for u in urls
+    )
     xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
     return Response(xml, mimetype='application/xml')
 
@@ -469,6 +473,33 @@ def sitemap_xml():
 def about():
     body = """<div class=\"card\"><h1>About FixMyNameOnline™</h1><p class=\"sub\">FixMyNameOnline™ is an Australia-based, worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.</p><p>We help individuals, professionals, business owners and public figures understand what appears around their name, document risk signals, review removal or platform-reporting pathways where appropriate, and build accurate positive assets over time.</p><p class=\"note\">We are not a law firm and do not provide legal advice. No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed.</p></div>"""
     return page('About — FixMyNameOnline™', body, 'About FixMyNameOnline™, an Australia-based worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.')
+
+
+@app.route('/fix-my-name-online')
+def fix_my_name_online_exact_match():
+    body = """
+    <div class=\"card\">
+      <span class=\"pill\">Fix My Name Online™</span>
+      <h1>Fix My Name Online™ private search protection</h1>
+      <p class=\"sub\">Fix My Name Online™ / FixMyNameOnline™ helps people and businesses understand what Google shows around their name, business, reviews, old links and associated search terms.</p>
+      <p>This exact-name page exists so search engines can clearly connect the spaced brand name, the domain name and the service. If someone searches “fix my name online”, this page explains who we are, what we do and how to start privately.</p>
+      <h2>What Fix My Name Online checks</h2>
+      <ul>
+        <li>Google results around your name, business name, previous names and associated names</li>
+        <li>Old articles, outdated snippets, image results, review profiles and complaint pages</li>
+        <li>Possible removal, correction, privacy, outdated-content or platform-reporting pathways</li>
+        <li>Positive profile, business and authority assets that can strengthen the full current story</li>
+      </ul>
+      <p><a class=\"btn\" href=\"/app\">Start the Free Search Snapshot™ →</a> <a class=\"btn btn2\" href=\"/services\">View services</a></p>
+      <p class=\"note\">Australia-based, worldwide service by MadisonJade Pty Ltd. No ranking, removal, de-indexing or platform outcome is guaranteed.</p>
+    </div>
+    """
+    return page(
+        'Fix My Name Online™ | Private Search & Reputation Repair',
+        body,
+        'Fix My Name Online™ / FixMyNameOnline™ private search protection and reputation repair for bad Google results, old links, reviews and associated-name search problems.',
+        canonical_path='/fix-my-name-online'
+    )
 
 
 @app.route('/services')
