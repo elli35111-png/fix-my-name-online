@@ -459,7 +459,7 @@ def robots_txt():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    urls = ['/', '/fix-my-name-online', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    urls = ['/', '/fix-my-name-online', '/learn', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/online-reputation-management-australia', '/reputation-repair-for-individuals', '/old-news-article-on-google', '/fake-google-reviews-help', '/how-to-check-your-online-reputation', '/privacy', '/terms']
     today = datetime.utcnow().strftime('%Y-%m-%d')
     urlset = ''.join(
         f"<url><loc>{DOMAIN}{u}</loc><lastmod>{today}</lastmod><changefreq>{'weekly' if u in ['/', '/fix-my-name-online'] else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else ('0.9' if u == '/fix-my-name-online' else '0.7')}</priority></url>"
@@ -599,6 +599,129 @@ def private_reputation_repair_page():
         '/private-reputation-repair',
         'Private reputation repair and search protection for individuals, professionals and businesses. Australia-based, worldwide service by MadisonJade Pty Ltd.'
     )
+
+SEO_GUIDES = {
+    'online-reputation-management-australia': {
+        'eyebrow': 'Australian reputation management',
+        'title': 'Online Reputation Management Australia — Fix My Name Online™',
+        'h1': 'Online reputation management in Australia, built for real search risk',
+        'description': 'Australian online reputation management for individuals, businesses and professionals dealing with Google results, reviews, old articles and associated-name search risk.',
+        'intro': 'Fix My Name Online™ is operated by MadisonJade Pty Ltd in Australia and supports clients worldwide. This guide explains the careful, search-safe way we approach online reputation management: technical discovery, evidence, removal-pathway review, truthful positive assets and ongoing monitoring.',
+        'sections': [
+            ('Start with the search result page, not guesses', 'The first professional step is to map what Google actually shows for the full name, business name, old names, common misspellings, locations, review terms and risk words. Ranking work fails when it is built around one vanity keyword instead of the real search pattern people use before they trust someone.'),
+            ('Separate removable problems from reputation gaps', 'Some results may have a correction, outdated-content, privacy, platform-policy or publisher-request pathway. Others cannot be removed safely or realistically. A strong campaign separates those paths early so the client does not waste months chasing impossible takedowns.'),
+            ('Build approved assets that deserve to rank', 'Modern SEO rewards pages that are useful, specific and trustworthy. For reputation repair, that means accurate biographies, service pages, business proof, profile assets, helpful articles, FAQs and evidence-based updates — not thin AI filler.'),
+            ('Use Search Console and monitoring', 'Google Search Console, sitemap submission, URL inspection, analytics and ranking checks are not optional. They tell us whether Google can discover, crawl, index and understand the reputation assets being built.'),
+        ],
+        'faqs': [
+            ('Do Australian reputation cases only affect Australia?', 'No. Australian clients are often searched by overseas clients, employers, investors, journalists and platforms. The operator can be Australian while the search risk is worldwide.'),
+            ('Can you guarantee page one?', 'No. Google makes its own decisions. The professional goal is to improve technical clarity, usefulness, authority, internal linking and external discovery signals over time.'),
+        ],
+    },
+    'reputation-repair-for-individuals': {
+        'eyebrow': 'Individual reputation repair',
+        'title': 'Reputation Repair for Individuals — Fix My Name Online™',
+        'h1': 'Reputation repair for individuals when Google shows the wrong first impression',
+        'description': 'Private reputation repair for individuals dealing with old Google results, associated names, outdated snippets, reviews, complaint pages or sensitive search terms.',
+        'intro': 'People get searched before job interviews, dates, rentals, partnerships, media calls and client decisions. Individual reputation repair is about making the search result page more accurate, current and complete without making unsafe promises.',
+        'sections': [
+            ('Map the person behind the search', 'A real plan checks legal names, previous names, nicknames, professional names, locations, business links, images, news results, review sites and common risk phrases. One bad result may be less damaging than a pattern of associated searches.'),
+            ('Create assets that answer real questions', 'Useful positive assets should explain who the person is now, what they do, what is verified, what they are comfortable publishing and what should stay private. Thin pages do not build trust.'),
+            ('Handle sensitive claims carefully', 'Where allegations, court mentions, old articles or disputes exist, the safest public strategy is factual, approved and proportionate. Legal advice may be needed for legal claims; reputation work should not pretend to be a law firm.'),
+            ('Measure progress by search coverage', 'The goal is not one page in isolation. The campaign should track which owned or approved assets appear for the name, old name, business name, location and risk-term combinations.'),
+        ],
+        'faqs': [
+            ('Is this public?', 'The intake and planning are private. Published assets are only created from approved, truthful information.'),
+            ('How long does individual reputation repair take?', 'Some assets can be published quickly, but organic search visibility usually takes weeks or months depending on competition and existing result authority.'),
+        ],
+    },
+    'old-news-article-on-google': {
+        'eyebrow': 'Old article search risk',
+        'title': 'Old News Article Showing on Google — Options and Limits | Fix My Name Online™',
+        'h1': 'Old news article showing on Google? Start with options, limits and evidence',
+        'description': 'What to do when an old news article, court mention or outdated story appears on Google: review pathways, evidence, outdated-content requests and positive search assets.',
+        'intro': 'Old articles can keep following people long after the facts, context or life circumstances have changed. The right response depends on the source, accuracy, legal status, public interest, indexing and available evidence.',
+        'sections': [
+            ('Check whether the article is accurate and current', 'Correction and publisher requests are strongest when there is a clear factual error, missing outcome, outdated snippet, privacy issue or changed circumstance that can be evidenced.'),
+            ('Understand what Google controls', 'Google usually indexes pages created by others. It may remove or update some results under specific policies, but it does not rewrite publisher content. That is why publisher, platform and search-engine paths need to be separated.'),
+            ('Prepare evidence before asking', 'Screenshots, URLs, dates, cached snippets, legal outcomes, publisher contact details and proof of identity or authority can matter. A vague emotional request is weaker than a calm, documented request.'),
+            ('Build the fuller current story', 'If the article cannot be removed, a reputation plan can create accurate current assets that help searchers see more than the old result: bios, business pages, profiles, interviews, FAQs and useful articles.'),
+        ],
+        'faqs': [
+            ('Can an old news article always be removed?', 'No. Some have a valid pathway; many do not. The first step is to assess the facts and available policies.'),
+            ('Can Google remove the snippet?', 'Sometimes outdated or policy-eligible snippets can be reviewed, but Google and the publisher make their own decisions.'),
+        ],
+    },
+    'fake-google-reviews-help': {
+        'eyebrow': 'Google review defence',
+        'title': 'Fake Google Reviews Help — Evidence, Reporting and Response | Fix My Name Online™',
+        'h1': 'Fake Google reviews need evidence, calm responses and a repair plan',
+        'description': 'Help for fake, malicious or unfair Google reviews: audit the pattern, collect evidence, check policy pathways, draft owner responses and rebuild trust signals.',
+        'intro': 'A fake or malicious review can cost calls, bookings and trust. The strongest response is not panic or public fighting; it is a clean evidence file, policy review, professional response and a wider trust-recovery plan.',
+        'sections': [
+            ('Document the pattern', 'Record review dates, reviewer names, wording, star rating, business relationship, screenshots and any signs of competitor, ex-employee, ex-partner or review-bombing activity.'),
+            ('Match the issue to platform policy', 'Google decides whether a review is removed. A professional report should connect the facts to possible policy issues rather than simply saying the review is unfair.'),
+            ('Respond for future customers', 'A calm owner response is often read by prospects. It should be short, factual, non-defamatory and focused on customer care, not a public argument.'),
+            ('Rebuild surrounding trust', 'More accurate business profiles, service pages, testimonials where allowed, FAQs, proof assets and monitoring reduce the damage of one hostile review result.'),
+        ],
+        'faqs': [
+            ('Can you delete fake Google reviews?', 'No agency can directly delete Google reviews. We help audit, document, report and respond; Google makes the decision.'),
+            ('Should I reply publicly?', 'Often yes, but carefully. The reply should reassure future customers, not escalate the dispute.'),
+        ],
+    },
+    'how-to-check-your-online-reputation': {
+        'eyebrow': 'Search self-audit',
+        'title': 'How to Check Your Online Reputation Before People Search You | Fix My Name Online™',
+        'h1': 'How to check your online reputation before clients, employers or dates search you',
+        'description': 'A practical online reputation self-audit checklist for names, business names, old names, Google results, reviews, images, snippets and associated search terms.',
+        'intro': 'Most reputation problems are discovered too late — after a client goes quiet, an employer hesitates or a partner searches a name. A simple search audit shows what needs monitoring, challenging or strengthening.',
+        'sections': [
+            ('Search like a stranger', 'Use your full name, quoted name, old names, nicknames, business names, suburb, city, job title, review terms and risk words. Check web results, images, videos, news and review profiles.'),
+            ('Record what appears on page one and two', 'Titles, snippets and images can matter as much as the page itself. Screenshot the result, URL, date and search phrase so changes can be tracked.'),
+            ('Classify the problem', 'Group results into positive assets, neutral listings, outdated items, bad reviews, complaint pages, old articles, images and associated-name risks. Each group needs a different response.'),
+            ('Strengthen the weak spots', 'If there are too few accurate assets, build them. If a result may breach policy, document it. If new issues keep appearing, set up monitoring.'),
+        ],
+        'faqs': [
+            ('Should I search in private browsing?', 'It can help reduce personalization, but location and device still influence results. Track the exact search phrase and date.'),
+            ('What should I do first if I find something bad?', 'Save evidence before reacting. Then decide whether it is a removal/review issue, monitoring issue or positive-footprint issue.'),
+        ],
+    },
+}
+
+
+def guide_schema(slug, guide):
+    return f'''<script type="application/ld+json">{json.dumps({
+        '@context': 'https://schema.org',
+        '@graph': [
+            {'@type': 'Article', '@id': f'{DOMAIN}/{slug}#article', 'headline': guide['h1'], 'description': guide['description'], 'author': {'@type': 'Organization', 'name': 'Fix My Name Online'}, 'publisher': {'@type': 'Organization', 'name': 'MadisonJade Pty Ltd'}, 'mainEntityOfPage': f'{DOMAIN}/{slug}'},
+            {'@type': 'BreadcrumbList', 'itemListElement': [
+                {'@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': DOMAIN + '/'},
+                {'@type': 'ListItem', 'position': 2, 'name': 'Learn', 'item': DOMAIN + '/learn'},
+                {'@type': 'ListItem', 'position': 3, 'name': guide['h1'], 'item': f'{DOMAIN}/{slug}'},
+            ]},
+            {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in guide['faqs']]},
+        ]
+    }, ensure_ascii=False)}</script>'''
+
+
+@app.route('/learn')
+def learn_hub():
+    cards = ''.join(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p></div>''' for slug, g in SEO_GUIDES.items())
+    body = f'''<div class="card"><span class="pill">Fix My Name Online™ learning hub</span><h1>Private reputation repair guides</h1><p class="sub">Useful, human-first guides for people and businesses dealing with bad Google results, fake reviews, old articles, associated names and search trust problems.</p><p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">View services</a></p></div><div class="grid" style="margin-top:16px">{cards}</div>'''
+    return page('Learn — Reputation Repair Guides | Fix My Name Online™', body, 'Fix My Name Online™ guides for reputation repair, online reputation management, bad Google results, fake reviews and personal search audits.', canonical_path='/learn')
+
+
+@app.route('/<slug>')
+def seo_guide(slug):
+    guide = SEO_GUIDES.get(slug)
+    if not guide:
+        return page('Not found — FixMyNameOnline™', '<div class="card"><h1>Page not found</h1><p><a class="btn" href="/">Back home</a></p></div>'), 404
+    section_html = ''.join(f'<h2>{safe(heading)}</h2><p>{safe(text)}</p>' for heading, text in guide['sections'])
+    faq_html = ''.join(f'<div class="card"><h2>{safe(q)}</h2><p>{safe(a)}</p></div>' for q, a in guide['faqs'])
+    related = ''.join(f'<li><a href="/{safe(other)}">{safe(g["h1"])}</a></li>' for other, g in SEO_GUIDES.items() if other != slug)
+    body = f'''{guide_schema(slug, guide)}<div class="card"><span class="pill">{safe(guide['eyebrow'])}</span><h1>{safe(guide['h1'])}</h1><p class="sub">{safe(guide['intro'])}</p>{section_html}<div class="recommend"><h2>Start with a private search snapshot</h2><p>If this sounds like your situation, send the name, business, links, reviews or search terms privately. We will map the issue before recommending alerts, removal review, review defence or a repair plan.</p><p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">See services</a></p></div><h2>Related Fix My Name Online™ guides</h2><ul>{related}<li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li><li><a href="/remove-bad-google-results">Bad Google results options</a></li><li><a href="/google-review-defence">Google Review Defence™</a></li></ul><p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No ranking, removal, review-removal, de-indexing or search outcome is guaranteed.</p></div><div class="grid" style="margin-top:16px">{faq_html}</div>'''
+    return page(guide['title'], body, description=guide['description'], canonical_path='/' + slug)
+
 
 @app.route('/google-your-name')
 def google_your_name_landing():
