@@ -129,6 +129,7 @@ def _dispatch_agent(agent: str, case: Dict[str, Any], task: Dict[str, Any], sour
         "PublishingOperator": _publishing_operator,
         "CaseOperator": _case_operator,
         "ReportingAgent": _reporting_agent,
+        "FreeSnapshotReportAgent": _free_snapshot_report_agent,
     }
     return handlers.get(agent, _generic_agent)(case, task, source, customer)
 
@@ -502,6 +503,75 @@ FixMyNameOnline™ does not guarantee removals, rankings, de-indexing, platform 
         "held_actions": len(held_actions),
         "client_summary": client_report,
         "ready_to_email_client": True,
+    }
+
+
+
+def _free_snapshot_report_agent(case, task, source, customer):
+    name = customer.get("name") or source.get("name") or "Client"
+    triage = source.get("triage") or {}
+    triage_label = triage.get("label") or "Search repair plan"
+    triage_key = triage.get("key") or "repair-plan"
+    links = _split_lines(source.get("problem_links") or source.get("links") or "")
+    names = _split_lines(source.get("names_to_check") or source.get("names") or customer.get("name") or "")
+    case_type = source.get("case_type") or "Private search/reputation concern"
+    goal = source.get("goal") or source.get("context") or "Understand what appears online and choose the safest next step."
+    negative_count = len(links)
+    if negative_count >= 5:
+        risk_level = "high"
+    elif negative_count >= 2 or triage_key in {"removal-review", "review-defence", "high-risk"}:
+        risk_level = "medium"
+    else:
+        risk_level = "baseline"
+
+    package_map = {
+        "alerts": {"package": "Sentinel Alert™", "url": "/checkout/sentinel", "why": "monitoring looks like the first sensible move before heavier work."},
+        "removal-review": {"package": "Removal Review™", "url": "/checkout/removal-review", "why": "one or more links/articles/snippets may need a removal, correction, de-indexing, or platform pathway review."},
+        "review-defence": {"package": "Review Defence™", "url": "/checkout/review-defence", "why": "reviews or business trust signals appear to be the main risk area."},
+        "high-risk": {"package": "Private Concierge review", "url": "/onboarding?plan=concierge", "why": "the issue looks sensitive and should be reviewed privately before fixed-package work."},
+        "repair-plan": {"package": "Starter™", "url": "/checkout/starter", "why": "a broader positive search footprint is likely needed if bad results cannot simply be removed."},
+    }
+    rec = package_map.get(triage_key, package_map["repair-plan"])
+    recommended_actions = [
+        "Confirm the exact name/business/search terms the client wants protected.",
+        "Capture screenshots of the top Google results, bad links, reviews, snippets, and any associated-name searches before action.",
+        f"Recommend {rec['package']} because {rec['why']}",
+        "Tell the client clearly that outcomes depend on Google, publishers, platforms, and the facts; no removal/ranking result is guaranteed.",
+    ]
+    if negative_count >= 2:
+        recommended_actions.append("Because multiple negative items were supplied, separate them into: removable/reportable targets, review-response/reporting targets, and reputation-repair/search-asset targets.")
+    client_summary = f"""FixMyNameOnline™ Free Search Snapshot™
+
+Client: {name}
+Case type: {case_type}
+Risk level from submitted intake: {risk_level}
+Submitted names/search focus: {', '.join(names) if names else name}
+Submitted negative links/search terms: {negative_count}
+
+Recommended next step: {rec['package']}
+Reason: {rec['why']}
+
+What this means:
+We have not taken public action and this is not legal advice. The next safe step is to verify the live search/review evidence, then choose either monitoring, removal/review-pathway assessment, review defence, or a repair plan. Search engines and platforms make their own decisions, so no removal, ranking, de-indexing, or review-removal result is guaranteed.
+"""
+    return {
+        "type": "free_snapshot_report",
+        "case_id": case.get("id"),
+        "client": name,
+        "case_type": case_type,
+        "goal": goal,
+        "names_reviewed": names,
+        "submitted_negative_items": links,
+        "negative_item_count": negative_count,
+        "risk_level": risk_level,
+        "recommended_package": rec["package"],
+        "recommended_url": rec["url"],
+        "recommendation_reason": rec["why"],
+        "recommended_actions": recommended_actions,
+        "client_summary": client_summary,
+        "ready_for_internal_review": True,
+        "ready_to_email_client_after_qc": True,
+        "disclaimer": "Free snapshot only. No public action, legal advice, removals, rankings, de-indexing, platform decisions, or search outcomes are guaranteed.",
     }
 
 

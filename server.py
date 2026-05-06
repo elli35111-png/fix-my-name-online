@@ -196,6 +196,35 @@ def safe_create_fulfilment_case(plan, customer, source, trigger):
         return None
 
 
+def run_free_snapshot_pipeline(case):
+    """Run the lightweight free-report agents immediately up to the QC gate."""
+    if not case or not run_next_ready:
+        return []
+    results = []
+    for _ in range(5):
+        result = run_next_ready(case.get('id'), operator='FreeSnapshotAutoWorker')
+        results.append(result)
+        if not result.get('ok'):
+            break
+        # Stop after report generation / QC preparation so client send remains manual/QC-gated.
+        task_id = (result.get('task') or {}).get('id')
+        if task_id == 'FS-005':
+            break
+    return results
+
+
+def latest_free_snapshot_report(case):
+    if not case:
+        return None
+    reports = []
+    for task_obj in case.get('tasks', []):
+        for generated_at, output in (task_obj.get('outputs') or {}).items():
+            if output.get('type') == 'free_snapshot_report':
+                reports.append((generated_at, output))
+    reports.sort(key=lambda item: item[0], reverse=True)
+    return reports[0][1] if reports else None
+
+
 def send_telegram_alert(title, payload):
     token = os.environ.get('FMNO_TELEGRAM_BOT_TOKEN') or os.environ.get('TELEGRAM_BOT_TOKEN')
     chat_id = os.environ.get('FMNO_TELEGRAM_CHAT_ID') or os.environ.get('TELEGRAM_CHAT_ID')
@@ -293,7 +322,7 @@ def make_queue_item(kind, data, triage=None):
     }
 
 
-def send_snapshot_emails(data, triage, queue_item):
+def send_snapshot_emails(data, triage, queue_item, case=None, report=None):
     customer_html = f"""
     <div style=\"font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#111\">
       <h1>Your Free Search Snapshot™ request is in</h1>
@@ -308,11 +337,14 @@ def send_snapshot_emails(data, triage, queue_item):
     """
     internal_html = f"""
     <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111\">
-      <h1>New FMNO Free Snapshot lead</h1>
+      <h1>New FMNO Free Snapshot report ready</h1>
       <p><strong>Queue ID:</strong> {safe(queue_item['id'])}</p>
+      <p><strong>Case ID:</strong> {safe(case.get('id') if case else '')}</p>
       <p><strong>Priority:</strong> {safe(queue_item['priority'])}</p>
-      <p><strong>Recommendation:</strong> {safe(triage['label'])}</p>
-      <pre style=\"background:#f5f5f5;padding:16px;border-radius:10px;white-space:pre-wrap\">{safe(json.dumps(data, indent=2, ensure_ascii=False))}</pre>
+      <p><strong>Recommendation:</strong> {safe((report or {}).get('recommended_package') or triage['label'])}</p>
+      <p><strong>Negative items:</strong> {safe((report or {}).get('negative_item_count'))}</p>
+      <p><strong>Admin report:</strong> {safe(DOMAIN + '/admin/fulfilment/report/' + case.get('id') if case else '')}</p>
+      <pre style=\"background:#f5f5f5;padding:16px;border-radius:10px;white-space:pre-wrap\">{safe(json.dumps({'intake': data, 'report': report}, indent=2, ensure_ascii=False))}</pre>
     </div>
     """
     return {
@@ -511,17 +543,25 @@ def submit_snapshot():
     queue_item = make_queue_item('free_snapshot', data, triage)
     append_jsonl(LEADS_FILE, {**data, 'triage': triage, 'queue_id': queue_item['id']})
     append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
+    case_source = {**data, 'triage': triage, 'queue_id': queue_item['id']}
+    case = safe_create_fulfilment_case('free-snapshot', data, case_source, 'free_snapshot')
+    run_free_snapshot_pipeline(case)
+    case = get_case(case.get('id')) if case and get_case else case
+    report = latest_free_snapshot_report(case)
 
-    send_telegram_alert('FMNO Free Search Snapshot lead', {
+    send_telegram_alert('FMNO Free Search Snapshot report ready', {
         'queue_id': queue_item['id'],
+        'case_id': case.get('id') if case else '',
         'name': data.get('name'),
         'email': data.get('email'),
         'phone': data.get('phone'),
         'case_type': data.get('case_type'),
-        'recommendation': triage.get('label'),
+        'recommendation': (report or {}).get('recommended_package') or triage.get('label'),
+        'negative_items': (report or {}).get('negative_item_count'),
         'priority': queue_item.get('priority'),
+        'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
     })
-    email_status = send_snapshot_emails(data, triage, queue_item)
+    email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report)
     app.logger.info('Snapshot %s email status: %s', queue_item['id'], email_status)
 
     body = f"""
@@ -529,7 +569,7 @@ def submit_snapshot():
       <p class="sub">Thanks {safe(data['name'])}. We saved your details. The next step is a private review of the names, links, reviews, or search terms you gave us.</p>
       <div class="recommend"><h2>Suggested next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
       <h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, repair, or a private high-risk review.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol>
-      <p class="note">Private reference: {safe(queue_item['id'])}</p><p><a class="btn btn2" href="/">Back to site</a></p>
+      <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
     </div>"""
     return page('Snapshot received — FixMyNameOnline™', body)
 
@@ -829,7 +869,7 @@ def fulfilment_dashboard():
       <div class='card'><div class='muted small'>Blocked</div><h1>{counts['blocked']}</h1></div>
     </div>
     <div class='card' style='margin:16px 0'><h2>Backup / export</h2><p class='muted small'>Render free storage is not a long-term database. Export cases regularly until we add Postgres.</p><div class='row'><a class='btn' href='/admin/fulfilment/export/cases.json?{token_qs()}'>Download all cases JSON</a><a class='btn btn2' href='/admin/fulfilment/export/backup.json?{token_qs()}'>Download full backup JSON</a></div></div>
-    <div class='card' style='margin:16px 0'><form method='get' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><select name='status'><option value=''>All statuses</option><option>blocked</option><option>intake_ready</option><option>executing</option><option>qc_pending</option><option>complete</option></select><select name='plan'><option value=''>All plans</option><option>sentinel</option><option>removal-review</option><option>review-defence</option><option>starter</option><option>pro</option><option>premium</option><option>concierge</option></select><button>Filter</button><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>Reset</a></form></div>
+    <div class='card' style='margin:16px 0'><form method='get' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><select name='status'><option value=''>All statuses</option><option>blocked</option><option>intake_ready</option><option>executing</option><option>qc_pending</option><option>complete</option></select><select name='plan'><option value=''>All plans</option><option>free-snapshot</option><option>sentinel</option><option>removal-review</option><option>review-defence</option><option>starter</option><option>pro</option><option>premium</option><option>concierge</option></select><button>Filter</button><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>Reset</a></form></div>
     <div class='card' style='margin:16px 0'><h2>QC text safety check</h2><form method='post' action='/admin/fulfilment/check-text'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><textarea name='text' placeholder='Paste draft public copy, responses, articles, or platform request text here before approval...'></textarea><p><button>Check draft safety</button></p></form></div>
     <div class='casegrid'>{''.join(cards) if cards else "<div class='card'><h2>No cases yet</h2><p class='muted'>Paid onboarding or Stripe checkout will create cases automatically.</p></div>"}</div>
     """
@@ -874,7 +914,7 @@ def fulfilment_case_dashboard(case_id):
     notes = ''.join([f"<div class='small muted'>• {safe(n.get('note'))} — {safe(n.get('author'))} / {safe(n.get('type'))}</div>" for n in case.get('notes', [])[-8:]])
     active_html = ''.join([f"<li>{safe(a.get('task_id'))}: {safe(a.get('title'))} — {safe(a.get('agent'))}</li>" for a in active]) or '<li>No active tasks</li>'
     body = f"""
-    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>← Back</a><a class='btn btn2' href='/admin/fulfilment/export/case/{safe(case_id)}.json?{token_qs()}'>Export case JSON</a>{status_badge(case.get('status'))}<span class='mono'>{safe(case_id)}</span></div>
+    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>← Back</a><a class='btn btn2' href='/admin/fulfilment/export/case/{safe(case_id)}.json?{token_qs()}'>Export case JSON</a><a class='btn' href='/admin/fulfilment/report/{safe(case_id)}?{token_qs()}'>Client report preview</a>{status_badge(case.get('status'))}<span class='mono'>{safe(case_id)}</span></div>
     <div class='grid' style='grid-template-columns:2fr 1fr 1fr 1fr'>
       <div class='card'><h1>{safe(case.get('plan_name'))}</h1><p class='muted'>{safe(case.get('description'))}</p></div>
       <div class='card'><div class='muted small'>Customer</div><strong>{safe(case.get('customer', {}).get('name') or 'Unnamed')}</strong><div class='small muted'>{safe(case.get('customer', {}).get('email'))}</div></div>
@@ -888,6 +928,44 @@ def fulfilment_case_dashboard(case_id):
     """
     return dashboard_page(f"FMNO Case {case_id}", body)
 
+
+
+@app.route('/admin/fulfilment/report/<case_id>')
+def fulfilment_report_preview(case_id):
+    if not admin_authorized():
+        return redirect('/admin/fulfilment')
+    case = get_case(case_id) if get_case else None
+    if not case:
+        return dashboard_page('Report not found', f"<div class='card'><h1>Case not found</h1><a href='/admin/fulfilment?{token_qs()}'>Back</a></div>"), 404
+    report = latest_free_snapshot_report(case)
+    if not report:
+        outputs = latest_case_outputs(case, limit=12)
+        report = None
+        for item in outputs:
+            output = item.get('output') or {}
+            if output.get('client_summary'):
+                report = output
+                break
+    if not report:
+        body = f"<div class='card'><h1>No client-ready report yet</h1><p class='muted'>Run the next ready agent until a report output exists.</p><a class='btn' href='/admin/fulfilment/case/{safe(case_id)}?{token_qs()}'>Open case</a></div>"
+        return dashboard_page('FMNO Report Preview', body)
+    actions = ''.join([f"<li>{safe(a)}</li>" for a in report.get('recommended_actions', [])])
+    negative_items = ''.join([f"<li>{safe(x)}</li>" for x in report.get('submitted_negative_items', [])]) or '<li>No specific negative URLs/search terms supplied.</li>'
+    summary = safe(report.get('client_summary') or '')
+    body = f"""
+    <div class='row' style='margin-bottom:14px'><a class='btn btn2' href='/admin/fulfilment/case/{safe(case_id)}?{token_qs()}'>← Back to case</a><a class='btn btn2' href='/admin/fulfilment/export/case/{safe(case_id)}.json?{token_qs()}'>Export case JSON</a></div>
+    <div class='card'><span class='small muted'>Client-ready preview after QC/manual review</span><h1>Free Search Snapshot™ report</h1><p class='muted'>Case {safe(case_id)} · {safe(case.get('customer', {}).get('name'))} · {safe(case.get('customer', {}).get('email'))}</p></div>
+    <div class='grid' style='grid-template-columns:1fr 1fr 1fr'>
+      <div class='card'><div class='muted small'>Risk level</div><h2>{safe(report.get('risk_level'))}</h2></div>
+      <div class='card'><div class='muted small'>Negative items supplied</div><h2>{safe(report.get('negative_item_count'))}</h2></div>
+      <div class='card'><div class='muted small'>Recommended next step</div><h2>{safe(report.get('recommended_package'))}</h2></div>
+    </div>
+    <div class='card' style='margin-top:14px'><h2>Client summary</h2><pre class='mono' style='white-space:pre-wrap'>{summary}</pre></div>
+    <div class='card' style='margin-top:14px'><h2>Recommended actions</h2><ol>{actions}</ol><p><a class='btn' href='{safe(report.get('recommended_url') or '/checkout/starter')}'>Open recommended checkout/onboarding path</a></p></div>
+    <div class='card' style='margin-top:14px'><h2>Submitted negative links/search terms</h2><ul>{negative_items}</ul></div>
+    <div class='card danger' style='margin-top:14px'><h2>Operator rule</h2><p>Do not send this externally until the QC task is approved. The report gives recommended actions, not guarantees or legal advice.</p></div>
+    """
+    return dashboard_page('FMNO Free Snapshot Report', body)
 
 
 @app.route('/admin/fulfilment/check-text', methods=['POST'])
@@ -1100,7 +1178,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v11-checkout-payment-link-fallback', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v12-free-snapshot-agent-reports', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':

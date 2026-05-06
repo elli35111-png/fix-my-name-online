@@ -58,6 +58,7 @@ AGENT_ROLES = {
     "PublishingOperator": "Publishes or queues approved content only after gates pass.",
     "CaseOperator": "Submits/sends approved platform requests or review responses only after gates pass.",
     "ReportingAgent": "Produces client-facing and internal delivery reports.",
+    "FreeSnapshotReportAgent": "Creates the client-ready Free Search Snapshot™ summary, risk flags, and recommended next step.",
 }
 
 
@@ -90,6 +91,19 @@ def task(task_id: str, title: str, agent: str, gates: Optional[List[str]] = None
 
 
 PLAN_TEMPLATES = {
+
+    "free-snapshot": {
+        "name": "Free Search Snapshot™",
+        "default_priority": "standard",
+        "description": "Free intake report that maps submitted names/links/search terms, estimates visible risk, and recommends the safest next step. No public action or legal advice.",
+        "tasks": [
+            task("FS-001", "Normalize free snapshot intake", "IntakeAgent"),
+            task("FS-002", "Build name/search-term map", "SearchMapper", [], ["FS-001"]),
+            task("FS-003", "Create baseline evidence records", "EvidenceAgent", [], ["FS-002"]),
+            task("FS-004", "Generate Free Search Snapshot report", "FreeSnapshotReportAgent", [], ["FS-003"]),
+            task("FS-005", "QC Free Search Snapshot before client send", "QCJohnny", ["factuality", "brand_safety"], ["FS-004"]),
+        ],
+    },
     "sentinel": {
         "name": "Sentinel Alert™",
         "default_priority": "standard",
@@ -227,6 +241,11 @@ def resolve_template(plan: str) -> Dict[str, Any]:
 def normalize_plan(plan: str) -> str:
     plan = (plan or "starter").strip().lower().replace("_", "-")
     aliases = {
+        "free": "free-snapshot",
+        "snapshot": "free-snapshot",
+        "free-snapshot™": "free-snapshot",
+        "free-search-snapshot": "free-snapshot",
+        "free-search-snapshot™": "free-snapshot",
         "sentinel-alert": "sentinel",
         "sentinel-alert™": "sentinel",
         "removal": "removal-review",
