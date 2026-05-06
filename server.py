@@ -356,12 +356,35 @@ def send_snapshot_emails(data, triage, queue_item, case=None, report=None):
 def send_onboarding_emails(data, queue_item):
     plan_label = PLANS.get(data.get('plan'), {}).get('name', data.get('plan', 'Private onboarding'))
     customer_html = f"""
-    <div style=\"font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#111\">
-      <h1>Private onboarding received</h1>
+    <div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#111;line-height:1.55\">
+      <h1>We’ve received your private onboarding</h1>
       <p>Hi {safe(data.get('name'))},</p>
-      <p>We received your private onboarding details for {safe(plan_label)}.</p>
-      <p>We’ll use this to review the names, links, reviews, search terms, context, and anything that must be handled carefully.</p>
-      <p style=\"font-size:12px;color:#666\">Reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
+      <p>Thank you — we’ve received your details for <strong>{safe(plan_label)}</strong>.</p>
+      <p>In plain English: we are going to look at what people may see when they search your name or business, work out what can safely be improved, and prepare positive, accurate material for your approval before anything public is used.</p>
+
+      <h2>What happens next</h2>
+      <ol>
+        <li><strong>Private review:</strong> we check the names, links, reviews, search terms and context you sent us.</li>
+        <li><strong>Search map:</strong> we map the main searches and the gaps where stronger positive assets may help.</li>
+        <li><strong>Asset plan:</strong> we prepare a simple plan for the positive pages, profiles, bios or content assets that make sense for your situation.</li>
+        <li><strong>Drafts:</strong> we draft the first approved materials using only accurate information you have provided or approved.</li>
+        <li><strong>Quality check:</strong> we check the wording for accuracy, privacy, tone and safety.</li>
+        <li><strong>Your approval:</strong> you review the material before anything is published, submitted or used publicly.</li>
+        <li><strong>Delivery report:</strong> we send you a private update showing what was prepared, approved, published/queued, and what happens next.</li>
+      </ol>
+
+      <h2>What we may ask you for</h2>
+      <ul>
+        <li>Your preferred name, business name and any old/associated names to monitor.</li>
+        <li>Links, screenshots or search terms that worry you.</li>
+        <li>Accurate bio facts: role, business, location, services, qualifications, achievements, photos or logo.</li>
+        <li>Anything sensitive, private, disputed, outdated or not to be mentioned publicly.</li>
+      </ul>
+
+      <h2>Important</h2>
+      <p>We do not guarantee Google rankings, removals, review removals, de-indexing or platform decisions. Search engines, publishers and platforms make their own decisions. Our job is to build a safer, stronger, truthful search presence and prepare any possible removal/review pathway carefully.</p>
+      <p>If you have a question, reply to this email and include your private reference below.</p>
+      <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
     </div>
     """
     internal_html = f"""
@@ -1178,7 +1201,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v12-free-snapshot-agent-reports', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v13-onboarding-process-email', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
