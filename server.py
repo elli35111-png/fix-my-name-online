@@ -55,12 +55,12 @@ FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
 INTERNAL_EMAIL = os.environ.get('FMNO_INTERNAL_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'Elli35111@gmail.com'
 
 PLANS = {
-    'sentinel': {'name': 'Sentinel Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL'},
-    'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW'},
-    'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE'},
-    'starter': {'name': 'Starter™', 'price': 499, 'mode': 'subscription', 'env': 'STRIPE_PRICE_STARTER'},
-    'pro': {'name': 'Pro™', 'price': 997, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PRO'},
-    'premium': {'name': 'Premium™', 'price': 2497, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PREMIUM'},
+    'sentinel': {'name': 'Sentinel Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': 'https://buy.stripe.com/8x200iexwehrcsqbdjcZa03'},
+    'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW', 'payment_link': 'https://buy.stripe.com/bJe14mfBA3CN8ca6X3cZa04'},
+    'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE', 'payment_link': 'https://buy.stripe.com/7sY9AS610b5f6426X3cZa05'},
+    'starter': {'name': 'Starter™', 'price': 499, 'mode': 'subscription', 'env': 'STRIPE_PRICE_STARTER', 'payment_link': 'https://buy.stripe.com/28E9AS8987T3bom1CJcZa06'},
+    'pro': {'name': 'Pro™', 'price': 997, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PRO', 'payment_link': 'https://buy.stripe.com/6oUcN4dtsb5f786dlrcZa07'},
+    'premium': {'name': 'Premium™', 'price': 2497, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PREMIUM', 'payment_link': 'https://buy.stripe.com/6oUeVc2OOgpzfEC817cZa08'},
 }
 
 TRIAGE_NEXT_STEPS = {
@@ -590,9 +590,12 @@ def checkout(tier):
         return redirect('/onboarding?plan=concierge')
     if tier not in PLANS:
         return jsonify({'error': 'Invalid plan'}), 400
+    plan = PLANS[tier]
+    payment_link = plan.get('payment_link')
+    if payment_link:
+        return redirect(payment_link, code=302)
     if not stripe.api_key:
         return jsonify({'error': 'Stripe is not configured'}), 500
-    plan = PLANS[tier]
     price_id = os.environ.get(plan['env'])
     if not price_id:
         return jsonify({'error': f'Missing Stripe price env var: {plan["env"]}'}), 500
@@ -1097,7 +1100,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v10-customer-acquisition-pages', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v11-checkout-payment-link-fallback', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
