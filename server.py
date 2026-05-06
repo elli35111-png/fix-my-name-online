@@ -119,11 +119,52 @@ def safe(value):
     return html.escape(str(value or ''), quote=True)
 
 
+def tracking_head():
+    """Optional ad/analytics tracking. Enabled only when env vars are configured."""
+    parts = []
+    ga_id = (os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or '').strip()
+    meta_pixel_id = (os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID') or '').strip()
+    if ga_id:
+        gid = safe(ga_id)
+        parts.append(f'''
+<script async src="https://www.googletagmanager.com/gtag/js?id={gid}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{gid}');
+</script>
+''')
+    if meta_pixel_id:
+        pid = safe(meta_pixel_id)
+        parts.append(f'''
+<script>
+!function(f,b,e,v,n,t,s){{if(f.fbq)return;n=f.fbq=function(){{n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)}};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '{pid}');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id={pid}&ev=PageView&noscript=1" /></noscript>
+''')
+    return ''.join(parts)
+
+
+def conversion_tracking_event(event_name, payload=None):
+    payload = payload or {}
+    clean_event = ''.join(ch for ch in str(event_name or '') if ch.isalnum() or ch in ['_', '-']) or 'Lead'
+    json_payload = json.dumps(payload, ensure_ascii=False)
+    return f'''<script>
+try {{
+  if (typeof gtag === 'function') gtag('event', '{safe(clean_event)}', {json_payload});
+  if (typeof fbq === 'function') fbq('track', '{safe(clean_event)}');
+}} catch(e) {{}}
+</script>'''
+
+
 def page(title, body, description=None, canonical_path=None):
     desc = description or SEO_DESCRIPTION
     path = canonical_path or request.path or '/'
     canonical = DOMAIN + (path if path.startswith('/') else '/' + path)
-    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta name=\"twitter:card\" content=\"summary\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\"><style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™ · MADISONJADE PTY LTD</div>{body}</div></body></html>"""
+    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta name=\"twitter:card\" content=\"summary\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\">{tracking_head()}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™ · MADISONJADE PTY LTD</div>{body}</div></body></html>"""
 
 
 def append_jsonl(path, payload):
@@ -415,7 +456,7 @@ def robots_txt():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    urls = ['/', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    urls = ['/', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
     urlset = ''.join(f"<url><loc>{DOMAIN}{u}</loc><changefreq>{'weekly' if u == '/' else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else '0.7'}</priority></url>" for u in urls)
     xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
     return Response(xml, mimetype='application/xml')
@@ -525,6 +566,47 @@ def private_reputation_repair_page():
         'Private reputation repair and search protection for individuals, professionals and businesses. Australia-based, worldwide service by MadisonJade Pty Ltd.'
     )
 
+@app.route('/google-your-name')
+def google_your_name_landing():
+    body = """
+    <div class="card">
+      <span class="pill">Free private search check</span>
+      <h1>Google your name. We’ll wait.</h1>
+      <p class="sub">If old results, reviews, articles, associated names, bad links, or outdated snippets are affecting how people see you, start with a private Free Search Snapshot™.</p>
+      <p><a class="btn" href="/free-search-snapshot">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/questions">Ask a private question</a></p>
+      <div class="recommend"><h2>What we privately check</h2><ul><li>Your name, old names, nicknames, business names and associated names.</li><li>Bad links, articles, review issues, complaint pages, images or damaging search terms.</li><li>Whether the issue looks like monitoring, removal review, review defence or a broader repair plan.</li><li>What information we would need before preparing any public-facing asset or request.</li></ul></div>
+      <h2>Private. Careful. No pressure.</h2>
+      <p>We do not publish, submit, respond, report or use anything publicly from this landing page. The first step is only a private snapshot so you understand the search pattern and the safest next step.</p>
+      <p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No Google ranking, removal, review removal, de-indexing, platform decision or search outcome is guaranteed.</p>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <div class="card"><h2>Old Google results</h2><p class="sub">Old articles, snippets, images, complaint pages, associated names or results that follow you around.</p></div>
+      <div class="card"><h2>Bad reviews</h2><p class="sub">Fake, malicious, unfair or damaging business reviews that may need evidence, response notes or platform-policy review.</p></div>
+      <div class="card"><h2>Everyday checks</h2><p class="sub">Jobs, clients, dating, finance, partnerships and people quietly searching before they trust you.</p></div>
+      <div class="card"><h2>Positive footprint</h2><p class="sub">Truthful, approved assets that help show the fuller current picture over time.</p></div>
+    </div>
+    """
+    return page('Google your name — Free Search Snapshot™ | FixMyNameOnline™', body, 'Google your name. Start a private Free Search Snapshot™ for old results, reviews, bad links, associated names and reputation-sensitive search problems.', canonical_path='/google-your-name')
+
+
+@app.route('/free-search-snapshot')
+def ad_free_snapshot_form():
+    body = """
+    <div class="card"><span class="pill">Start here</span><h1>Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll privately map the pattern and point you toward the safest next step.</p>
+    <form method="post" action="/submit-snapshot" class="grid">
+      <input type="hidden" name="source_page" value="ad_landing_free_search_snapshot">
+      <div><label>Your name</label><input name="name" required autocomplete="name"></div>
+      <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
+      <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
+      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
+      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations..."></textarea></div>
+      <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
+      <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
+      <div class="full"><button class="btn" type="submit">Submit Free Snapshot →</button> <a class="btn btn2" href="/questions">Ask a question first</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
+    </form></div>"""
+    return page('Free Search Snapshot™ — FixMyNameOnline™', body, 'Start a private Free Search Snapshot™ for reputation-sensitive name, business, review, article and search-result problems.', canonical_path='/free-search-snapshot')
+
+
 @app.route('/pricing')
 def pricing():
     return redirect('/#pricing', code=301)
@@ -559,7 +641,7 @@ def free_snapshot_form():
 
 @app.route('/submit-snapshot', methods=['POST'])
 def submit_snapshot():
-    data = {k: request.form.get(k, '').strip() for k in ['name', 'email', 'phone', 'case_type', 'names_to_check', 'problem_links', 'goal']}
+    data = {k: request.form.get(k, '').strip() for k in ['name', 'email', 'phone', 'case_type', 'names_to_check', 'problem_links', 'goal', 'source_page']}
     if not data['name'] or not data['email']:
         return page('Missing details', '<div class="card"><h1 class="err">Missing details</h1><p>Please enter your name and email.</p><a class="btn" href="/app">Go back</a></div>'), 400
 
@@ -595,6 +677,7 @@ def submit_snapshot():
       <h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, repair, or a private high-risk review.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol>
       <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
     </div>"""
+    body += conversion_tracking_event('Lead', {'content_name': 'Free Search Snapshot'})
     return page('Snapshot received — FixMyNameOnline™', body)
 
 
@@ -785,6 +868,7 @@ def submit_question():
     app.logger.info('Question %s email status: %s', queue_item['id'], email_status)
 
     body = f"""<div class="card"><span class="pill ok">Received</span><h1>Your private question is in.</h1><p class="sub">Thanks {safe(data['name'])}. We saved your question and will respond privately by email.</p><h2>What happens next</h2><ol><li>We match the question to your case/reference where possible.</li><li>We review it privately, especially if it involves sensitive, legal, review, platform or removal issues.</li><li>We reply before any public action is taken.</li></ol><p class="note">Private question reference: {safe(queue_item['id'])}{'<br>Matched case: ' + safe(case_id) if case_id else ''}<br>No legal advice or outcome guarantee is provided through this form.</p><a class="btn" href="/">Back to site</a></div>"""
+    body += conversion_tracking_event('Lead', {'content_name': 'Private Question'})
     return page('Question received — FixMyNameOnline™', body)
 
 
@@ -1305,7 +1389,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v14-private-question-intake', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v15-ad-landing-tracking-ready', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
 
 
 if __name__ == '__main__':
