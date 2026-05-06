@@ -123,6 +123,7 @@ def _dispatch_agent(agent: str, case: Dict[str, Any], task: Dict[str, Any], sour
         "ReviewDefenceAgent": _review_defence_agent,
         "ContentArchitect": _content_architect,
         "DraftingAgent": _drafting_agent,
+        "GoogleRankingOfficer": _google_ranking_officer,
         "QCJohnny": _qc_johnny,
         "LegalEscalationGate": _legal_gate,
         "ClientApprovalGate": _client_approval_gate,
@@ -315,6 +316,114 @@ def _drafting_agent(case, task, source, customer):
     }
 
 
+def _google_ranking_officer(case, task, source, customer):
+    """Internal rank-readiness review for truthful positive client assets.
+
+    This step does not publish and does not promise outcomes. It prepares a search-safe
+    optimisation plan for QC/client approval so every FMNO asset has the best chance to
+    compete for the exact name/entity searches that matter.
+    """
+    names = _split_lines(source.get("names") or source.get("names_to_check") or customer.get("name") or "")
+    if not names and customer.get("name"):
+        names = [customer.get("name")]
+    business = customer.get("business") or source.get("business") or ""
+    primary = names[0] if names else (business or "Client")
+    mapped_terms = []
+    asset_types = []
+    draft_summaries = []
+    for output in _collect_outputs(case):
+        if output.get("type") == "search_map":
+            mapped_terms.extend(output.get("primary_terms") or [])
+        if output.get("type") == "asset_architecture":
+            for item in output.get("asset_plan") or []:
+                asset = item.get("asset") if isinstance(item, dict) else str(item)
+                if asset:
+                    asset_types.append(asset)
+        if output.get("type") == "draft_output" and output.get("draft"):
+            draft_summaries.append(output.get("draft")[:180])
+    if not mapped_terms:
+        for name in names or [primary]:
+            mapped_terms.extend([name, f"{name} professional", f"{name} profile", f"{name} reviews"])
+        if business:
+            mapped_terms.extend([business, f"{business} profile", f"{business} reviews"])
+    if not asset_types:
+        asset_types = [
+            "owned professional profile page",
+            "approved biography asset",
+            "expertise article or FAQ asset",
+            "consistent social/profile listing",
+        ]
+    target_query_matrix = []
+    for term in sorted(set([t for t in mapped_terms if t]))[:12]:
+        low = term.lower()
+        intent = "risk/discovery" if any(w in low for w in ["review", "complaint", "court", "news", "scam", "lawsuit"]) else "positive identity/entity"
+        target_query_matrix.append({
+            "query": term,
+            "intent": intent,
+            "preferred_asset": asset_types[0] if intent == "positive identity/entity" else "supporting context or monitoring record",
+            "priority": "high" if term in names or term == business else "standard",
+        })
+    asset_rank_plan = []
+    for idx, asset in enumerate(asset_types, start=1):
+        asset_rank_plan.append({
+            "asset": asset,
+            "target_query": (target_query_matrix[min(idx - 1, len(target_query_matrix) - 1)]["query"] if target_query_matrix else primary),
+            "recommended_title_pattern": f"{primary} | Professional Profile" if idx == 1 else f"{primary} — Background, Work and Public Profile",
+            "recommended_slug_pattern": _slugify(primary if idx == 1 else f"{primary} profile {idx}"),
+            "content_requirements": [
+                "use the exact approved name/entity in title and first paragraph",
+                "state only verified facts supplied by the client or evidence pack",
+                "include helpful context, dates, roles, locations, and business names only when verified",
+                "link to other approved positive assets where safe",
+            ],
+        })
+    score = 55
+    score += min(20, len(target_query_matrix) * 2)
+    score += min(15, len(asset_rank_plan) * 3)
+    if draft_summaries:
+        score += 10
+    score = min(score, 100)
+    return {
+        "type": "google_rank_readiness_plan",
+        "internal_role": "GoogleRankingOfficer",
+        "case_id": case.get("id"),
+        "search_focus": primary,
+        "target_query_matrix": target_query_matrix,
+        "asset_rank_plan": asset_rank_plan,
+        "on_page_checklist": [
+            "exact approved name/entity in title, H1, opening paragraph, and metadata",
+            "clean readable slug with name/entity signal",
+            "unique helpful facts; no generic filler or unsupported claims",
+            "FAQ section for safe search questions where appropriate",
+            "canonical URL and indexable page settings on owned assets",
+            "image alt text only if an approved image is used",
+        ],
+        "schema_entity_plan": [
+            "Person schema for individual profile assets where facts are verified",
+            "Organization or LocalBusiness schema only for legitimate verified business assets",
+            "Article schema for guide/expertise assets",
+            "BreadcrumbList schema on owned site pages when applicable",
+        ],
+        "authority_signals": [
+            "link approved assets from owned profile pages and safe social bios",
+            "use consistent name, business, location, and role/entity wording across assets",
+            "submit owned URLs through Search Console where available",
+            "monitor exact name/entity and risk/discovery variants after publication",
+        ],
+        "publication_priority": [
+            "owned/client-controlled profile page first",
+            "high-authority professional/social profile second",
+            "supporting article/FAQ asset third",
+            "directory/listing cleanup only when facts are verified",
+        ],
+        "monitoring_terms": sorted(set([item["query"] for item in target_query_matrix]))[:10],
+        "rank_readiness_score": score,
+        "approval_required": True,
+        "ready_for_public_use": False,
+        "disclaimer": "Prepared for QC and client approval only. FixMyNameOnline™ does not promise or control removals, ranking positions, de-indexing, platform decisions, or search-engine outcomes.",
+    }
+
+
 def _removal_review_draft_pack(case, task, source, customer):
     name = customer.get("name") or "Client"
     email = customer.get("email") or "client@example.com"
@@ -469,6 +578,8 @@ def _reporting_agent(case, task, source, customer):
     outputs = _collect_outputs(case)
     evidence_count = sum(len(o.get("evidence_items", [])) for o in outputs if o.get("type") == "evidence_pack")
     draft_count = sum(len(o.get("draft_requests", [])) for o in outputs if o.get("type") == "removal_review_pack")
+    rank_plans = [o for o in outputs if o.get("type") == "google_rank_readiness_plan"]
+    best_rank_score = max([int(o.get("rank_readiness_score") or 0) for o in rank_plans] or [0])
     held_actions = [o for o in outputs if o.get("type") in {"case_operator_hold", "publishing_operator_hold"}]
     client_report = f"""FixMyNameOnline™ private case update
 
@@ -480,6 +591,8 @@ What we prepared:
 - Completed internal tasks: {len(done)}
 - Evidence records created: {evidence_count}
 - Draft request/action packs prepared: {draft_count}
+- Google rank-readiness plans prepared: {len(rank_plans)}
+- Highest rank-readiness score: {best_rank_score}/100
 
 Current safety status:
 No public action is taken without QC and client approval. Any platform/removal/review action remains held unless explicitly approved and manually executed.
@@ -490,7 +603,7 @@ Review the prepared pack, confirm any requested changes, and approve only if you
 Important disclaimer:
 FixMyNameOnline™ is operated from Australia and prepares private reputation/review/removal support for worldwide matters. The target platform, publisher, client location, and URL may affect which pathway is appropriate.
 
-FixMyNameOnline™ does not guarantee removals, rankings, de-indexing, platform decisions, or search-engine outcomes. Legal advice must be obtained from a qualified lawyer.
+FixMyNameOnline™ does not promise or control removals, ranking positions, de-indexing, platform decisions, or search-engine outcomes. Legal advice must be obtained from a qualified lawyer.
 """
     return {
         "type": "client_ready_status_report",
@@ -500,6 +613,8 @@ FixMyNameOnline™ does not guarantee removals, rankings, de-indexing, platform 
         "pending_tasks": [f"{t.get('id')} {t.get('title')}" for t in pending],
         "evidence_records": evidence_count,
         "draft_packs": draft_count,
+        "rank_readiness_plans": len(rank_plans),
+        "best_rank_readiness_score": best_rank_score,
         "held_actions": len(held_actions),
         "client_summary": client_report,
         "ready_to_email_client": True,
@@ -589,6 +704,12 @@ def _generic_agent(case, task, source, customer):
         "agent": task.get("agent"),
         "requires_review": True,
     }
+
+
+def _slugify(value: Any) -> str:
+    raw = str(value or "").lower()
+    raw = re.sub(r"[^a-z0-9]+", "-", raw).strip("-")
+    return raw[:80] or "profile"
 
 
 def _split_lines(value: Any) -> list[str]:

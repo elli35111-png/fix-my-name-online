@@ -41,6 +41,7 @@ QC_GATES = {
     "legal_escalation": "Sensitive/legal-risk material flagged for manual/legal review.",
     "client_approval": "Client approves public assets, responses, or platform submissions.",
     "execution_approval": "QC-approved item may be sent/published/submitted.",
+    "ranking_readiness": "Positive assets are checked for search intent, entity signals, safe metadata, platform priority, and monitoring terms before public use.",
 }
 
 AGENT_ROLES = {
@@ -52,6 +53,7 @@ AGENT_ROLES = {
     "ReviewDefenceAgent": "Audit review patterns and platform policy reporting paths.",
     "ContentArchitect": "Design truthful positive asset/search footprint plan.",
     "DraftingAgent": "Draft evidence packs, response notes, bios, articles, and profile content.",
+    "GoogleRankingOfficer": "Optimise each truthful positive asset for Google rank-readiness before QC, approval, and publishing.",
     "QCJohnny": "Final quality control: factuality, tone, safety, compliance, hallucination check.",
     "LegalEscalationGate": "Flags legal-risk/sensitive matters for manual or lawyer review.",
     "ClientApprovalGate": "Requires client approval before public/sensitive execution.",
@@ -157,7 +159,8 @@ PLAN_TEMPLATES = {
             task("STA-002", "Map search surface and asset gaps", "SearchMapper", ["evidence_ready"], ["STA-001"]),
             task("STA-003", "Design Starter asset plan", "ContentArchitect", ["brand_safety"], ["STA-002"]),
             task("STA-004", "Draft first asset/content set", "DraftingAgent", ["factuality", "brand_safety"], ["STA-003"]),
-            task("STA-005", "QC factuality and safe positioning", "QCJohnny", ["factuality", "brand_safety"], ["STA-004"]),
+            task("STA-004R", "Google rank-readiness pass for first asset set", "GoogleRankingOfficer", ["ranking_readiness", "brand_safety"], ["STA-004"]),
+            task("STA-005", "QC factuality and safe positioning", "QCJohnny", ["factuality", "brand_safety"], ["STA-004R"]),
             task("STA-006", "Client approval before public use", "ClientApprovalGate", ["client_approval"], ["STA-005"], requires_client_approval=True),
             task("STA-007", "Queue/publish approved assets", "PublishingOperator", ["execution_approval"], ["STA-006"], execution_sensitive=True),
             task("STA-008", "Monthly delivery report", "ReportingAgent", [], ["STA-007"]),
@@ -172,7 +175,8 @@ PLAN_TEMPLATES = {
             task("PRO-009", "Expand keyword/associated-name map", "SearchMapper", ["evidence_ready"], ["STA-002"]),
             task("PRO-010", "Create Pro content cluster plan", "ContentArchitect", ["brand_safety"], ["PRO-009"]),
             task("PRO-011", "Draft expanded approved asset batch", "DraftingAgent", ["factuality", "brand_safety"], ["PRO-010"]),
-            task("PRO-012", "QC expanded asset batch", "QCJohnny", ["factuality", "brand_safety"], ["PRO-011"]),
+            task("PRO-011R", "Google rank-readiness pass for expanded asset batch", "GoogleRankingOfficer", ["ranking_readiness", "brand_safety"], ["PRO-011"]),
+            task("PRO-012", "QC expanded asset batch", "QCJohnny", ["factuality", "brand_safety"], ["PRO-011R"]),
             task("PRO-013", "Pro monthly strategy report", "ReportingAgent", [], ["PRO-012"]),
         ],
     },
@@ -184,7 +188,8 @@ PLAN_TEMPLATES = {
         "extra_tasks": [
             task("PRE-014", "Premium weekly risk review", "QCJohnny", ["factuality", "brand_safety"], ["PRO-013"]),
             task("PRE-015", "Premium authority asset roadmap", "ContentArchitect", ["brand_safety"], ["PRE-014"]),
-            task("PRE-016", "Premium client update pack", "ReportingAgent", [], ["PRE-015"]),
+            task("PRE-015R", "Google rank-readiness pass for premium authority roadmap", "GoogleRankingOfficer", ["ranking_readiness", "brand_safety"], ["PRE-015"]),
+            task("PRE-016", "Premium client update pack", "ReportingAgent", [], ["PRE-015R"]),
         ],
     },
     "concierge": {
