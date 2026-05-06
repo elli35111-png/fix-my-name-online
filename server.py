@@ -49,6 +49,7 @@ DATA_DIR.mkdir(exist_ok=True)
 LEADS_FILE = DATA_DIR / 'snapshot_leads.jsonl'
 ONBOARDING_FILE = DATA_DIR / 'onboarding_submissions.jsonl'
 FULFILMENT_QUEUE_FILE = DATA_DIR / 'fulfilment_queue.jsonl'
+QUESTIONS_FILE = DATA_DIR / 'client_questions.jsonl'
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
@@ -383,7 +384,7 @@ def send_onboarding_emails(data, queue_item):
 
       <h2>Important</h2>
       <p>We do not guarantee Google rankings, removals, review removals, de-indexing or platform decisions. Search engines, publishers and platforms make their own decisions. Our job is to build a safer, stronger, truthful search presence and prepare any possible removal/review pathway carefully.</p>
-      <p>If you have a question, reply to this email and include your private reference below.</p>
+      <p>If you have a question, reply to this email and include your private reference below, or use the private question form: <a href="{DOMAIN}/questions">{DOMAIN}/questions</a>.</p>
       <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
     </div>
     """
@@ -414,7 +415,7 @@ def robots_txt():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    urls = ['/', '/app', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    urls = ['/', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
     urlset = ''.join(f"<url><loc>{DOMAIN}{u}</loc><changefreq>{'weekly' if u == '/' else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else '0.7'}</priority></url>" for u in urls)
     xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
     return Response(xml, mimetype='application/xml')
@@ -692,7 +693,99 @@ def cancel():
 
 @app.route('/contact')
 def contact():
-    return page('Contact — FixMyNameOnline™', '<div class="card"><h1>Contact FixMyNameOnline™</h1><p>Email: <a href="mailto:admin@fixmynameonline.com">admin@fixmynameonline.com</a></p><p class="sub">Private reputation repair operated by MadisonJade Pty Ltd.</p></div>')
+    return page('Contact — FixMyNameOnline™', '<div class="card"><h1>Contact FixMyNameOnline™</h1><p>Email: <a href="mailto:admin@fixmynameonline.com">admin@fixmynameonline.com</a></p><p><a class="btn" href="/questions">Ask a private case question →</a></p><p class="sub">Private reputation repair operated by MadisonJade Pty Ltd.</p></div>')
+
+
+@app.route('/questions')
+def question_form():
+    ref = request.args.get('ref', '')
+    body = f"""
+    <div class="card"><span class="pill">Private concierge</span><h1>Ask a private question</h1><p class="sub">Use this for process questions, missing details, approval questions, or anything you want us to review privately. This is not legal advice and no public action is taken from this form alone.</p>
+    <form method="post" action="/submit-question" class="grid">
+      <div><label>Your name</label><input name="name" required autocomplete="name"></div>
+      <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
+      <div class="full"><label>Private reference / case ID if you have it</label><input name="reference" value="{safe(ref)}" placeholder="Example: FMNO-... or FMNO-CASE-..."></div>
+      <div class="full"><label>Your question</label><textarea name="question" required placeholder="Write your question. If it involves a link, review, article, screenshot or sensitive detail, include enough context for a private review."></textarea></div>
+      <div class="full"><button class="btn" type="submit">Send private question →</button> <a class="btn btn2" href="/">Back</a><p class="note">We will respond privately. The form does not publish, submit, remove, rank, or change anything publicly.</p></div>
+    </form></div>"""
+    return page('Ask a private question — FixMyNameOnline™', body, 'Ask a private FixMyNameOnline™ case or process question. Private concierge intake; no public action or legal advice.')
+
+
+def resolve_question_case_id(reference, email):
+    ref = (reference or '').strip()
+    email_l = (email or '').strip().lower()
+    if get_case and ref and get_case(ref):
+        return ref
+    if not list_cases:
+        return None
+    try:
+        for case in list_cases(limit=1000):
+            source = case.get('source') or {}
+            customer = case.get('customer') or {}
+            candidates = {case.get('id'), source.get('queue_id'), source.get('id')}
+            if ref and ref in candidates:
+                return case.get('id')
+            if email_l and (customer.get('email') or '').strip().lower() == email_l and not ref:
+                return case.get('id')
+    except Exception as exc:
+        app.logger.warning('Question case lookup failed: %s', exc)
+    return None
+
+
+def send_question_emails(data, queue_item, case_id=None):
+    customer_html = f"""
+    <div style=\"font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#111;line-height:1.55\">
+      <h1>We received your private question</h1>
+      <p>Hi {safe(data.get('name'))},</p>
+      <p>Thank you — we received your question. We will review it privately and reply by email before any public action is taken.</p>
+      <p>If the question involves legal issues, media allegations, court matters, criminal allegations, defamation, reviews, platform reports or removals, we may need to review it manually before giving a process answer.</p>
+      <p><strong>Your reference:</strong> {safe(queue_item['id'])}</p>
+      <p style=\"font-size:12px;color:#666\">FixMyNameOnline™ · MadisonJade Pty Ltd<br>No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed. We do not provide legal advice.</p>
+    </div>
+    """
+    internal_html = f"""
+    <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111\">
+      <h1>New FMNO private question</h1>
+      <p><strong>Question ID:</strong> {safe(queue_item['id'])}</p>
+      <p><strong>Matched case:</strong> {safe(case_id or '')}</p>
+      <pre style=\"background:#f5f5f5;padding:16px;border-radius:10px;white-space:pre-wrap\">{safe(json.dumps(data, indent=2, ensure_ascii=False))}</pre>
+    </div>
+    """
+    return {
+        'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'Private question received — FixMyNameOnline™', customer_html),
+        'internal_email_sent': send_brevo_email(INTERNAL_EMAIL, 'FMNO Admin', f"FMNO question — {data.get('name', '')}", internal_html),
+    }
+
+
+@app.route('/submit-question', methods=['POST'])
+def submit_question():
+    fields = ['name', 'email', 'reference', 'question']
+    data = {k: request.form.get(k, '').strip() for k in fields}
+    if not data['name'] or not data['email'] or not data['question']:
+        return page('Missing details', '<div class="card"><h1 class="err">Missing details</h1><p>Please enter your name, email and question.</p><a class="btn" href="/questions">Go back</a></div>'), 400
+
+    triage = {'key': 'client_question', 'label': 'Private client question', 'priority': 'high'}
+    queue_item = make_queue_item('client_question', data, triage)
+    case_id = resolve_question_case_id(data.get('reference'), data.get('email'))
+    record = {**data, 'queue_id': queue_item['id'], 'matched_case_id': case_id}
+    append_jsonl(QUESTIONS_FILE, record)
+    append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
+    if case_id and add_case_note:
+        add_case_note(case_id, f"Client private question ({queue_item['id']}): {data.get('question')}", data.get('name') or 'Client', 'client_question')
+
+    send_telegram_alert('FMNO private question received', {
+        'question_id': queue_item['id'],
+        'matched_case_id': case_id or '',
+        'reference': data.get('reference'),
+        'name': data.get('name'),
+        'email': data.get('email'),
+        'question': data.get('question')[:700],
+    })
+    email_status = send_question_emails(data, queue_item, case_id=case_id)
+    app.logger.info('Question %s email status: %s', queue_item['id'], email_status)
+
+    body = f"""<div class="card"><span class="pill ok">Received</span><h1>Your private question is in.</h1><p class="sub">Thanks {safe(data['name'])}. We saved your question and will respond privately by email.</p><h2>What happens next</h2><ol><li>We match the question to your case/reference where possible.</li><li>We review it privately, especially if it involves sensitive, legal, review, platform or removal issues.</li><li>We reply before any public action is taken.</li></ol><p class="note">Private question reference: {safe(queue_item['id'])}{'<br>Matched case: ' + safe(case_id) if case_id else ''}<br>No legal advice or outcome guarantee is provided through this form.</p><a class="btn" href="/">Back to site</a></div>"""
+    return page('Question received — FixMyNameOnline™', body)
 
 
 @app.route('/privacy')
@@ -891,7 +984,7 @@ def fulfilment_dashboard():
       <div class='card'><div class='muted small'>QC pending</div><h1>{counts['qc_pending']}</h1></div>
       <div class='card'><div class='muted small'>Blocked</div><h1>{counts['blocked']}</h1></div>
     </div>
-    <div class='card' style='margin:16px 0'><h2>Backup / export</h2><p class='muted small'>Render free storage is not a long-term database. Export cases regularly until we add Postgres.</p><div class='row'><a class='btn' href='/admin/fulfilment/export/cases.json?{token_qs()}'>Download all cases JSON</a><a class='btn btn2' href='/admin/fulfilment/export/backup.json?{token_qs()}'>Download full backup JSON</a></div></div>
+    <div class='card' style='margin:16px 0'><h2>Backup / export</h2><p class='muted small'>Render free storage is not a long-term database. Export cases regularly until we add Postgres.</p><div class='row'><a class='btn' href='/admin/fulfilment/export/cases.json?{token_qs()}'>Download all cases JSON</a><a class='btn btn2' href='/admin/fulfilment/export/backup.json?{token_qs()}'>Download full backup JSON</a><a class='btn btn2' href='/admin/fulfilment/export/questions.json?{token_qs()}'>Download questions JSON</a></div></div>
     <div class='card' style='margin:16px 0'><form method='get' class='row'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><select name='status'><option value=''>All statuses</option><option>blocked</option><option>intake_ready</option><option>executing</option><option>qc_pending</option><option>complete</option></select><select name='plan'><option value=''>All plans</option><option>free-snapshot</option><option>sentinel</option><option>removal-review</option><option>review-defence</option><option>starter</option><option>pro</option><option>premium</option><option>concierge</option></select><button>Filter</button><a class='btn btn2' href='/admin/fulfilment?{token_qs()}'>Reset</a></form></div>
     <div class='card' style='margin:16px 0'><h2>QC text safety check</h2><form method='post' action='/admin/fulfilment/check-text'><input type='hidden' name='token' value='{safe(request.args.get('token'))}'><textarea name='text' placeholder='Paste draft public copy, responses, articles, or platform request text here before approval...'></textarea><p><button>Check draft safety</button></p></form></div>
     <div class='casegrid'>{''.join(cards) if cards else "<div class='card'><h2>No cases yet</h2><p class='muted'>Paid onboarding or Stripe checkout will create cases automatically.</p></div>"}</div>
@@ -1092,8 +1185,19 @@ def admin_export_full_backup_json():
         'snapshot_leads': read_jsonl_records(LEADS_FILE),
         'onboarding_submissions': read_jsonl_records(ONBOARDING_FILE),
         'fulfilment_queue': read_jsonl_records(FULFILMENT_QUEUE_FILE),
+        'client_questions': read_jsonl_records(QUESTIONS_FILE),
     }
     return json_download(payload, f'fmno-full-backup-{datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}.json')
+
+
+@app.route('/admin/fulfilment/export/questions.json')
+def admin_export_questions_json():
+    unauthorized = require_admin_json()
+    if unauthorized:
+        return unauthorized
+    questions = read_jsonl_records(QUESTIONS_FILE)
+    payload = {'exported_at': utc_now(), 'service': 'FixMyNameOnline™', 'type': 'client_questions', 'question_count': len(questions), 'questions': questions}
+    return json_download(payload, f'fmno-client-questions-{datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}.json')
 
 
 @app.route('/admin/fulfilment/cases')
@@ -1201,7 +1305,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v13-onboarding-process-email', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v14-private-question-intake', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN'))})
 
 
 if __name__ == '__main__':
