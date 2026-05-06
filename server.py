@@ -446,6 +446,9 @@ def send_onboarding_emails(data, queue_item):
 @app.route('/')
 def landing():
     html_text = Path('landing_page_v2.html').read_text(encoding='utf-8')
+    tracking = tracking_head()
+    if tracking and '</head>' in html_text:
+        html_text = html_text.replace('</head>', tracking + '</head>', 1)
     return Response(html_text, mimetype='text/html')
 
 
