@@ -457,6 +457,14 @@ def robots_txt():
     return Response(f"User-agent: *\nAllow: /\nSitemap: {DOMAIN}/sitemap.xml\n", mimetype='text/plain')
 
 
+INDEXNOW_KEY = '92e0a789584811cf9904921b7c0c56fa'
+
+
+@app.route(f'/{INDEXNOW_KEY}.txt')
+def indexnow_key_file():
+    return Response(INDEXNOW_KEY, mimetype='text/plain')
+
+
 @app.route('/sitemap.xml')
 def sitemap_xml():
     urls = ['/', '/fix-my-name-online', '/learn', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/online-reputation-management-australia', '/reputation-repair-for-individuals', '/old-news-article-on-google', '/fake-google-reviews-help', '/how-to-check-your-online-reputation', '/privacy', '/terms']
@@ -1546,7 +1554,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v17-google-ranking-officer', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v18-indexnow-discovery-push', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
 
 
 if __name__ == '__main__':
