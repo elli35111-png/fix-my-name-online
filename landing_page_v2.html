@@ -77,6 +77,11 @@
     .fmno-tv-screen:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 34%),repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0,rgba(255,255,255,.035) 1px,transparent 1px,transparent 6px);pointer-events:none;mix-blend-mode:screen;opacity:.55;}
     .fmno-tv-stand{width:34%;height:12px;margin:0 auto;background:linear-gradient(90deg,transparent,rgba(217,181,109,.5),transparent);border-radius:999px;box-shadow:0 18px 55px rgba(217,31,61,.22);}
     .tv-pill{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);}
+    .concierge-choice{border:1px solid rgba(255,255,255,.13);background:rgba(8,9,15,.72);transition:.2s;}
+    .concierge-choice:hover,.concierge-choice.active{border-color:rgba(217,31,61,.62);background:rgba(217,31,61,.12);transform:translateY(-1px);}
+    .guide-card{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);transition:.22s;cursor:pointer;}
+    .guide-card:hover,.guide-card.active{border-color:rgba(217,31,61,.48);background:rgba(217,31,61,.10);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.24);}
+    .guide-thumb{background:linear-gradient(135deg,rgba(217,31,61,.25),rgba(8,9,15,.95));border:1px solid rgba(255,255,255,.12);}
 
     @media (max-width:640px){
       html,body{max-width:100%;overflow-x:hidden!important;}
@@ -116,20 +121,42 @@
                 <p class="text-greyLight text-base sm:text-lg leading-relaxed max-w-2xl">A public education channel for private reputation problems — bad search results, old articles, fake reviews, associated names, and the steps real people can take before search defines them.</p>
                 <div class="flex flex-wrap gap-2 mt-6 text-xs sm:text-sm text-greyLight"><a href="/bad-results-on-google-what-to-do" class="tv-pill rounded-full px-3 py-1">I have bad results on Google</a><span class="tv-pill rounded-full px-3 py-1">Cleaning your name online</span><span class="tv-pill rounded-full px-3 py-1">Google results</span><span class="tv-pill rounded-full px-3 py-1">Review defence</span><span class="tv-pill rounded-full px-3 py-1">Private search protection</span></div>
               </div>
-              <div class="glass rounded-2xl p-5 border border-red/20">
-                <div class="flex items-center justify-between mb-4"><span class="font-orbitron text-sm text-red">Now playing</span><span class="text-xs text-grey">Clean Search Series</span></div>
+              <div class="glass rounded-2xl p-5 border border-red/20" id="private-search-concierge">
+                <div class="flex items-center justify-between mb-4"><span class="font-orbitron text-sm text-red">Private Search Concierge™</span><span class="text-xs text-grey">Secure first step</span></div>
                 <div class="space-y-3 text-sm text-greyLight">
-                  <div class="result-item result-risk">▶ What to do if bad results show up on Google</div>
-                  <div class="result-item result-trust">▶ How to build positive results around your name</div>
-                  <div class="result-item result-trust">▶ Fake Google reviews: your first response plan</div>
-                  <div class="result-item result-risk">▶ Old news articles and outdated search snippets</div>
+                  <div class="result-item result-trust" id="concierge-message">Welcome. Let’s take this one step at a time. What appeared when you searched your name?</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="concierge-choices">
+                    <button type="button" class="concierge-choice rounded-lg px-3 py-2 text-left text-greyLight" data-topic="bad-results">Bad Google result</button>
+                    <button type="button" class="concierge-choice rounded-lg px-3 py-2 text-left text-greyLight" data-topic="old-articles">Old article</button>
+                    <button type="button" class="concierge-choice rounded-lg px-3 py-2 text-left text-greyLight" data-topic="privacy">Private information</button>
+                    <button type="button" class="concierge-choice rounded-lg px-3 py-2 text-left text-greyLight" data-topic="reviews">Fake or unfair review</button>
+                  </div>
+                  <div class="result-item result-risk" id="concierge-next">If you want FMNO to check it for you, start with your name or name variants. URLs and screenshots help if you already have them, but they are not required.</div>
                 </div>
-                <a href="/app" class="btn-red mt-5 inline-block w-full text-center px-5 py-3 rounded-xl font-bold text-white">Get Your Free Snapshot™</a>
+                <a href="/app" class="btn-red mt-5 inline-block w-full text-center px-5 py-3 rounded-xl font-bold text-white">Prepare My Free Search Snapshot™</a>
+                <p class="text-[11px] text-grey mt-3 leading-relaxed">Private search matters require verified client access before case details are created or viewed.</p>
               </div>
             </div>
           </div>
         </div>
         <div class="fmno-tv-stand mt-4"></div>
+        <div class="mt-8 text-left">
+          <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+            <div>
+              <div class="tier-badge text-red mb-2">REPUTATION TV GUIDES</div>
+              <h3 class="font-orbitron text-2xl md:text-3xl font-bold">Before you panic, choose what you’re dealing with.</h3>
+            </div>
+            <p class="text-sm text-greyLight max-w-md">These cards change the big TV concierge topic and build trust before the Free Search Snapshot™.</p>
+          </div>
+          <div class="grid md:grid-cols-3 gap-4">
+            <button type="button" class="guide-card active rounded-2xl p-4 text-left" data-topic="privacy"><div class="guide-thumb rounded-xl h-20 flex items-center justify-center font-orbitron text-red mb-3">PRIVACY</div><h4 class="font-orbitron font-bold text-sm mb-2">Your Privacy Matters</h4><p class="text-xs text-greyLight">Understanding the Right To Be Forgotten and privacy-first pathways.</p></button>
+            <button type="button" class="guide-card rounded-2xl p-4 text-left" data-topic="bad-results"><div class="guide-thumb rounded-xl h-20 flex items-center justify-center font-orbitron text-red mb-3">GOOGLE</div><h4 class="font-orbitron font-bold text-sm mb-2">Bad Google Results</h4><p class="text-xs text-greyLight">The first calm steps before you react.</p></button>
+            <button type="button" class="guide-card rounded-2xl p-4 text-left" data-topic="old-articles"><div class="guide-thumb rounded-xl h-20 flex items-center justify-center font-orbitron text-red mb-3">OLD</div><h4 class="font-orbitron font-bold text-sm mb-2">Old Articles</h4><p class="text-xs text-greyLight">What may be possible, what usually is not, and how to assess the pathway.</p></button>
+            <button type="button" class="guide-card rounded-2xl p-4 text-left" data-topic="reviews"><div class="guide-thumb rounded-xl h-20 flex items-center justify-center font-orbitron text-red mb-3">REVIEWS</div><h4 class="font-orbitron font-bold text-sm mb-2">Fake Reviews</h4><p class="text-xs text-greyLight">How to document, respond, and escalate properly.</p></button>
+            <button type="button" class="guide-card rounded-2xl p-4 text-left" data-topic="positive"><div class="guide-thumb rounded-xl h-20 flex items-center justify-center font-orbitron text-red mb-3">TRUST</div><h4 class="font-orbitron font-bold text-sm mb-2">Positive Search Results</h4><p class="text-xs text-greyLight">When removal is not enough, rebuild the visible story.</p></button>
+            <button type="button" class="guide-card rounded-2xl p-4 text-left" data-topic="snapshot"><div class="guide-thumb rounded-xl h-20 flex items-center justify-center font-orbitron text-red mb-3">FREE</div><h4 class="font-orbitron font-bold text-sm mb-2">Free Search Snapshot™</h4><p class="text-xs text-greyLight">What FMNO checks before recommending a pathway.</p></button>
+          </div>
+        </div>
       </div>
       <div class="max-w-4xl mx-auto"><p class="text-sm text-grey mb-4 font-medium">Example search presence map — risk signals vs stronger positive assets</p><div class="grid md:grid-cols-2 gap-8 mb-6"><div class="glass-card rounded-2xl p-6"><div class="flex items-center justify-between mb-4"><span class="text-red text-sm font-medium">RISK SIGNALS</span><span class="text-xs text-grey/60">What people may find</span></div><div class="space-y-2"><div class="result-item result-risk">Old news article or court mention</div><div class="result-item result-risk">Associated name or business dispute</div><div class="result-item result-risk">Fake or malicious Google review</div><div class="result-item result-risk">Complaint, forum, or allegation page</div><div class="result-item result-risk">Outdated snippet with no current context</div></div></div><div class="glass-card rounded-2xl p-6 border border-green-500/20"><div class="flex items-center justify-between mb-4"><span class="text-green-400 text-sm font-medium">TRUST FOOTPRINT</span><span class="text-xs text-grey/60">The fuller story</span></div><div class="space-y-2"><div class="result-item result-trust">Current biography and credentials</div><div class="result-item result-trust">Business / professional proof assets</div><div class="result-item result-trust">Helpful articles and profile pages</div><div class="result-item result-trust">Review response and evidence record</div><div class="result-item result-trust">Verified social and business profiles</div></div></div></div><p class="text-sm text-grey">No one can promise search rankings, removals, or third-party platform decisions. We focus on careful, documented, quality-first reputation repair.</p></div>
     </div>
@@ -178,6 +205,44 @@
   <footer class="py-12 bg-dark border-t border-white/5"><div class="max-w-7xl mx-auto px-4"><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-red rounded-lg flex items-center justify-center font-orbitron font-bold text-sm">FM</div><div><div class="font-orbitron text-sm font-bold">FIXMYNAME<span class="text-red">ONLINE</span></div><div class="text-xs text-grey">© 2026 MadisonJade Pty Ltd</div></div></div><div class="flex items-center gap-6 text-sm text-grey"><a href="/learn" class="hover:text-white transition-colors">Guides</a><a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a><a href="/terms" class="hover:text-white transition-colors">Terms of Service</a><a href="/questions" class="hover:text-white transition-colors">Questions</a></div><div class="text-xs text-grey">FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd. All rights reserved.</div></div></div></footer>
 
   <script>
+    const conciergeTopics = {
+      privacy: {
+        message: 'Privacy is paramount. Some search results may involve correction, source contact, platform review, de-indexing, or right-to-be-forgotten style pathways.',
+        next: 'Start with the name or name variants you want checked. If you already have a URL or screenshot, add it — but FMNO can search first.'
+      },
+      'bad-results': {
+        message: 'A bad Google result needs a calm first step. We identify what appears, where it comes from, and whether it is a search result, article, profile, image, or snippet problem.',
+        next: 'Tell us the primary name, variants, country context, and what you are worried people may find.'
+      },
+      'old-articles': {
+        message: 'Old articles can be difficult, but there may be correction, update, source contact, de-indexing, or positive search footprint pathways depending on the facts.',
+        next: 'You do not need the article URL to begin. Add it only if you already have it.'
+      },
+      reviews: {
+        message: 'Fake or unfair reviews need evidence first. Capture the platform, review text, reviewer name, date, and business impact where possible.',
+        next: 'If you do not have screenshots yet, FMNO can still begin with the business name, location, and review concern.'
+      },
+      positive: {
+        message: 'When removal is not available, the strategy may be to build stronger, accurate, positive search results around your name or business.',
+        next: 'The snapshot checks what positive assets already exist and what may need to be strengthened.'
+      },
+      snapshot: {
+        message: 'A Free Search Snapshot™ checks the visible search picture before anyone guesses the solution.',
+        next: 'You provide who you are, the name or variants to search, and any optional links or screenshots you already have.'
+      }
+    };
+    function setConciergeTopic(topic){
+      const data = conciergeTopics[topic] || conciergeTopics.privacy;
+      const msg = document.getElementById('concierge-message');
+      const next = document.getElementById('concierge-next');
+      if(msg) msg.textContent = data.message;
+      if(next) next.textContent = data.next;
+      document.querySelectorAll('[data-topic]').forEach(el => el.classList.toggle('active', el.dataset.topic === topic));
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('[data-topic]').forEach(el => el.addEventListener('click', () => setConciergeTopic(el.dataset.topic)));
+      setConciergeTopic('privacy');
+    });
     function toggleFaq(btn){const content=btn.nextElementSibling;const arrow=btn.querySelector('.faq-arrow');content.classList.toggle('hidden');arrow.style.transform=content.classList.contains('hidden')?'':'rotate(180deg)'}
   </script>
 </body>
