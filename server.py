@@ -467,10 +467,15 @@ def indexnow_key_file():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    urls = ['/', '/fix-my-name-online', '/learn', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/online-reputation-management-australia', '/reputation-repair-for-individuals', '/old-news-article-on-google', '/fake-google-reviews-help', '/how-to-check-your-online-reputation', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    guide_urls = ['/' + slug for slug in SEO_GUIDES.keys()]
+    urls = []
+    for u in base_urls + guide_urls:
+        if u not in urls:
+            urls.append(u)
     today = datetime.utcnow().strftime('%Y-%m-%d')
     urlset = ''.join(
-        f"<url><loc>{DOMAIN}{u}</loc><lastmod>{today}</lastmod><changefreq>{'weekly' if u in ['/', '/fix-my-name-online'] else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else ('0.9' if u == '/fix-my-name-online' else '0.7')}</priority></url>"
+        f"<url><loc>{DOMAIN}{u}</loc><lastmod>{today}</lastmod><changefreq>{'weekly' if u in ['/', '/fix-my-name-online', '/bad-results-on-google-what-to-do', '/what-to-do-if-google-results-are-bad'] else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else ('0.9' if u in ['/fix-my-name-online', '/bad-results-on-google-what-to-do'] else '0.7')}</priority></url>"
         for u in urls
     )
     xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
@@ -700,6 +705,92 @@ SEO_GUIDES = {
             ('What should I do first if I find something bad?', 'Save evidence before reacting. Then decide whether it is a removal/review issue, monitoring issue or positive-footprint issue.'),
         ],
     },
+    'bad-results-on-google-what-to-do': {
+        'eyebrow': 'Bad Google results help',
+        'title': 'I Have Bad Results on Google — What Do I Do? | Fix My Name Online™',
+        'h1': 'I have bad results on Google. What do I do first?',
+        'description': 'What to do if you have bad results on Google: save evidence, check removal pathways, avoid risky reactions and build a stronger search footprint.',
+        'intro': 'If you have bad results on Google, do not panic and do not start sending angry messages. The first move is to save evidence, understand what type of result it is, and choose the safest pathway before the result spreads or the wrong response makes it worse.',
+        'sections': [
+            ('Step 1: save the result before reacting', 'Take screenshots of the Google result, page title, snippet, URL, date, search phrase and any image or review that appears. If the result changes later, this evidence helps show what was visible and when.'),
+            ('Step 2: identify what kind of bad result it is', 'A bad Google result can be an old news article, court mention, bad review, complaint page, image, outdated snippet, forum post, copied content or an associated-name result. Each one has a different pathway.'),
+            ('Step 3: check whether removal or correction is realistic', 'Some results may have a publisher correction, privacy, outdated-content, review-policy or platform-reporting pathway. Others may not. A careful review prevents wasted time and avoids making unsafe claims.'),
+            ('Step 4: build the stronger current story', 'If the bad result cannot be removed quickly, the next move is to build accurate, approved assets around your name or business: profiles, pages, articles, FAQs, proof points and monitoring signals that show the fuller current picture.'),
+        ],
+        'faqs': [
+            ('Can bad results on Google be removed?', 'Sometimes there is a valid pathway; often there is not. Google, publishers and platforms make their own decisions. The first step is to review the facts and available policies.'),
+            ('Should I contact the website immediately?', 'Not always. Save evidence first and check the risk. Some messages help, but rushed or emotional contact can make a sensitive result harder to handle.'),
+            ('Can Fix My Name Online check this privately?', 'Yes. Start with a Free Search Snapshot™ and include the search phrase, links, screenshots or review details you are worried about.'),
+        ],
+    },
+    'what-to-do-if-google-results-are-bad': {
+        'eyebrow': 'Bad search results action plan',
+        'title': 'What To Do If Google Results Are Bad | Fix My Name Online™',
+        'h1': 'What to do if your Google results are bad',
+        'description': 'A practical action plan for bad Google results around your name or business: evidence, risk review, removal options and positive search assets.',
+        'intro': 'Bad Google results can affect jobs, clients, finance, relationships and business trust. The safest response is a calm action plan: capture the evidence, classify the result, review possible pathways and strengthen the search page with accurate positive assets.',
+        'sections': [
+            ('Do not feed the result', 'Avoid public arguments, repeated searches from the same account, social posts about the issue or mass-reporting without evidence. The goal is to reduce risk, not create more signals around the problem.'),
+            ('Map the searches people actually use', 'Check your full name, business name, old names, suburb, profession, review terms and risk phrases. Reputation repair works best when it targets the real search combinations people type.'),
+            ('Separate platform problems from search problems', 'Google shows results from other sites. A review platform, publisher, court database, social profile or complaint site may need a different response from Google itself.'),
+            ('Create a private next-step plan', 'Decide whether this is monitoring, removal review, review defence or broader reputation repair. The correct pathway depends on evidence, source authority, sensitivity and timing.'),
+        ],
+        'faqs': [
+            ('How urgent is a bad Google result?', 'It depends on where it ranks, what the snippet says, whether it appears for your exact name and whether clients, employers or customers are likely to search it.'),
+            ('Can positive content help?', 'Accurate positive assets can help searchers see a fuller picture over time, but search engines decide what ranks and when.'),
+        ],
+    },
+    'negative-google-results-help': {
+        'eyebrow': 'Negative Google results',
+        'title': 'Negative Google Results Help — Private Search Repair | Fix My Name Online™',
+        'h1': 'Negative Google results need evidence, strategy and patience',
+        'description': 'Private help for negative Google results, old links, reviews, complaint pages, snippets and personal or business search reputation problems.',
+        'intro': 'Negative Google results can feel urgent, but the strongest plan starts with evidence and classification. Some problems need removal review, some need review defence, some need updated assets, and some need careful monitoring before action.',
+        'sections': [
+            ('Work from the search page outward', 'Record the exact search phrase, ranking position, title, snippet and source. Then inspect the page itself. Search-page damage can come from the title or snippet even when the underlying article is more balanced.'),
+            ('Look for policy or accuracy issues', 'Privacy, impersonation, outdated information, fake reviews, harassment, copyright, defamation concerns or incorrect facts may each have different reporting or correction options.'),
+            ('Avoid reputation spam', 'Thin fake profiles, copied articles and aggressive mass posting can look low-quality and may not solve the problem. The better route is truthful, approved and useful assets.'),
+            ('Monitor every change', 'Track when Google crawls, when snippets change, when new results appear and which positive assets are discovered. Progress is measured across the whole search footprint.'),
+        ],
+        'faqs': [
+            ('Is negative Google result help confidential?', 'Fix My Name Online™ is designed for private intake and discreet planning. Public assets are based on approved information only.'),
+            ('What information should I send?', 'Send the exact search phrase, URLs, screenshots, dates, business/name details and what outcome you are hoping for.'),
+        ],
+    },
+    'how-to-fix-bad-google-search-results': {
+        'eyebrow': 'Fix bad Google search results',
+        'title': 'How To Fix Bad Google Search Results | Fix My Name Online™',
+        'h1': 'How to fix bad Google search results without making it worse',
+        'description': 'How to fix bad Google search results safely: document evidence, check removal or correction paths, improve positive assets and monitor search changes.',
+        'intro': 'Fixing bad Google search results is not one button. It is a sequence: evidence, source review, policy pathway, safe communication, positive asset building and monitoring. The wrong shortcut can make the problem louder.',
+        'sections': [
+            ('Find the source of the problem', 'Google may be showing a publisher page, review profile, social result, image, court database, complaint page or copied snippet. The source controls many of the next options.'),
+            ('Check removal, update or correction routes', 'Depending on the facts, there may be a publisher request, Google outdated-content request, review report, privacy pathway or legal pathway. Some matters need legal advice outside reputation work.'),
+            ('Build assets that deserve trust', 'Profiles, business pages, articles, FAQs, bios, interviews and proof pages work best when they are truthful, specific, useful and internally linked.'),
+            ('Review results over weeks, not minutes', 'Search engines crawl and rank over time. A professional plan watches indexing, snippets, impressions and ranking movement instead of claiming instant control.'),
+        ],
+        'faqs': [
+            ('Can I fix bad Google results myself?', 'You can start by saving evidence and checking official platform policies. Professional help is useful when the issue is sensitive, confusing or affects income or trust.'),
+            ('What should I avoid?', 'Avoid fake content, threats, public arguments, spammy posting and anyone promising they control Google.'),
+        ],
+    },
+    'bad-search-results-for-my-name': {
+        'eyebrow': 'Personal name search problem',
+        'title': 'Bad Search Results for My Name — What Can I Do? | Fix My Name Online™',
+        'h1': 'Bad search results for your name? Start with a private map',
+        'description': 'What to do when bad search results appear for your personal name, old name, business name, location or associated search terms.',
+        'intro': 'When bad search results appear for your name, the problem is personal. People may search before hiring, dating, renting, investing, booking or trusting you. The first step is a private map of what appears and why.',
+        'sections': [
+            ('Search all name variations', 'Check your full name, old names, middle name, nicknames, professional name, business name, city, suburb, occupation and terms people may add when they are suspicious.'),
+            ('Look at images, news and suggestions', 'Bad reputation signals are not only blue links. Image results, news tabs, autocomplete, people-also-search boxes and review snippets can shape first impressions.'),
+            ('Decide what should stay private', 'Not every positive asset needs your whole life story. Reputation repair should use approved, truthful information that you are comfortable publishing.'),
+            ('Build a safer positive footprint', 'Depending on the case, that may include profiles, biographies, service pages, professional proof, helpful articles, FAQs and ongoing monitoring.'),
+        ],
+        'faqs': [
+            ('Will people know I used reputation help?', 'The intake is private. Public assets should look natural, truthful and appropriate to your situation, not like a public crisis campaign.'),
+            ('Can this help with associated names?', 'Yes. Associated names, old names, nicknames, business names and locations should be mapped because people often search more than one phrase.'),
+        ],
+    },
 }
 
 
@@ -723,6 +814,15 @@ def learn_hub():
     cards = ''.join(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p></div>''' for slug, g in SEO_GUIDES.items())
     body = f'''<div class="card"><span class="pill">Fix My Name Online™ learning hub</span><h1>Private reputation repair guides</h1><p class="sub">Useful, human-first guides for people and businesses dealing with bad Google results, fake reviews, old articles, associated names and search trust problems.</p><p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">View services</a></p></div><div class="grid" style="margin-top:16px">{cards}</div>'''
     return page('Learn — Reputation Repair Guides | Fix My Name Online™', body, 'Fix My Name Online™ guides for reputation repair, online reputation management, bad Google results, fake reviews and personal search audits.', canonical_path='/learn')
+
+
+@app.route('/i-have-bad-results-on-google')
+@app.route('/i-have-bad-google-results')
+@app.route('/my-google-results-are-bad')
+@app.route('/what-can-i-do-about-bad-google-results')
+@app.route('/bad-google-results-what-do-i-do')
+def bad_google_results_variant_redirects():
+    return redirect('/bad-results-on-google-what-to-do', code=301)
 
 
 @app.route('/<slug>')
@@ -1560,7 +1660,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v19-split-online-brand-search-signals', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v20-bad-google-results-keyword-cluster', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
 
 
 if __name__ == '__main__':
