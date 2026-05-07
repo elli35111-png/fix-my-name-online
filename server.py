@@ -42,7 +42,7 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
-SEO_DESCRIPTION = 'Fix My Name Online™ / FixMyNameOnline™ provides private reputation repair and search protection for individuals, professionals, businesses and public figures. Australia-based, worldwide service by MadisonJade Pty Ltd.'
+SEO_DESCRIPTION = 'Fix My Name Online™ / FixMyNameOnline™ provides private reputation repair and search protection for individuals, professionals, businesses and public figures. Some people search the brand as Fix My Name On Line; the official site is fixmynameonline.com.'
 SEO_IMAGE = DOMAIN + '/og-image.png'
 DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
 DATA_DIR.mkdir(exist_ok=True)
@@ -483,6 +483,11 @@ def about():
     return page('About — FixMyNameOnline™', body, 'About FixMyNameOnline™, an Australia-based worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.')
 
 
+@app.route('/fix-my-name-on-line')
+def fix_my_name_on_line_variant_redirect():
+    return redirect('/fix-my-name-online', code=301)
+
+
 @app.route('/fix-my-name-online')
 def fix_my_name_online_exact_match():
     body = """
@@ -491,6 +496,7 @@ def fix_my_name_online_exact_match():
       <h1>Fix My Name Online™ private search protection</h1>
       <p class=\"sub\">Fix My Name Online™ / FixMyNameOnline™ helps people and businesses understand what Google shows around their name, business, reviews, old links and associated search terms.</p>
       <p>This exact-name page exists so search engines can clearly connect the spaced brand name, the domain name and the service. If someone searches “fix my name online”, this page explains who we are, what we do and how to start privately.</p>
+      <p>People sometimes type the brand as “Fix My Name On Line” with “online” split into two words. That search means the same official brand: Fix My Name Online™ at fixmynameonline.com.</p>
       <h2>What Fix My Name Online checks</h2>
       <ul>
         <li>Google results around your name, business name, previous names and associated names</li>
@@ -503,9 +509,9 @@ def fix_my_name_online_exact_match():
     </div>
     """
     return page(
-        'Fix My Name Online™ | Private Search & Reputation Repair',
+        'Fix My Name Online™ | Fix My Name On Line Brand Variant',
         body,
-        'Fix My Name Online™ / FixMyNameOnline™ private search protection and reputation repair for bad Google results, old links, reviews and associated-name search problems.',
+        'Fix My Name Online™ / FixMyNameOnline™ private search protection. Also searched as Fix My Name On Line. Reputation repair for bad Google results, old links, reviews and associated-name search problems.',
         canonical_path='/fix-my-name-online'
     )
 
