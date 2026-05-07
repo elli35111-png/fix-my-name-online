@@ -132,9 +132,15 @@
                     <button type="button" class="concierge-choice rounded-lg px-3 py-2 text-left text-greyLight" data-topic="reviews">Fake or unfair review</button>
                   </div>
                   <div class="result-item result-risk" id="concierge-next">If you want FMNO to check it for you, start with your name or name variants. URLs and screenshots help if you already have them, but they are not required.</div>
+                  <div id="concierge-transcript" class="space-y-2 hidden"></div>
+                  <div id="concierge-live-form" class="mt-4 space-y-3">
+                    <input id="concierge-input" class="w-full rounded-xl bg-dark/80 border border-white/15 px-4 py-3 text-sm text-white placeholder:text-grey" placeholder="Type your answer here..." autocomplete="off">
+                    <button type="button" id="concierge-send" class="btn-red w-full px-5 py-3 rounded-xl font-bold text-white">Answer Private Concierge™</button>
+                    <button type="button" id="concierge-submit" class="hidden w-full px-5 py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-700 transition-colors">Submit Free Search Snapshot™</button>
+                  </div>
                 </div>
-                <a href="/app" class="btn-red mt-5 inline-block w-full text-center px-5 py-3 rounded-xl font-bold text-white">Prepare My Free Search Snapshot™</a>
-                <p class="text-[11px] text-grey mt-3 leading-relaxed">Private search matters require verified client access before case details are created or viewed.</p>
+                <a href="/app" class="btn-red mt-5 inline-block w-full text-center px-5 py-3 rounded-xl font-bold text-white">Use Full Form Instead</a>
+                <p class="text-[11px] text-grey mt-3 leading-relaxed">Private AI-assisted intake. No public action happens from this chat. FMNO validates details before sensitive case access.</p>
               </div>
             </div>
           </div>
@@ -205,42 +211,80 @@
   <footer class="py-12 bg-dark border-t border-white/5"><div class="max-w-7xl mx-auto px-4"><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-red rounded-lg flex items-center justify-center font-orbitron font-bold text-sm">FM</div><div><div class="font-orbitron text-sm font-bold">FIXMYNAME<span class="text-red">ONLINE</span></div><div class="text-xs text-grey">© 2026 MadisonJade Pty Ltd</div></div></div><div class="flex items-center gap-6 text-sm text-grey"><a href="/learn" class="hover:text-white transition-colors">Guides</a><a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a><a href="/terms" class="hover:text-white transition-colors">Terms of Service</a><a href="/questions" class="hover:text-white transition-colors">Questions</a></div><div class="text-xs text-grey">FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd. All rights reserved.</div></div></div></footer>
 
   <script>
-    const conciergeTopics = {
-      privacy: {
-        message: 'Privacy is paramount. Some search results may involve correction, source contact, platform review, de-indexing, or right-to-be-forgotten style pathways.',
-        next: 'Start with the name or name variants you want checked. If you already have a URL or screenshot, add it — but FMNO can search first.'
-      },
-      'bad-results': {
-        message: 'A bad Google result needs a calm first step. We identify what appears, where it comes from, and whether it is a search result, article, profile, image, or snippet problem.',
-        next: 'Tell us the primary name, variants, country context, and what you are worried people may find.'
-      },
-      'old-articles': {
-        message: 'Old articles can be difficult, but there may be correction, update, source contact, de-indexing, or positive search footprint pathways depending on the facts.',
-        next: 'You do not need the article URL to begin. Add it only if you already have it.'
-      },
-      reviews: {
-        message: 'Fake or unfair reviews need evidence first. Capture the platform, review text, reviewer name, date, and business impact where possible.',
-        next: 'If you do not have screenshots yet, FMNO can still begin with the business name, location, and review concern.'
-      },
-      positive: {
-        message: 'When removal is not available, the strategy may be to build stronger, accurate, positive search results around your name or business.',
-        next: 'The snapshot checks what positive assets already exist and what may need to be strengthened.'
-      },
-      snapshot: {
-        message: 'A Free Search Snapshot™ checks the visible search picture before anyone guesses the solution.',
-        next: 'You provide who you are, the name or variants to search, and any optional links or screenshots you already have.'
+    let conciergeState = {topic:'privacy', collected:{}, current_field:'', ready_to_submit:false, transcript:[]};
+    const topicLabels = {privacy:'Private information', 'bad-results':'Bad Google result', 'old-articles':'Old article', reviews:'Fake or unfair review', positive:'Positive search footprint', snapshot:'Free Search Snapshot™'};
+    function setText(id, value){const el=document.getElementById(id); if(el) el.textContent=value || '';}
+    function addTranscript(role, text){
+      if(!text) return;
+      conciergeState.transcript.push({role, text, at:new Date().toISOString()});
+      const box=document.getElementById('concierge-transcript');
+      if(!box) return;
+      box.classList.remove('hidden');
+      const div=document.createElement('div');
+      div.className = role === 'visitor' ? 'result-item result-risk' : 'result-item result-trust';
+      div.textContent = (role === 'visitor' ? 'You: ' : 'Concierge: ') + text;
+      box.appendChild(div);
+      while(box.children.length > 5) box.removeChild(box.firstChild);
+    }
+    async function callConcierge({topic, message=''}){
+      const send=document.getElementById('concierge-send');
+      if(send) {send.disabled=true; send.textContent='Private Concierge is thinking...';}
+      try{
+        const res = await fetch('/api/concierge/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({topic:topic || conciergeState.topic, message, current_field:conciergeState.current_field, collected:conciergeState.collected})});
+        const data = await res.json();
+        if(!data.ok) throw new Error(data.error || 'Concierge unavailable');
+        conciergeState.topic = topic || conciergeState.topic;
+        conciergeState.collected = data.collected || conciergeState.collected;
+        conciergeState.current_field = data.current_field || '';
+        conciergeState.ready_to_submit = !!data.ready_to_submit;
+        setText('concierge-message', data.reply);
+        setText('concierge-next', data.next_question || (data.ready_to_submit ? 'Ready to prepare your Free Search Snapshot™.' : ''));
+        addTranscript('concierge', data.reply + (data.next_question ? ' ' + data.next_question : ''));
+        const input=document.getElementById('concierge-input');
+        const submit=document.getElementById('concierge-submit');
+        if(input) input.placeholder = data.next_question || 'Ready to submit';
+        if(submit) submit.classList.toggle('hidden', !data.ready_to_submit);
+      } catch(e){
+        setText('concierge-message','The private concierge is still available. Start with the full Free Search Snapshot™ form if you prefer.');
+        setText('concierge-next','Nothing public happens from this intake.');
+      } finally {
+        if(send) {send.disabled=false; send.textContent='Answer Private Concierge™';}
       }
-    };
+    }
     function setConciergeTopic(topic){
-      const data = conciergeTopics[topic] || conciergeTopics.privacy;
-      const msg = document.getElementById('concierge-message');
-      const next = document.getElementById('concierge-next');
-      if(msg) msg.textContent = data.message;
-      if(next) next.textContent = data.next;
+      conciergeState = {topic, collected:{issue_type:topic, issue_label:topicLabels[topic] || topic}, current_field:'', ready_to_submit:false, transcript:[]};
+      const box=document.getElementById('concierge-transcript'); if(box){box.innerHTML=''; box.classList.add('hidden');}
       document.querySelectorAll('[data-topic]').forEach(el => el.classList.toggle('active', el.dataset.topic === topic));
+      callConcierge({topic});
+    }
+    async function sendConciergeAnswer(){
+      const input=document.getElementById('concierge-input');
+      const message=(input && input.value || '').trim();
+      if(!message) return;
+      addTranscript('visitor', message);
+      if(input) input.value='';
+      await callConcierge({message});
+    }
+    async function submitConcierge(){
+      const submit=document.getElementById('concierge-submit');
+      if(submit){submit.disabled=true; submit.textContent='Submitting private snapshot...';}
+      try{
+        const res=await fetch('/api/concierge/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({collected:conciergeState.collected, transcript:conciergeState.transcript})});
+        const data=await res.json();
+        if(!data.ok) throw new Error(data.error || 'Submit failed');
+        setText('concierge-message', data.message);
+        setText('concierge-next', 'Private reference: ' + data.queue_id);
+        setTimeout(()=>{ if(data.redirect) window.location.href=data.redirect; }, 900);
+      }catch(e){
+        setText('concierge-next', e.message || 'Please check the details and try again, or use the full form.');
+        if(submit){submit.disabled=false; submit.textContent='Submit Free Search Snapshot™';}
+      }
     }
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('[data-topic]').forEach(el => el.addEventListener('click', () => setConciergeTopic(el.dataset.topic)));
+      const send=document.getElementById('concierge-send'); if(send) send.addEventListener('click', sendConciergeAnswer);
+      const input=document.getElementById('concierge-input'); if(input) input.addEventListener('keydown', e=>{if(e.key==='Enter') sendConciergeAnswer();});
+      const submit=document.getElementById('concierge-submit'); if(submit) submit.addEventListener('click', submitConcierge);
       setConciergeTopic('privacy');
     });
     function toggleFaq(btn){const content=btn.nextElementSibling;const arrow=btn.querySelector('.faq-arrow');content.classList.toggle('hidden');arrow.style.transform=content.classList.contains('hidden')?'':'rotate(180deg)'}

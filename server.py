@@ -50,6 +50,7 @@ LEADS_FILE = DATA_DIR / 'snapshot_leads.jsonl'
 ONBOARDING_FILE = DATA_DIR / 'onboarding_submissions.jsonl'
 FULFILMENT_QUEUE_FILE = DATA_DIR / 'fulfilment_queue.jsonl'
 QUESTIONS_FILE = DATA_DIR / 'client_questions.jsonl'
+CONCIERGE_TRANSCRIPTS_FILE = DATA_DIR / 'concierge_transcripts.jsonl'
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
@@ -311,6 +312,177 @@ def send_brevo_email(to_email, to_name, subject, html_body, text_body=''):
         app.logger.warning('Brevo email exception: %s', exc)
         return False
 
+
+CONCIERGE_FIELDS = [
+    ('names_to_check', 'What name, business name, old name, nickname, or associated name should we privately search first?'),
+    ('country_state', 'What country, state, or city context should we consider for that search?'),
+    ('problem_links', 'If you already have a link, article title, review page, or search phrase, paste it here. If not, write “search first”.'),
+    ('goal', 'What are you hoping to understand or fix from the Free Search Snapshot™?'),
+    ('contact_name', 'What name should we use when we send the private snapshot?'),
+    ('email', 'What email should we send the private snapshot to?'),
+]
+
+CONCIERGE_TOPIC_LABELS = {
+    'bad-results': 'Bad Google result',
+    'old-articles': 'Old article or outdated result',
+    'privacy': 'Private information showing online',
+    'reviews': 'Fake or unfair review',
+    'positive': 'Positive search footprint',
+    'snapshot': 'Free Search Snapshot',
+}
+
+CONCIERGE_SAFE_REPLACEMENTS = {
+    'guaranteed removal': 'careful pathway review',
+    'guarantee removal': 'assess removal options',
+    'guaranteed ranking': 'stronger search-readiness',
+    'guarantee ranking': 'improve search-readiness',
+    'erase google': 'review what is showing on Google',
+    'bury results': 'build a stronger truthful search footprint',
+    'manipulate search': 'improve accurate search signals',
+    'we will delete it': 'we will assess the strongest pathway',
+    'we can delete it': 'we can assess the strongest pathway',
+    'legal guarantee': 'careful private review',
+    'guaranteed de-index': 'de-indexing pathway review',
+    'guarantee de-index': 'review de-indexing options',
+}
+
+
+def clean_concierge_text(text):
+    text = str(text or '').strip()
+    lowered = text.lower()
+    for phrase, replacement in CONCIERGE_SAFE_REPLACEMENTS.items():
+        if phrase in lowered:
+            text = text.replace(phrase, replacement).replace(phrase.title(), replacement)
+            lowered = text.lower()
+    return text[:900]
+
+
+def concierge_next_field(collected):
+    for key, question in CONCIERGE_FIELDS:
+        if not str(collected.get(key, '')).strip():
+            return key, question
+    return None, None
+
+
+def fallback_concierge_reply(topic, collected, next_question, ready=False):
+    issue = CONCIERGE_TOPIC_LABELS.get(topic or collected.get('issue_type'), 'private search issue')
+    if ready:
+        return 'Thank you. I have enough to prepare this as a private Free Search Snapshot™. Nothing public happens from this intake; it gives FMNO the context to privately map the issue and recommend the safest next step.'
+    if not collected.get('names_to_check'):
+        return f'I understand — {issue.lower()} can feel urgent, but the safest first step is to map what people may actually see. We will keep this private and take it one step at a time.'
+    if not collected.get('problem_links'):
+        return 'Good. We can start from the name and location context. Links or screenshots help if you already have them, but they are not required for the first private snapshot.'
+    return 'Understood. I will keep this focused on a private assessment: what is showing, what type of result it is, and which pathway may be safest to review first.'
+
+
+def build_concierge_messages(topic, collected, user_message, next_question, ready):
+    system = '''You are Private Search Concierge™ for FixMyNameOnline™, operated by MadisonJade Pty Ltd.
+Tone: premium, calm, private, human, concise.
+Role: AI-assisted intake only. Ask one question at a time and move toward Free Search Snapshot™.
+Do not provide legal advice. Do not promise removals, rankings, de-indexing, platform decisions, suppression, or search outcomes.
+Do not expose internal agent names or backend machinery.
+Use safe language: assess the strongest pathway, private snapshot, removal/review options, positive search footprint, no public action without approval.
+Return ONLY valid JSON with keys: reply, next_question, risk_level, recommended_pathway, cta.'''
+    user = {
+        'selected_issue': CONCIERGE_TOPIC_LABELS.get(topic or collected.get('issue_type'), topic or collected.get('issue_type')),
+        'collected_fields': collected,
+        'latest_user_message': user_message,
+        'next_question_to_ask': next_question,
+        'ready_to_submit': ready,
+    }
+    return [
+        {'role': 'system', 'content': system},
+        {'role': 'user', 'content': json.dumps(user, ensure_ascii=False)},
+    ]
+
+
+def parse_model_json(content):
+    content = str(content or '').strip()
+    if content.startswith('```'):
+        content = content.strip('`')
+        if content.lower().startswith('json'):
+            content = content[4:].strip()
+    try:
+        return json.loads(content)
+    except Exception:
+        start, end = content.find('{'), content.rfind('}')
+        if start >= 0 and end > start:
+            return json.loads(content[start:end + 1])
+    return {}
+
+
+def call_concierge_model(topic, collected, user_message, next_question, ready):
+    api_key = (
+        os.environ.get('CONCIERGE_API_KEY')
+        or os.environ.get('MINIMAX_API_KEY')
+        or os.environ.get('LLM_API_KEY')
+        or os.environ.get('OPENROUTER_API_KEY')
+        or ''
+    ).strip()
+    if not api_key:
+        return None
+    provider = (os.environ.get('CONCIERGE_PROVIDER') or 'minimax').strip().lower()
+    if provider == 'openrouter':
+        default_base = 'https://openrouter.ai/api/v1/chat/completions'
+        default_model = 'minimax/minimax-m2.7'
+    else:
+        default_base = 'https://api.minimax.chat/v1/chat/completions'
+        default_model = 'MiniMax-M2.7-highspeed'
+    url = (os.environ.get('CONCIERGE_BASE_URL') or default_base).strip()
+    model = (os.environ.get('CONCIERGE_MODEL') or default_model).strip()
+    payload = {
+        'model': model,
+        'messages': build_concierge_messages(topic, collected, user_message, next_question, ready),
+        'temperature': 0.35,
+        'max_tokens': 420,
+        'response_format': {'type': 'json_object'},
+    }
+    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+    if provider == 'openrouter':
+        headers.update({'HTTP-Referer': DOMAIN, 'X-Title': 'FixMyNameOnline Concierge'})
+    try:
+        r = requests.post(url, headers=headers, json=payload, timeout=18)
+        if not r.ok:
+            app.logger.warning('Concierge model failed %s: %s', r.status_code, r.text[:500])
+            return None
+        data = r.json()
+        content = (((data.get('choices') or [{}])[0].get('message') or {}).get('content')
+                   or (data.get('choices') or [{}])[0].get('text')
+                   or data.get('reply') or '')
+        return parse_model_json(content)
+    except Exception as exc:
+        app.logger.warning('Concierge model exception: %s', exc)
+        return None
+
+
+def make_concierge_response(topic, collected, user_message='', current_field=''):
+    collected = {k: str(v or '').strip()[:1200] for k, v in (collected or {}).items()}
+    topic = (topic or collected.get('issue_type') or '').strip()
+    if topic:
+        collected['issue_type'] = topic
+        collected['issue_label'] = CONCIERGE_TOPIC_LABELS.get(topic, topic)
+    if current_field and user_message:
+        collected[current_field] = str(user_message or '').strip()[:1200]
+    next_key, next_question = concierge_next_field(collected)
+    ready = next_key is None
+    model_data = call_concierge_model(topic, collected, user_message, next_question, ready) or {}
+    reply = clean_concierge_text(model_data.get('reply') or fallback_concierge_reply(topic, collected, next_question, ready))
+    question = clean_concierge_text(model_data.get('next_question') or next_question or '')
+    risk_level = str(model_data.get('risk_level') or ('high' if topic == 'privacy' else 'medium')).lower()
+    if risk_level not in ['low', 'medium', 'high']:
+        risk_level = 'medium'
+    return {
+        'ok': True,
+        'reply': reply,
+        'next_question': question,
+        'current_field': next_key,
+        'collected': collected,
+        'ready_to_submit': ready,
+        'risk_level': risk_level,
+        'recommended_pathway': clean_concierge_text(model_data.get('recommended_pathway') or 'Free Search Snapshot™'),
+        'cta': 'Submit Free Search Snapshot™' if ready else None,
+        'model_used': bool(model_data),
+    }
 
 def triage_snapshot(data):
     text = ' '.join([data.get('case_type', ''), data.get('names_to_check', ''), data.get('problem_links', ''), data.get('goal', '')]).lower()
@@ -891,6 +1063,73 @@ def how_it_works():
 @app.route('/faq')
 def faq():
     return redirect('/#faq', code=301)
+
+
+@app.route('/api/concierge/chat', methods=['POST'])
+def api_concierge_chat():
+    payload = request.get_json(silent=True) or {}
+    topic = payload.get('topic') or ''
+    collected = payload.get('collected') if isinstance(payload.get('collected'), dict) else {}
+    message = str(payload.get('message') or '').strip()
+    current_field = str(payload.get('current_field') or '').strip()
+    return jsonify(make_concierge_response(topic, collected, message, current_field))
+
+
+@app.route('/api/concierge/submit', methods=['POST'])
+def api_concierge_submit():
+    payload = request.get_json(silent=True) or {}
+    collected = payload.get('collected') if isinstance(payload.get('collected'), dict) else {}
+    transcript = payload.get('transcript') if isinstance(payload.get('transcript'), list) else []
+    collected = {k: str(v or '').strip()[:2000] for k, v in collected.items()}
+    name = collected.get('contact_name') or collected.get('names_to_check') or ''
+    email = collected.get('email') or ''
+    if not name or not email or '@' not in email:
+        return jsonify({'ok': False, 'error': 'Please add a contact name and valid email before submitting.'}), 400
+    issue_label = collected.get('issue_label') or CONCIERGE_TOPIC_LABELS.get(collected.get('issue_type'), collected.get('issue_type', 'Private search issue'))
+    data = {
+        'name': name,
+        'email': email,
+        'phone': collected.get('phone', ''),
+        'case_type': issue_label,
+        'names_to_check': collected.get('names_to_check', ''),
+        'problem_links': '\n'.join(x for x in [collected.get('country_state', ''), collected.get('problem_links', '')] if x),
+        'goal': collected.get('goal', ''),
+        'source_page': 'private_search_concierge_agent_v1',
+    }
+    triage = triage_snapshot(data)
+    queue_item = make_queue_item('free_snapshot', data, triage)
+    source = {**data, 'triage': triage, 'queue_id': queue_item['id'], 'concierge_collected': collected, 'concierge_transcript': transcript[-20:]}
+    append_jsonl(LEADS_FILE, {**source})
+    append_jsonl(CONCIERGE_TRANSCRIPTS_FILE, {'queue_id': queue_item['id'], 'collected': collected, 'transcript': transcript[-40:]})
+    append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
+    case = safe_create_fulfilment_case('free-snapshot', data, source, 'concierge_agent_v1')
+    run_free_snapshot_pipeline(case)
+    case = get_case(case.get('id')) if case and get_case else case
+    report = latest_free_snapshot_report(case)
+    send_telegram_alert('FMNO Concierge Free Snapshot created', {
+        'queue_id': queue_item['id'],
+        'case_id': case.get('id') if case else '',
+        'name': data.get('name'),
+        'email': data.get('email'),
+        'case_type': data.get('case_type'),
+        'recommendation': (report or {}).get('recommended_package') or triage.get('label'),
+        'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
+    })
+    send_snapshot_emails(data, triage, queue_item, case=case, report=report)
+    return jsonify({
+        'ok': True,
+        'queue_id': queue_item['id'],
+        'case_id': case.get('id') if case else '',
+        'message': 'Your Free Search Snapshot™ request is in. We will prepare the private search map and send the next step by email.',
+        'redirect': f"/snapshot-received?ref={queue_item['id']}",
+    })
+
+
+@app.route('/snapshot-received')
+def snapshot_received_light():
+    ref = request.args.get('ref', '')
+    body = f'''<div class="card"><span class="pill ok">Received</span><h1>Your Free Search Snapshot™ request is in.</h1><p class="sub">Thank you. We saved the private concierge intake and will prepare the search snapshot pathway from here.</p><p class="note">Private reference: {safe(ref)}<br>No public action happens from this intake alone.</p><p><a class="btn" href="/">Back to site</a></p></div>'''
+    return page('Snapshot received — FixMyNameOnline™', body)
 
 
 @app.route('/app')
@@ -1660,7 +1899,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v21-in-tv-concierge', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v22-minimax-concierge-agent', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
 
 
 if __name__ == '__main__':
