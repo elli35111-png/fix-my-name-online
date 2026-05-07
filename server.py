@@ -382,10 +382,12 @@ def fallback_concierge_reply(topic, collected, next_question, ready=False):
 def build_concierge_messages(topic, collected, user_message, next_question, ready):
     system = '''You are Private Search Concierge™ for FixMyNameOnline™, operated by MadisonJade Pty Ltd.
 Tone: premium, calm, private, human, concise.
-Role: AI-assisted intake only. Ask one question at a time and move toward Free Search Snapshot™.
+Role: AI-assisted intake only. Keep replies short and move toward Free Search Snapshot™.
 Do not provide legal advice. Do not promise removals, rankings, de-indexing, platform decisions, suppression, or search outcomes.
+Do not use alarmist words like doxxing, swatting, crisis, emergency, or permanent damage.
 Do not expose internal agent names or backend machinery.
 Use safe language: assess the strongest pathway, private snapshot, removal/review options, positive search footprint, no public action without approval.
+The backend controls the exact next question. If next_question_to_ask is present, copy it exactly as next_question.
 Return ONLY valid JSON with keys: reply, next_question, risk_level, recommended_pathway, cta.'''
     user = {
         'selected_issue': CONCIERGE_TOPIC_LABELS.get(topic or collected.get('issue_type'), topic or collected.get('issue_type')),
@@ -485,7 +487,9 @@ def make_concierge_response(topic, collected, user_message='', current_field='')
     ready = next_key is None
     model_data = call_concierge_model(topic, collected, user_message, next_question, ready) or {}
     reply = clean_concierge_text(model_data.get('reply') or fallback_concierge_reply(topic, collected, next_question, ready))
-    question = clean_concierge_text(model_data.get('next_question') or next_question or '')
+    # Keep the displayed question aligned with the deterministic field being captured.
+    # The model supplies tone/advisor reply; the backend owns intake sequence correctness.
+    question = clean_concierge_text(next_question or model_data.get('next_question') or '')
     risk_level = str(model_data.get('risk_level') or ('high' if topic == 'privacy' else 'medium')).lower()
     if risk_level not in ['low', 'medium', 'high']:
         risk_level = 'medium'
@@ -1086,8 +1090,10 @@ def faq():
 @app.route('/api/concierge/chat', methods=['POST'])
 def api_concierge_chat():
     payload = request.get_json(silent=True) or {}
-    topic = payload.get('topic') or ''
+    topic = payload.get('topic') or payload.get('issue_type') or ''
     collected = payload.get('collected') if isinstance(payload.get('collected'), dict) else {}
+    if not collected and isinstance(payload.get('session'), dict):
+        collected = payload.get('session')
     message = str(payload.get('message') or '').strip()
     current_field = str(payload.get('current_field') or '').strip()
     return jsonify(make_concierge_response(topic, collected, message, current_field))
