@@ -8,6 +8,7 @@ FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
 import html
 import os
 import json
+import re
 import hmac
 import hashlib
 from datetime import datetime
@@ -338,6 +339,9 @@ CONCIERGE_SAFE_REPLACEMENTS = {
     'guarantee ranking': 'improve search-readiness',
     'erase google': 'review what is showing on Google',
     'bury results': 'build a stronger truthful search footprint',
+    'push down unwanted content': 'review removal options and build a stronger truthful search footprint',
+    'push down negative content': 'review removal options and build a stronger truthful search footprint',
+    'suppression': 'positive search-footprint support',
     'manipulate search': 'improve accurate search signals',
     'we will delete it': 'we will assess the strongest pathway',
     'we can delete it': 'we can assess the strongest pathway',
@@ -402,12 +406,25 @@ def parse_model_json(content):
         content = content.strip('`')
         if content.lower().startswith('json'):
             content = content[4:].strip()
-    try:
-        return json.loads(content)
-    except Exception:
-        start, end = content.find('{'), content.rfind('}')
-        if start >= 0 and end > start:
-            return json.loads(content[start:end + 1])
+    candidates = [content]
+    # MiniMax reasoning models often wrap the actual JSON after a <think> block.
+    candidates.append(re.sub(r'<think>.*?</think>', '', content, flags=re.I | re.S).strip())
+    decoder = json.JSONDecoder()
+    for candidate in candidates:
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            pass
+        # Try JSON objects from the end first so quoted/input JSON in reasoning text is ignored.
+        for idx in [i for i, ch in enumerate(candidate) if ch == '{'][::-1]:
+            try:
+                parsed, _ = decoder.raw_decode(candidate[idx:])
+                if isinstance(parsed, dict):
+                    return parsed
+            except Exception:
+                continue
     return {}
 
 
@@ -434,8 +451,8 @@ def call_concierge_model(topic, collected, user_message, next_question, ready):
     payload = {
         'model': model,
         'messages': build_concierge_messages(topic, collected, user_message, next_question, ready),
-        'temperature': 0.35,
-        'max_tokens': 420,
+        'temperature': 0.25,
+        'max_tokens': 1000,
         'response_format': {'type': 'json_object'},
     }
     headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
