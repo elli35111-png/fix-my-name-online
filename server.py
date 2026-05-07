@@ -426,7 +426,8 @@ def call_concierge_model(topic, collected, user_message, next_question, ready):
         default_base = 'https://openrouter.ai/api/v1/chat/completions'
         default_model = 'minimax/minimax-m2.7'
     else:
-        default_base = 'https://api.minimax.chat/v1/chat/completions'
+        # MiniMax global endpoint is OpenAI-compatible at /v1/chat/completions.
+        default_base = 'https://api.minimax.io/v1/chat/completions'
         default_model = 'MiniMax-M2.7-highspeed'
     url = (os.environ.get('CONCIERGE_BASE_URL') or default_base).strip()
     model = (os.environ.get('CONCIERGE_MODEL') or default_model).strip()
@@ -1899,7 +1900,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v22-minimax-concierge-agent', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID'))})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v22-minimax-concierge-agent', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('MINIMAX_API_KEY') or os.environ.get('LLM_API_KEY') or os.environ.get('OPENROUTER_API_KEY')), 'concierge_provider': os.environ.get('CONCIERGE_PROVIDER', 'minimax')})
 
 
 if __name__ == '__main__':
