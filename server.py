@@ -52,6 +52,7 @@ ONBOARDING_FILE = DATA_DIR / 'onboarding_submissions.jsonl'
 FULFILMENT_QUEUE_FILE = DATA_DIR / 'fulfilment_queue.jsonl'
 QUESTIONS_FILE = DATA_DIR / 'client_questions.jsonl'
 CONCIERGE_TRANSCRIPTS_FILE = DATA_DIR / 'concierge_transcripts.jsonl'
+CASE_ROOMS_FILE = DATA_DIR / 'private_case_rooms.jsonl'
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
@@ -175,6 +176,22 @@ def append_jsonl(path, payload):
     with path.open('a', encoding='utf-8') as f:
         f.write(json.dumps(payload, ensure_ascii=False) + '\n')
     return payload
+
+
+def read_jsonl(path, limit=None):
+    if not path.exists():
+        return []
+    rows = []
+    with path.open('r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rows.append(json.loads(line))
+            except Exception:
+                continue
+    return rows[-limit:] if limit else rows
 
 
 def admin_authorized():
@@ -493,6 +510,14 @@ def make_concierge_response(topic, collected, user_message='', current_field='')
     risk_level = str(model_data.get('risk_level') or ('high' if topic == 'privacy' else 'medium')).lower()
     if risk_level not in ['low', 'medium', 'high']:
         risk_level = 'medium'
+    preview_data = {
+        'case_type': collected.get('issue_label') or CONCIERGE_TOPIC_LABELS.get(topic, topic),
+        'names_to_check': collected.get('names_to_check', ''),
+        'problem_links': ' '.join([collected.get('country_state', ''), collected.get('problem_links', '')]).strip(),
+        'goal': collected.get('goal', ''),
+        'country_state': collected.get('country_state', ''),
+    }
+    preview_triage = triage_snapshot(preview_data) if (collected.get('names_to_check') or topic) else {}
     return {
         'ok': True,
         'reply': reply,
@@ -502,6 +527,7 @@ def make_concierge_response(topic, collected, user_message='', current_field='')
         'ready_to_submit': ready,
         'risk_level': risk_level,
         'recommended_pathway': clean_concierge_text(model_data.get('recommended_pathway') or 'Free Search Snapshot™'),
+        'risk_score_preview': reputation_risk_score(preview_data, preview_triage),
         'cta': 'Submit Free Search Snapshot™' if ready else None,
         'model_used': bool(model_data),
     }
@@ -558,7 +584,117 @@ def make_queue_item(kind, data, triage=None):
     }
 
 
-def send_snapshot_emails(data, triage, queue_item, case=None, report=None):
+def reputation_risk_score(data, triage=None, report=None):
+    """Public-safe FMNO Reputation Risk Score™ heuristic for intake/case-room V2.
+
+    This is not a guarantee or search-engine diagnosis; it turns the visitor's intake
+    into a clearer private first-step signal and stronger paid-pathway handoff.
+    """
+    data = data or {}
+    triage = triage or {}
+    report = report or {}
+    text = ' '.join(str(data.get(k, '')) for k in ['case_type', 'names_to_check', 'problem_links', 'goal']).lower()
+    score = 34
+    factors = []
+
+    def bump(points, label):
+        nonlocal score
+        score += points
+        if label not in factors:
+            factors.append(label)
+
+    if any(w in text for w in ['address', 'phone', 'mobile', 'personal information', 'private information', 'directory', 'people search']):
+        bump(18, 'Private information appears to be exposed')
+    if any(w in text for w in ['review', '1 star', 'one star', 'fake review', 'malicious review', 'google business']):
+        bump(16, 'Trust/review issue may affect decisions quickly')
+    if any(w in text for w in ['article', 'old news', 'news article', 'court', 'snippet', 'image', 'outdated']):
+        bump(15, 'Old or outdated result may need pathway review')
+    if any(w in text for w in ['urgent', 'criminal', 'police', 'media', 'journalist', 'lawsuit', 'defamation', 'threat', 'stalking', 'sensitive']):
+        bump(20, 'Sensitive context should be handled privately')
+    if any(w in text for w in ['business', 'clinic', 'studio', 'company', 'clients', 'customers']):
+        bump(8, 'Business trust may be affected')
+    if data.get('country_state') or any(w in text for w in ['australia', 'nsw', 'vic', 'qld', 'usa', 'uk', 'canada']):
+        bump(4, 'Location context supplied for a cleaner private search')
+    if data.get('problem_links') and 'search first' not in str(data.get('problem_links')).lower():
+        bump(6, 'Specific link/search clue supplied')
+    if report.get('negative_item_count'):
+        bump(min(18, int(report.get('negative_item_count') or 0) * 4), 'Snapshot found negative/risk items')
+    if triage.get('key') == 'high-risk':
+        bump(10, 'Recommended for private high-risk review')
+    elif triage.get('key') in ['removal-review', 'review-defence']:
+        bump(7, 'Likely needs a targeted review pathway')
+
+    if not factors:
+        factors.append('Initial private search context received')
+    score = max(18, min(92, score))
+    if score >= 80:
+        band = 'high'
+        label = 'High attention'
+    elif score >= 60:
+        band = 'elevated'
+        label = 'Elevated'
+    elif score >= 40:
+        band = 'moderate'
+        label = 'Moderate'
+    else:
+        band = 'early'
+        label = 'Early signal'
+    return {
+        'score': score,
+        'band': band,
+        'label': label,
+        'factors': factors[:5],
+        'recommendation': (report or {}).get('recommended_package') or triage.get('label') or 'Free Search Snapshot™',
+        'summary': 'This score is an intake signal only. It helps prioritise the private snapshot and next-step recommendation; it is not a guarantee of ranking, removal, or platform outcome.',
+    }
+
+
+def case_room_token(queue_id, email):
+    raw = f"case-room:{queue_id}:{(email or '').strip().lower()}".encode('utf-8')
+    return hmac.new(approval_secret().encode('utf-8'), raw, hashlib.sha256).hexdigest()
+
+
+def case_room_url(queue_id, email):
+    return f"{DOMAIN}/private-case-room/{safe(queue_id)}?access_token={case_room_token(queue_id, email)}"
+
+
+def save_case_room(queue_item, data, triage, case=None, report=None, transcript=None):
+    score = reputation_risk_score(data, triage, report)
+    record = {
+        'queue_id': queue_item.get('id'),
+        'case_id': case.get('id') if case else '',
+        'email': data.get('email', ''),
+        'name': data.get('name') or data.get('contact_name') or '',
+        'case_type': data.get('case_type', ''),
+        'triage': triage,
+        'risk_score': score,
+        'status': 'snapshot_received',
+        'report_ready': bool(report),
+        'report_summary': {
+            'recommended_package': (report or {}).get('recommended_package'),
+            'negative_item_count': (report or {}).get('negative_item_count'),
+        },
+        'intake_preview': {
+            'names_to_check': data.get('names_to_check', ''),
+            'problem_links': data.get('problem_links', ''),
+            'goal': data.get('goal', ''),
+        },
+        'transcript': (transcript or [])[-12:],
+        'access_token': case_room_token(queue_item.get('id'), data.get('email', '')),
+        'case_room_url': case_room_url(queue_item.get('id'), data.get('email', '')),
+    }
+    append_jsonl(CASE_ROOMS_FILE, record)
+    return record
+
+
+def find_case_room(queue_id):
+    matches = [row for row in read_jsonl(CASE_ROOMS_FILE) if row.get('queue_id') == queue_id]
+    return matches[-1] if matches else None
+
+
+def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_room=None):
+    room_link = (case_room or {}).get('case_room_url') or ''
+    room_cta = f'<p><a href="{safe(room_link)}" style="background:#111827;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block">Open Private Case Room™</a></p>' if room_link else ''
     customer_html = f"""
     <div style=\"font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#111\">
       <h1>Your Free Search Snapshot™ request is in</h1>
@@ -567,6 +703,7 @@ def send_snapshot_emails(data, triage, queue_item, case=None, report=None):
       <h2>Suggested next step: {safe(triage['label'])}</h2>
       <p>{safe(triage['summary'])}</p>
       <p>We’ll privately review what you submitted and come back with the safest next step. No removal, ranking, or platform result is guaranteed.</p>
+      {room_cta}
       <p><a href=\"{DOMAIN}{triage['url']}\" style=\"background:#d91f3d;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block\">{safe(triage['cta'])}</a></p>
       <p style=\"font-size:12px;color:#666\">Reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
     </div>
@@ -1130,6 +1267,7 @@ def api_concierge_submit():
     run_free_snapshot_pipeline(case)
     case = get_case(case.get('id')) if case and get_case else case
     report = latest_free_snapshot_report(case)
+    case_room = save_case_room(queue_item, data, triage, case=case, report=report, transcript=transcript)
     send_telegram_alert('FMNO Concierge Free Snapshot created', {
         'queue_id': queue_item['id'],
         'case_id': case.get('id') if case else '',
@@ -1137,15 +1275,19 @@ def api_concierge_submit():
         'email': data.get('email'),
         'case_type': data.get('case_type'),
         'recommendation': (report or {}).get('recommended_package') or triage.get('label'),
+        'risk_score': case_room.get('risk_score', {}).get('score'),
         'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
+        'private_case_room': case_room.get('case_room_url'),
     })
-    send_snapshot_emails(data, triage, queue_item, case=case, report=report)
+    send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
     return jsonify({
         'ok': True,
         'queue_id': queue_item['id'],
         'case_id': case.get('id') if case else '',
-        'message': 'Your Free Search Snapshot™ request is in. We will prepare the private search map and send the next step by email.',
-        'redirect': f"/snapshot-received?ref={queue_item['id']}",
+        'risk_score': case_room.get('risk_score'),
+        'case_room_url': case_room.get('case_room_url'),
+        'message': 'Your Free Search Snapshot™ request is in. Your Private Case Room™ is ready with the first Reputation Risk Score™.',
+        'redirect': f"/private-case-room/{queue_item['id']}?access_token={case_room.get('access_token')}",
     })
 
 
@@ -1154,6 +1296,39 @@ def snapshot_received_light():
     ref = request.args.get('ref', '')
     body = f'''<div class="card"><span class="pill ok">Received</span><h1>Your Free Search Snapshot™ request is in.</h1><p class="sub">Thank you. We saved the private concierge intake and will prepare the search snapshot pathway from here.</p><p class="note">Private reference: {safe(ref)}<br>No public action happens from this intake alone.</p><p><a class="btn" href="/">Back to site</a></p></div>'''
     return page('Snapshot received — FixMyNameOnline™', body)
+
+
+@app.route('/private-case-room/<queue_id>')
+def private_case_room(queue_id):
+    record = find_case_room(queue_id)
+    supplied = (request.args.get('access_token') or '').strip()
+    if not record or not supplied or not hmac.compare_digest(supplied, record.get('access_token', '')):
+        body = '''<div class="card"><span class="pill err">Private access</span><h1>Private Case Room™ link required.</h1><p class="sub">For privacy, this room only opens from the secure link created after a Free Search Snapshot™ intake.</p><p><a class="btn" href="/">Back to FixMyNameOnline™</a></p></div>'''
+        return page('Private Case Room™ — secure link required', body), 403
+
+    score = record.get('risk_score') or {}
+    triage = record.get('triage') or {}
+    preview = record.get('intake_preview') or {}
+    factors = ''.join(f'<li>{safe(item)}</li>' for item in score.get('factors', [])) or '<li>Private intake received.</li>'
+    timeline = [
+        ('1', 'Private intake received', 'Your issue has been captured into a confidential case room.'),
+        ('2', 'Reputation Risk Score™ created', 'The first score helps prioritise the private snapshot and next-step pathway.'),
+        ('3', 'Snapshot review / QC', 'FMNO reviews the search context before recommending paid work or sending next instructions.'),
+        ('4', 'Choose next path', 'You decide whether to continue with alerts, removal review, review defence, repair, or private concierge support.'),
+    ]
+    timeline_html = ''.join(f'<div class="card"><span class="pill">Step {n}</span><h2>{safe(title)}</h2><p class="sub">{safe(text)}</p></div>' for n, title, text in timeline)
+    body = f'''
+    <div class="card"><span class="pill ok">Private Case Room™</span><h1>Your private reputation snapshot room is open.</h1>
+      <p class="sub">This is the secure first view for {safe(record.get('name'))}. No public action happens from this intake. This room is for private triage and next-step guidance only.</p>
+      <div class="recommend"><h2>Reputation Risk Score™: {safe(score.get('score'))}/100 · {safe(score.get('label'))}</h2><p>{safe(score.get('summary'))}</p><ul>{factors}</ul></div>
+      <div class="grid"><div class="card"><h2>Recommended pathway</h2><p class="sub">{safe(score.get('recommendation') or triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/app'))}">{safe(triage.get('cta', 'View next step'))} →</a></p></div>
+      <div class="card"><h2>Private reference</h2><p class="note">Reference: {safe(record.get('queue_id'))}<br>Case: {safe(record.get('case_id'))}<br>Status: {safe(record.get('status'))}</p></div></div>
+      <h2 style="margin-top:22px">What you gave us</h2>
+      <div class="card"><p><strong>Names/search:</strong><br>{safe(preview.get('names_to_check'))}</p><p><strong>Links/search clues:</strong><br>{safe(preview.get('problem_links'))}</p><p><strong>Goal:</strong><br>{safe(preview.get('goal'))}</p></div>
+      <h2 style="margin-top:22px">Private timeline</h2><div class="grid">{timeline_html}</div>
+      <p class="note">FixMyNameOnline™ is operated by MadisonJade Pty Ltd. This score is an intake signal, not a guarantee of removal, ranking, de-indexing, platform action, or search result outcome.</p>
+    </div>'''
+    return page('Private Case Room™ — FixMyNameOnline™', body, 'Secure private reputation snapshot room for FixMyNameOnline™ Free Search Snapshot™ intake.', canonical_path='/private-case-room')
 
 
 @app.route('/app')
@@ -1188,6 +1363,7 @@ def submit_snapshot():
     run_free_snapshot_pipeline(case)
     case = get_case(case.get('id')) if case and get_case else case
     report = latest_free_snapshot_report(case)
+    case_room = save_case_room(queue_item, data, triage, case=case, report=report)
 
     send_telegram_alert('FMNO Free Search Snapshot report ready', {
         'queue_id': queue_item['id'],
@@ -1199,15 +1375,18 @@ def submit_snapshot():
         'recommendation': (report or {}).get('recommended_package') or triage.get('label'),
         'negative_items': (report or {}).get('negative_item_count'),
         'priority': queue_item.get('priority'),
+        'risk_score': case_room.get('risk_score', {}).get('score'),
         'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
+        'private_case_room': case_room.get('case_room_url'),
     })
-    email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report)
+    email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
     app.logger.info('Snapshot %s email status: %s', queue_item['id'], email_status)
 
     body = f"""
     <div class="card"><span class="pill ok">Received</span><h1>Your Free Search Snapshot™ request is in.</h1>
-      <p class="sub">Thanks {safe(data['name'])}. We saved your details. The next step is a private review of the names, links, reviews, or search terms you gave us.</p>
-      <div class="recommend"><h2>Suggested next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
+      <p class="sub">Thanks {safe(data['name'])}. We saved your details and opened your Private Case Room™ with an initial Reputation Risk Score™.</p>
+      <div class="recommend"><h2>Reputation Risk Score™: {safe(case_room['risk_score']['score'])}/100 · {safe(case_room['risk_score']['label'])}</h2><p>{safe(case_room['risk_score']['summary'])}</p><p><a class="btn" href="{safe('/private-case-room/' + queue_item['id'] + '?access_token=' + case_room['access_token'])}">Open Private Case Room™ →</a></p></div>
+      <div class="recommend"><h2>Suggested next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn btn2" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
       <h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, repair, or a private high-risk review.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol>
       <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
     </div>"""
@@ -1923,7 +2102,7 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v22-minimax-concierge-agent', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('MINIMAX_API_KEY') or os.environ.get('LLM_API_KEY') or os.environ.get('OPENROUTER_API_KEY')), 'concierge_provider': os.environ.get('CONCIERGE_PROVIDER', 'minimax')})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v23-private-case-room-risk-score', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('MINIMAX_API_KEY') or os.environ.get('LLM_API_KEY') or os.environ.get('OPENROUTER_API_KEY')), 'concierge_provider': os.environ.get('CONCIERGE_PROVIDER', 'minimax')})
 
 
 if __name__ == '__main__':

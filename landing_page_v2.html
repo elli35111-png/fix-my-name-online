@@ -132,6 +132,7 @@
                     <button type="button" class="concierge-choice rounded-lg px-3 py-2 text-left text-greyLight" data-topic="reviews">Fake or unfair review</button>
                   </div>
                   <div class="result-item result-risk" id="concierge-next">If you want FMNO to check it for you, start with your name or name variants. URLs and screenshots help if you already have them, but they are not required.</div>
+                  <div class="result-item result-trust hidden" id="concierge-risk-score"></div>
                   <div id="concierge-transcript" class="space-y-2 hidden"></div>
                   <div id="concierge-live-form" class="mt-4 space-y-3">
                     <input id="concierge-input" class="w-full rounded-xl bg-dark/80 border border-white/15 px-4 py-3 text-sm text-white placeholder:text-grey" placeholder="Type your answer here..." autocomplete="off">
@@ -239,6 +240,11 @@
         conciergeState.ready_to_submit = !!data.ready_to_submit;
         setText('concierge-message', data.reply);
         setText('concierge-next', data.next_question || (data.ready_to_submit ? 'Ready to prepare your Free Search Snapshot™.' : ''));
+        const scoreBox=document.getElementById('concierge-risk-score');
+        if(scoreBox && data.risk_score_preview){
+          scoreBox.classList.remove('hidden');
+          scoreBox.textContent = 'Reputation Risk Score™ preview: ' + data.risk_score_preview.score + '/100 · ' + data.risk_score_preview.label;
+        }
         addTranscript('concierge', data.reply + (data.next_question ? ' ' + data.next_question : ''));
         const input=document.getElementById('concierge-input');
         const submit=document.getElementById('concierge-submit');
@@ -254,6 +260,7 @@
     function setConciergeTopic(topic){
       conciergeState = {topic, collected:{issue_type:topic, issue_label:topicLabels[topic] || topic}, current_field:'', ready_to_submit:false, transcript:[]};
       const box=document.getElementById('concierge-transcript'); if(box){box.innerHTML=''; box.classList.add('hidden');}
+      const scoreBox=document.getElementById('concierge-risk-score'); if(scoreBox){scoreBox.textContent=''; scoreBox.classList.add('hidden');}
       document.querySelectorAll('[data-topic]').forEach(el => el.classList.toggle('active', el.dataset.topic === topic));
       callConcierge({topic});
     }
