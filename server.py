@@ -811,7 +811,7 @@ def indexnow_key_file():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
     guide_urls = ['/' + slug for slug in SEO_GUIDES.keys()]
     urls = []
     for u in base_urls + guide_urls:
@@ -1153,9 +1153,99 @@ def guide_schema(slug, guide):
     }, ensure_ascii=False)}</script>'''
 
 
+@app.route('/when-google-makes-your-past-look-like-your-present')
+def google_past_present_article():
+    description = "Old court records, appeal transcripts, scraped pages and outdated search results can make a person's past look current. FixMyNameOnline™ explains the human cost and private next steps."
+    body = """
+    <style>
+      .article-hero{width:100%;border-radius:20px;margin:8px 0 22px;border:1px solid rgba(255,255,255,.12);box-shadow:0 18px 50px rgba(0,0,0,.35)}
+      .article p{font-size:18px;line-height:1.72;color:#edf1f8}.article h2{font-size:30px;margin-top:34px;color:#fff}.article blockquote{margin:28px 0;padding:20px 22px;border-left:5px solid var(--red);background:rgba(217,31,61,.10);border-radius:16px;color:#fff;font-size:23px;line-height:1.35;font-weight:800}.article ul{color:#edf1f8;font-size:18px;line-height:1.7}.article .byline{color:var(--grey);font-size:15px}.article .cta-box{border:1px solid rgba(217,31,61,.4);background:linear-gradient(135deg,rgba(217,31,61,.18),rgba(255,255,255,.05));border-radius:20px;padding:24px;margin-top:28px}
+    </style>
+    <div class="card article">
+      <span class="pill">FixMyNameOnline™ article</span>
+      <h1>When Google makes your past look like your present</h1>
+      <p class="byline">By FixMyNameOnline™ · MadisonJade Pty Ltd</p>
+      <img class="article-hero" src="/assets/old-records-google-past-present-hero.png" alt="Distressed person looking at online search results late at night">
+      <p>People try to move on.</p>
+      <p>That should not be controversial.</p>
+      <p>They get up. They go to work. They apply for better jobs. They start over after a divorce, a court case, a bad business deal, a public mistake, an allegation, a family breakdown, a review bomb, or a chapter they would give anything not to relive.</p>
+      <p>They do the hard part. They rebuild.</p>
+      <p>Then one night they Google their name and there it is again.</p>
+      <p>An old court page. An appeal transcript. A scraped public record. A page they have never seen before, sitting on a website they do not control, dressed up with a fresh date or a new URL so Google treats it like something new.</p>
+      <blockquote>To everyone else, it is a search result. To them, it can feel like being dragged back into the worst room of their life.</blockquote>
+
+      <h2>The punishment does not always end when the case ends</h2>
+      <p>There are people walking around right now who have already paid the price for whatever happened.</p>
+      <p>Some were cleared. Some appealed. Some changed. Some were never fairly understood in the first place. Some made a mistake years ago and have spent every day since trying to become someone better.</p>
+      <p>But Google does not show the years after.</p>
+      <p>It does not show the person getting clean. The parent showing up. The worker doing honest days. The business owner trying again. The quiet repair. The private shame. The effort.</p>
+      <p>It shows a headline. It shows a snippet. It shows a date.</p>
+      <p>And if that date looks fresh, the past can suddenly look like it happened yesterday.</p>
+      <blockquote>That is not accountability. That is a digital life sentence.</blockquote>
+
+      <h2>This is how lives get quietly damaged</h2>
+      <p>Most people do not get a phone call saying, “We found something on Google and decided not to hire you.”</p>
+      <p>They do not get told, “The client searched your name and got nervous.”</p>
+      <p>They do not get told, “The landlord looked you up.”</p>
+      <p>They just feel the silence.</p>
+      <p>The interview goes nowhere. The deal cools off. The date gets awkward. The family argument starts again. The person has to explain themselves to someone who has already made up their mind from three lines on a screen.</p>
+      <blockquote>A stranger sees the result for five seconds. The person named carries the consequence for years.</blockquote>
+
+      <h2>Old information can become newly harmful</h2>
+      <p>Public records, legal decisions, appeal documents and tribunal pages can exist online. That is one thing.</p>
+      <p>But some websites collect old material, copy it, repackage it, and make it easier for Google to find under a person's full name. A page may get a new URL. A new crawl date. A new layout. A fresh-looking timestamp. A title written for search.</p>
+      <p>The result can be completely distorted.</p>
+      <p>A person may have moved on. The matter may be old. The outcome may be missing. The context may be wrong. The page may be copied from somewhere else.</p>
+      <p>But Google is not a human being sitting down with the whole story.</p>
+      <p>Google ranks pages. Sometimes the page that wins is the one that hurts the person most.</p>
+
+      <h2>People are not clickbait</h2>
+      <p>A person's name is not a traffic strategy.</p>
+      <p>Their worst day should not be recycled for clicks. Their family should not have to keep finding it. Their children should not have to explain it. Their employer should not see the old version before meeting the real person standing in front of them today.</p>
+      <p>People deserve context. They deserve a chance to move forward. They deserve to know what is being shown about them and what options they may have.</p>
+      <p>That does not mean every record can be removed. It does not mean Google can be forced to forget everything. No responsible service should promise that.</p>
+      <p>But it does mean people should not be left alone with it.</p>
+
+      <h2>What a proper review should check</h2>
+      <p>If an old record, court page, review site, article, or scraped profile is showing for your name, the first step is not panic. The first step is evidence.</p>
+      <ul>
+        <li>what appears in Google for your name</li>
+        <li>the exact URL and page title</li>
+        <li>the snippet Google is showing</li>
+        <li>the date Google appears to be using</li>
+        <li>the original date of the matter</li>
+        <li>whether the page is copied, duplicated, republished, or missing context</li>
+        <li>whether the website offers a correction, removal, or privacy process</li>
+        <li>whether Google tools may apply for outdated or misleading results</li>
+        <li>whether your current, accurate identity is missing from page one</li>
+      </ul>
+      <p>From there, a person may be able to prepare a correction request, removal request, de-indexing request, outdated content request, privacy complaint, legal review, or a broader search repair plan.</p>
+      <p>The right answer depends on the facts.</p>
+
+      <h2>Your past should not be made to look like your present</h2>
+      <p>This is why FixMyNameOnline™ exists.</p>
+      <p>Not to sell fantasy. Not to promise magic. Not to tell people we can erase every hard thing that ever happened.</p>
+      <p>We exist because people are being judged by search results before they get to speak.</p>
+      <p>We exist because old material can be made to look new.</p>
+      <p>We exist because ordinary people need a private, calm way to understand what Google is showing and what can be done next.</p>
+      <p>If your name search is bringing up old records, court pages, reviews, articles, scraped profiles, or outdated material, start with a private snapshot.</p>
+      <p>Google your name.</p>
+      <p>Then ask one question: is this really the full story?</p>
+
+      <div class="cta-box">
+        <h2>Get a Free Private Snapshot™</h2>
+        <p>FixMyNameOnline™ offers a private first look at what people may be seeing when they search your name.</p>
+        <p><a class="btn" href="/app">Start Free Private Snapshot™ →</a> <a class="btn btn2" href="/learn">More guides</a></p>
+        <p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No ranking, removal, review-removal, de-indexing or search outcome is guaranteed.</p>
+      </div>
+    </div>
+    """
+    return page('When Google Makes Your Past Look Like Your Present | FixMyNameOnline™', body, description=description, canonical_path='/when-google-makes-your-past-look-like-your-present')
+
+
 @app.route('/learn')
 def learn_hub():
-    cards = ''.join(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p></div>''' for slug, g in SEO_GUIDES.items())
+    cards = '''<div class="card full"><span class="pill">Featured article</span><h2><a href="/when-google-makes-your-past-look-like-your-present">When Google makes your past look like your present</a></h2><p class="sub">Old records, appeal transcripts and scraped pages can resurface in search like they happened yesterday. This is the human cost behind bad Google results.</p></div>''' + ''.join(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p></div>''' for slug, g in SEO_GUIDES.items())
     body = f'''<div class="card"><span class="pill">Fix My Name Online™ learning hub</span><h1>Private reputation repair guides</h1><p class="sub">Useful, human-first guides for people and businesses dealing with bad Google results, fake reviews, old articles, associated names and search trust problems.</p><p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">View services</a></p></div><div class="grid" style="margin-top:16px">{cards}</div>'''
     return page('Learn — Reputation Repair Guides | Fix My Name Online™', body, 'Fix My Name Online™ guides for reputation repair, online reputation management, bad Google results, fake reviews and personal search audits.', canonical_path='/learn')
 
