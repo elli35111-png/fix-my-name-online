@@ -447,26 +447,34 @@ def parse_model_json(content):
     return {}
 
 
-def call_concierge_model(topic, collected, user_message, next_question, ready):
-    api_key = (
-        os.environ.get('CONCIERGE_API_KEY')
-        or os.environ.get('MINIMAX_API_KEY')
-        or os.environ.get('LLM_API_KEY')
-        or os.environ.get('OPENROUTER_API_KEY')
-        or ''
-    ).strip()
-    if not api_key:
-        return None
-    provider = (os.environ.get('CONCIERGE_PROVIDER') or 'minimax').strip().lower()
+def concierge_provider_name():
+    # Public intake should not depend on the broken MiniMax key. Prefer OpenRouter
+    # because the live Render service already has OPENROUTER_API_KEY configured.
+    return (os.environ.get('CONCIERGE_PROVIDER') or 'openrouter').strip().lower()
+
+
+def concierge_model_name():
+    provider = concierge_provider_name()
+    if os.environ.get('CONCIERGE_MODEL'):
+        return os.environ.get('CONCIERGE_MODEL', '').strip()
     if provider == 'openrouter':
+        return 'google/gemini-2.5-flash'
+    return 'MiniMax-M2.7-highspeed'
+
+
+def call_concierge_model(topic, collected, user_message, next_question, ready):
+    provider = concierge_provider_name()
+    if provider == 'openrouter':
+        api_key = (os.environ.get('OPENROUTER_API_KEY') or os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or '').strip()
         default_base = 'https://openrouter.ai/api/v1/chat/completions'
-        default_model = 'minimax/minimax-m2.7'
     else:
+        api_key = (os.environ.get('CONCIERGE_API_KEY') or os.environ.get('MINIMAX_API_KEY') or os.environ.get('LLM_API_KEY') or '').strip()
         # MiniMax global endpoint is OpenAI-compatible at /v1/chat/completions.
         default_base = 'https://api.minimax.io/v1/chat/completions'
-        default_model = 'MiniMax-M2.7-highspeed'
+    if not api_key:
+        return None
     url = (os.environ.get('CONCIERGE_BASE_URL') or default_base).strip()
-    model = (os.environ.get('CONCIERGE_MODEL') or default_model).strip()
+    model = concierge_model_name()
     payload = {
         'model': model,
         'messages': build_concierge_messages(topic, collected, user_message, next_question, ready),
@@ -2102,7 +2110,9 @@ def admin_validate_public_text():
 
 @app.route('/health')
 def health():
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v23-private-case-room-risk-score', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('MINIMAX_API_KEY') or os.environ.get('LLM_API_KEY') or os.environ.get('OPENROUTER_API_KEY')), 'concierge_provider': os.environ.get('CONCIERGE_PROVIDER', 'minimax')})
+    provider = concierge_provider_name()
+    configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v24-openrouter-concierge-fallback', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name()})
 
 
 if __name__ == '__main__':
