@@ -448,9 +448,14 @@ def parse_model_json(content):
 
 
 def concierge_provider_name():
-    # Public intake should not depend on the broken MiniMax key. Prefer OpenRouter
-    # because the live Render service already has OPENROUTER_API_KEY configured.
-    return (os.environ.get('CONCIERGE_PROVIDER') or 'openrouter').strip().lower()
+    configured = (os.environ.get('CONCIERGE_PROVIDER') or '').strip().lower()
+    if configured:
+        return configured
+    # Prefer OpenRouter when its key exists; otherwise keep the live concierge working
+    # with the configured MiniMax key instead of dropping to scripted fallback.
+    if os.environ.get('OPENROUTER_API_KEY'):
+        return 'openrouter'
+    return 'minimax'
 
 
 def concierge_model_name():
