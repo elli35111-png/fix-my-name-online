@@ -1138,6 +1138,109 @@ SEO_GUIDES = {
             ('Can this help with associated names?', 'Yes. Associated names, old names, nicknames, business names and locations should be mapped because people often search more than one phrase.'),
         ],
     },
+    'personal-online-reputation-repair': {
+        'eyebrow': 'Personal reputation repair',
+        'title': 'Personal Online Reputation Repair — Private Name Search Help | Fix My Name Online™',
+        'h1': 'Personal online reputation repair for name searches that feel unfair',
+        'description': 'Private personal online reputation repair for people dealing with bad Google results, old articles, images, reviews, associated names and damaging search snippets.',
+        'intro': 'Personal online reputation repair starts with a simple reality: people search names before they decide who to trust. If the first page shows old, incomplete or damaging material, the safest response is a private evidence map and a truthful plan for stronger current assets.',
+        'sections': [
+            ('Start with what people actually type', 'A personal reputation plan should map your full name, old names, nicknames, locations, business connections, image results and risk phrases. The damaging result may only appear for one combination, but that combination can still affect jobs, relationships, finance or clients.'),
+            ('Separate private facts from public assets', 'Not every positive asset needs to reveal sensitive history. Strong personal repair uses approved information: accurate bios, professional profiles, current work, helpful articles, credentials, business pages and search-friendly proof points.'),
+            ('Review removal pathways without promising outcomes', 'Some pages may have privacy, outdated-content, publisher correction, platform report or legal-review pathways. Others may not. A careful review helps avoid risky messages, public arguments or fake content.'),
+            ('Monitor the whole search footprint', 'Progress is measured across the full search page: web, images, videos, snippets, suggestions and associated names. The goal is a safer, more accurate search footprint over time.'),
+        ],
+        'faqs': [
+            ('Is personal online reputation repair confidential?', 'The intake and planning are private. Public assets are only created from information you approve.'),
+            ('Can this help if I am not a public figure?', 'Yes. Everyday people are searched by employers, clients, landlords, partners and communities. Reputation harm is not limited to celebrities.'),
+        ],
+    },
+    'remove-outdated-google-search-results': {
+        'eyebrow': 'Outdated Google results',
+        'title': 'Remove Outdated Google Search Results? Options and Limits | Fix My Name Online™',
+        'h1': 'Remove outdated Google search results: what can be checked first',
+        'description': 'Options for outdated Google search results, old snippets, changed pages, removed content, old articles and search results that no longer reflect the current facts.',
+        'intro': 'Outdated Google search results can make old information look current. Sometimes the source page changed, the snippet is stale, an old page was copied, or a result no longer reflects the current facts. The first step is evidence, not panic.',
+        'sections': [
+            ('Check the live page and Google snippet separately', 'A result can be outdated because the publisher page changed but Google still shows the old snippet. It can also be outdated because another site copied or republished old information. Each case needs a different pathway.'),
+            ('Collect proof of what changed', 'Save the search phrase, result title, snippet, URL, date, screenshots, original publication date and any current page showing the updated facts. Outdated-content requests are stronger when the difference is clear.'),
+            ('Know the limits of Google tools', 'Google may update or remove certain stale results under its policies, but it does not control every publisher page and does not erase every old reference. Publisher contact or legal advice may be needed in some cases.'),
+            ('Build current assets while review is pending', 'If an outdated result keeps ranking, accurate current pages, profiles and articles can help searchers see more context while formal review pathways are assessed.'),
+        ],
+        'faqs': [
+            ('Can Google remove outdated results?', 'Sometimes. It depends on the source page, policy, evidence and whether the information is truly outdated or still publicly available.'),
+            ('What should I send for review?', 'Send the exact Google result, URL, screenshot, search phrase, date and any proof showing the information has changed or is incomplete.'),
+        ],
+    },
+    'reputation-monitoring-alerts': {
+        'eyebrow': 'Reputation monitoring',
+        'title': 'Reputation Monitoring Alerts for Name and Review Risk | Fix My Name Online™',
+        'h1': 'Reputation monitoring alerts help you catch search problems early',
+        'description': 'Reputation monitoring alerts for names, old names, businesses, Google reviews, bad results, associated names and search-risk terms before damage spreads.',
+        'intro': 'Many reputation problems are found too late. Reputation monitoring alerts help identify new results, review changes, associated-name issues and search-risk terms before they become a bigger trust problem.',
+        'sections': [
+            ('Monitor more than your exact name', 'Search risk often appears through old names, business names, suburbs, job titles, directors, partners, review terms, complaint phrases and image results. A useful watchlist includes the phrases real people might search.'),
+            ('Track new results and changed snippets', 'A page that has existed for years can become harmful if Google changes the title, snippet, image or freshness signal. Monitoring should record what changed and when.'),
+            ('Use alerts to decide the next action', 'A new result may need no action, a quiet evidence file, a review-response plan, a publisher request, a Search Console/indexing check or a broader repair campaign.'),
+            ('Report in plain English', 'The client should understand what appeared, why it matters, what was checked and what the safest next step is. Mystery dashboards do not build trust.'),
+        ],
+        'faqs': [
+            ('Who needs reputation monitoring?', 'Professionals, founders, businesses, public figures and everyday people who cannot afford to be surprised by what appears when their name is searched.'),
+            ('Does monitoring remove results?', 'No. Monitoring detects and documents changes. It helps decide whether removal review, review defence or reputation repair is needed.'),
+        ],
+    },
+    'online-reputation-management-for-business': {
+        'eyebrow': 'Business reputation management',
+        'title': 'Online Reputation Management for Business | Fix My Name Online™',
+        'h1': 'Online reputation management for businesses that get searched before they get trusted',
+        'description': 'Online reputation management for businesses dealing with Google reviews, bad search results, complaint pages, outdated listings, brand snippets and trust problems.',
+        'intro': 'Customers search before they call, book or buy. Business reputation management is about making sure Google, reviews and public profiles show the most accurate and useful picture of the business — while handling bad results carefully.',
+        'sections': [
+            ('Audit the branded search page', 'Check the business name, owner names, suburb, service terms, reviews, images, map results, complaint pages, directories and old listings. A business can lose trust before the customer ever reaches the website.'),
+            ('Handle reviews with evidence and calm replies', 'Fake, unfair or malicious reviews need screenshots, pattern notes, policy review and professional public replies. Fighting in public usually makes the business look less trustworthy.'),
+            ('Strengthen the trust assets', 'Service pages, About pages, case-safe proof, FAQs, location pages, profiles, videos and helpful articles can improve the search footprint around the brand.'),
+            ('Separate reputation management from advertising', 'Ads can bring clicks, but reputation repair needs search assets, review hygiene, monitoring and clear public trust signals that keep working after the ad stops.'),
+        ],
+        'faqs': [
+            ('Can reputation management help with fake Google reviews?', 'It can help document, report, respond and rebuild trust signals. Google decides whether any review is removed.'),
+            ('Is this only for large businesses?', 'No. Local businesses, professionals, clinics, trades, agencies, restaurants and online brands can all be affected by search trust problems.'),
+        ],
+    },
+    'what-shows-up-when-someone-googles-my-name': {
+        'eyebrow': 'Name search check',
+        'title': 'What Shows Up When Someone Googles My Name? | Fix My Name Online™',
+        'h1': 'What shows up when someone Googles your name?',
+        'description': 'A private name-search checklist for people worried about what employers, clients, dates, landlords or customers see when they Google a name.',
+        'intro': 'Most people do not know what appears when someone Googles their name until something goes wrong. A private name-search check maps the first impression people see before they meet you, hire you, date you, rent to you or trust you.',
+        'sections': [
+            ('Search the way another person would', 'Use your full name, quoted name, old names, nicknames, suburb, business names, job title and risk words. Check web results, images, videos, news, reviews and suggestions.'),
+            ('Look at snippets, not only links', 'The headline and snippet can cause the damage even if the page itself is old or more balanced. Screenshots help record exactly what others may be seeing.'),
+            ('Classify the search results', 'Mark each result as positive, neutral, outdated, sensitive, review-related, article-related, image-related, associated-name risk or possible removal-review candidate.'),
+            ('Choose a safe next step', 'Some issues need monitoring, some need a quiet correction request, some need review defence and some need a broader positive-footprint strategy.'),
+        ],
+        'faqs': [
+            ('Should I Google myself often?', 'Occasionally, yes, but track results calmly. Repeated panic searching does not solve the issue; evidence and a plan do.'),
+            ('Can Fix My Name Online check it for me?', 'Yes. The Free Search Snapshot™ is designed as a private first check of name, business, URL and review concerns.'),
+        ],
+    },
+    'google-review-defence-for-small-business': {
+        'eyebrow': 'Small business review defence',
+        'title': 'Google Review Defence for Small Business | Fix My Name Online™',
+        'h1': 'Google review defence for small businesses hit by unfair reviews',
+        'description': 'Google review defence for small businesses facing fake, unfair, malicious, competitor, ex-employee or review-bombing attacks on Google.',
+        'intro': 'For a small business, one unfair Google review can affect phone calls, bookings and trust. The best defence is not a public fight. It is evidence, policy review, calm responses and stronger trust signals around the business.',
+        'sections': [
+            ('Save the review evidence', 'Record the review text, rating, reviewer name, date, screenshots, business relationship, timeline and any signs of fake, competitor, ex-employee or coordinated activity.'),
+            ('Check possible Google policy issues', 'A review may involve conflict of interest, spam, harassment, impersonation, irrelevant content or another policy issue. The report should connect facts to policy, not just say the review is unfair.'),
+            ('Write for future customers', 'A public reply should reassure future customers. Keep it short, calm and professional. Avoid threats, private details or emotional arguments.'),
+            ('Repair the wider search page', 'Review defence also means stronger service pages, profile accuracy, FAQs, photos, business proof, helpful content and monitoring so one hostile review is not the whole story.'),
+        ],
+        'faqs': [
+            ('Can a small business delete a Google review?', 'The business cannot directly delete third-party reviews. Google decides. A business can report possible policy violations and respond professionally.'),
+            ('Should I ask customers for more reviews?', 'Follow platform rules and avoid incentives or pressure. A steady pattern of genuine customer feedback is safer than a sudden suspicious spike.'),
+        ],
+    },
+
 }
 
 
