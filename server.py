@@ -53,6 +53,7 @@ FULFILMENT_QUEUE_FILE = DATA_DIR / 'fulfilment_queue.jsonl'
 QUESTIONS_FILE = DATA_DIR / 'client_questions.jsonl'
 CONCIERGE_TRANSCRIPTS_FILE = DATA_DIR / 'concierge_transcripts.jsonl'
 CASE_ROOMS_FILE = DATA_DIR / 'private_case_rooms.jsonl'
+CLICK_EVENTS_FILE = DATA_DIR / 'click_events.jsonl'
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
@@ -2088,6 +2089,8 @@ def admin_export_full_backup_json():
         'onboarding_submissions': read_jsonl_records(ONBOARDING_FILE),
         'fulfilment_queue': read_jsonl_records(FULFILMENT_QUEUE_FILE),
         'client_questions': read_jsonl_records(QUESTIONS_FILE),
+        'click_events': read_jsonl_records(CLICK_EVENTS_FILE),
+        'click_count': len(read_jsonl_records(CLICK_EVENTS_FILE)),
     }
     return json_download(payload, f'fmno-full-backup-{datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}.json')
 
@@ -2205,11 +2208,36 @@ def admin_validate_public_text():
     return jsonify({'ok': True, 'result': result})
 
 
+@app.route('/api/track-click', methods=['POST'])
+def api_track_click():
+    payload = request.get_json(silent=True) or {}
+    event = str(payload.get('event') or 'click')[:80]
+    label = str(payload.get('label') or '')[:160]
+    href = str(payload.get('href') or '')[:400]
+    location = str(payload.get('location') or payload.get('path') or '')[:300]
+    source = str(payload.get('source') or 'site')[:80]
+    ua = (request.headers.get('User-Agent') or '')[:220]
+    raw_ip = (request.headers.get('CF-Connecting-IP') or request.headers.get('X-Forwarded-For') or request.remote_addr or '').split(',')[0].strip()
+    salt = (os.environ.get('FMNO_ADMIN_TOKEN') or 'fmno-click-salt').strip()
+    ip_hash = hashlib.sha256(f'{salt}:{raw_ip}'.encode('utf-8')).hexdigest()[:16] if raw_ip else ''
+    append_jsonl(CLICK_EVENTS_FILE, {
+        'event': event,
+        'label': label,
+        'href': href,
+        'location': location,
+        'source': source,
+        'ip_hash': ip_hash,
+        'user_agent': ua,
+        'referrer': (request.headers.get('Referer') or '')[:400],
+    })
+    return jsonify({'ok': True})
+
+
 @app.route('/health')
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v25-minimax-ava-polish', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v26-click-tracking-conversion-boost', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':

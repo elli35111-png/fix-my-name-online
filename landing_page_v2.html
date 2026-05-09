@@ -88,6 +88,8 @@
     .ava-frame:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 24%,transparent 0 42%,rgba(8,9,15,.20) 70%,rgba(8,9,15,.55) 100%);z-index:2;pointer-events:none;}
     .ava-nameplate{position:absolute;left:14px;bottom:12px;z-index:20;border:1px solid rgba(217,31,61,.35);background:rgba(8,9,15,.74);backdrop-filter:blur(10px);border-radius:999px;padding:7px 10px;box-shadow:0 12px 32px rgba(0,0,0,.32);pointer-events:none;}
     .ava-status{position:absolute;right:14px;top:12px;z-index:20;border:1px solid rgba(33,214,128,.28);background:rgba(8,9,15,.66);backdrop-filter:blur(10px);border-radius:999px;padding:6px 10px;color:#a7f3c8;pointer-events:none;}
+    .fmno-boost-bar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;width:min(94vw,760px);border:1px solid rgba(217,31,61,.35);background:rgba(8,9,15,.88);backdrop-filter:blur(18px);box-shadow:0 18px 70px rgba(0,0,0,.48),0 0 36px rgba(217,31,61,.14);}
+    .fmno-boost-bar a{white-space:nowrap;}
 
     @media (max-width:640px){
       html,body{max-width:100%;overflow-x:hidden!important;}
@@ -225,7 +227,12 @@
     <div class="glass rounded-xl overflow-hidden"><button class="faq-toggle w-full text-left p-5 flex items-center justify-between font-medium" onclick="toggleFaq(this)"><span>What happens after I choose a plan?</span><span class="faq-arrow text-grey transition-transform">▼</span></button><div class="faq-content hidden px-5 pb-5 text-sm text-greyLight leading-relaxed">Start with the free Search Snapshot™. If there is a real issue, we help you understand whether monitoring, removal review, review defence, or a repair plan is the right next step.</div></div>
   </div></div></section>
 
-  <section class="py-24 gradient-bg relative"><div class="max-w-3xl mx-auto px-4 text-center relative z-10"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">Start with a<br><span class="text-red">Free Search Snapshot™</span></h2><p class="text-xl text-greyLight mb-4">Before the internet defines the story, build the footprint that should have been there already.</p><p class="text-grey mb-8">Start free or choose a private package. No public case disclosure.</p><a href="#pricing" class="btn-red inline-block px-12 py-4 rounded-xl font-bold text-lg">START FREE SEARCH SNAPSHOT™ →</a></div></section>
+  <section class="py-24 gradient-bg relative"><div class="max-w-3xl mx-auto px-4 text-center relative z-10"><h2 class="font-orbitron text-4xl md:text-5xl font-bold mb-4">Start with a<br><span class="text-red">Free Search Snapshot™</span></h2><p class="text-xl text-greyLight mb-4">Before the internet defines the story, build the footprint that should have been there already.</p><p class="text-grey mb-8">Start free or choose a private package. No public case disclosure.</p><a href="#pricing" class="btn-red inline-block px-12 py-4 rounded-xl font-bold text-lg" data-track="final_snapshot_cta">START FREE SEARCH SNAPSHOT™ →</a></div></section>
+
+  <div class="fmno-boost-bar rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="text-left"><div class="font-orbitron text-xs text-red tracking-widest">PRIVATE FIRST STEP</div><div class="text-sm text-greyLight">Worried what Google shows? Get the Free Search Snapshot™.</div></div>
+    <div class="flex gap-2"><a href="/app?source=sticky_boost" class="btn-red px-4 py-2 rounded-xl font-bold text-sm text-white" data-track="sticky_free_snapshot">Start Free</a><a href="#private-search-concierge" class="glass px-4 py-2 rounded-xl font-bold text-sm text-white border border-white/15" data-track="sticky_ask_ava">Ask Ava</a></div>
+  </div>
 
   <footer class="py-12 bg-dark border-t border-white/5"><div class="max-w-7xl mx-auto px-4"><div class="flex flex-col md:flex-row items-center justify-between gap-6"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-red rounded-lg flex items-center justify-center font-orbitron font-bold text-sm">FM</div><div><div class="font-orbitron text-sm font-bold">FIXMYNAME<span class="text-red">ONLINE</span></div><div class="text-xs text-grey">© 2026 MadisonJade Pty Ltd</div></div></div><div class="flex items-center gap-6 text-sm text-grey"><a href="/learn" class="hover:text-white transition-colors">Guides</a><a href="/privacy" class="hover:text-white transition-colors">Privacy Policy</a><a href="/terms" class="hover:text-white transition-colors">Terms of Service</a><a href="/questions" class="hover:text-white transition-colors">Questions</a></div><div class="text-xs text-grey">FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd. All rights reserved.</div></div></div></footer>
 
@@ -242,6 +249,13 @@
     let conciergeState = {topic:'privacy', collected:{}, current_field:'', ready_to_submit:false, transcript:[]};
     const topicLabels = {privacy:'Private information', 'bad-results':'Bad Google result', 'old-articles':'Old article', reviews:'Fake or unfair review', positive:'Positive search footprint', snapshot:'Free Search Snapshot™'};
     function setText(id, value){const el=document.getElementById(id); if(el) el.textContent=value || '';}
+    function trackFmnoClick(event, label, href){
+      try{
+        const body=JSON.stringify({event:event||'click', label:label||'', href:href||'', location:window.location.pathname+window.location.search, source:'fmno_home'});
+        if(navigator.sendBeacon){navigator.sendBeacon('/api/track-click', new Blob([body], {type:'application/json'}));}
+        else {fetch('/api/track-click',{method:'POST',headers:{'Content-Type':'application/json'},body,keepalive:true}).catch(()=>{});}
+      }catch(e){}
+    }
     function addTranscript(role, text){
       if(!text) return;
       conciergeState.transcript.push({role, text, at:new Date().toISOString()});
@@ -285,6 +299,7 @@
       }
     }
     function setConciergeTopic(topic){
+      trackFmnoClick('concierge_topic', topic, '#private-search-concierge');
       conciergeState = {topic, collected:{issue_type:topic, issue_label:topicLabels[topic] || topic}, current_field:'', ready_to_submit:false, transcript:[]};
       const box=document.getElementById('concierge-transcript'); if(box){box.innerHTML=''; box.classList.add('hidden');}
       const scoreBox=document.getElementById('concierge-risk-score'); if(scoreBox){scoreBox.textContent=''; scoreBox.classList.add('hidden');}
@@ -296,6 +311,7 @@
       const message=(input && input.value || '').trim();
       if(!message) return;
       addTranscript('visitor', message);
+      trackFmnoClick('concierge_answer', conciergeState.current_field || 'answer', '#private-search-concierge');
       if(input) input.value='';
       await callConcierge({message});
     }
@@ -303,6 +319,7 @@
       const submit=document.getElementById('concierge-submit');
       if(submit){submit.disabled=true; submit.textContent='Submitting private snapshot...';}
       try{
+        trackFmnoClick('concierge_submit', 'submit_free_snapshot', '#private-search-concierge');
         const res=await fetch('/api/concierge/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({collected:conciergeState.collected, transcript:conciergeState.transcript})});
         const data=await res.json();
         if(!data.ok) throw new Error(data.error || 'Submit failed');
@@ -316,6 +333,13 @@
     }
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('[data-topic]').forEach(el => el.addEventListener('click', () => setConciergeTopic(el.dataset.topic)));
+      document.querySelectorAll('a,button').forEach(el => {
+        el.addEventListener('click', () => {
+          const label = el.dataset.track || el.textContent.trim().slice(0,80) || el.getAttribute('aria-label') || 'click';
+          const href = el.getAttribute('href') || (el.dataset.topic ? '#topic-' + el.dataset.topic : '');
+          trackFmnoClick('click', label, href);
+        });
+      });
       const send=document.getElementById('concierge-send'); if(send) send.addEventListener('click', sendConciergeAnswer);
       const input=document.getElementById('concierge-input'); if(input) input.addEventListener('keydown', e=>{if(e.key==='Enter') sendConciergeAnswer();});
       const submit=document.getElementById('concierge-submit'); if(submit) submit.addEventListener('click', submitConcierge);
