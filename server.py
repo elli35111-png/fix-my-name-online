@@ -451,8 +451,10 @@ def concierge_provider_name():
     configured = (os.environ.get('CONCIERGE_PROVIDER') or '').strip().lower()
     if configured:
         return configured
-    # Prefer OpenRouter when its key exists; otherwise keep the live concierge working
-    # with the configured MiniMax key instead of dropping to scripted fallback.
+    # FMNO public concierge should default to MiniMax. OpenRouter remains a fallback
+    # only when MiniMax-style keys are absent and an OpenRouter key is explicitly live.
+    if os.environ.get('MINIMAX_API_KEY') or os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY'):
+        return 'minimax'
     if os.environ.get('OPENROUTER_API_KEY'):
         return 'openrouter'
     return 'minimax'
@@ -2207,7 +2209,7 @@ def admin_validate_public_text():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v24-openrouter-concierge-fallback', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name()})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v25-minimax-ava-polish', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True})
 
 
 if __name__ == '__main__':

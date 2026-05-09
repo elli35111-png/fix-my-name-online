@@ -82,6 +82,12 @@
     .guide-card{border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);transition:.22s;cursor:pointer;}
     .guide-card:hover,.guide-card.active{border-color:rgba(217,31,61,.48);background:rgba(217,31,61,.10);transform:translateY(-3px);box-shadow:0 20px 60px rgba(0,0,0,.24);}
     .guide-thumb{background:linear-gradient(135deg,rgba(217,31,61,.25),rgba(8,9,15,.95));border:1px solid rgba(255,255,255,.12);}
+    .ava-frame{position:relative;background:#05060a;}
+    .ava-frame video{display:block;width:100%;height:100%;object-fit:cover;filter:contrast(1.06) saturate(1.05) brightness(.98);}
+    .ava-frame:before{content:"";position:absolute;inset:0;border-radius:1rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.10), inset 0 -80px 90px rgba(8,9,15,.82), inset 0 0 70px rgba(217,31,61,.16);z-index:2;pointer-events:none;}
+    .ava-frame:after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 24%,transparent 0 42%,rgba(8,9,15,.20) 70%,rgba(8,9,15,.55) 100%);z-index:2;pointer-events:none;}
+    .ava-nameplate{position:absolute;left:14px;bottom:12px;z-index:4;border:1px solid rgba(217,31,61,.35);background:rgba(8,9,15,.74);backdrop-filter:blur(10px);border-radius:999px;padding:7px 10px;box-shadow:0 12px 32px rgba(0,0,0,.32);}
+    .ava-status{position:absolute;right:14px;top:12px;z-index:4;border:1px solid rgba(33,214,128,.28);background:rgba(8,9,15,.66);backdrop-filter:blur(10px);border-radius:999px;padding:6px 10px;color:#a7f3c8;}
 
     @media (max-width:640px){
       html,body{max-width:100%;overflow-x:hidden!important;}
@@ -118,12 +124,14 @@
               <div>
                 <div class="inline-flex items-center gap-2 tv-pill rounded-full px-3 py-1 mb-5"><span class="w-2 h-2 rounded-full bg-red animate-pulse"></span><span class="font-rajdhani tracking-[.28em] text-xs text-greyLight uppercase">FMNO Reputation TV</span></div>
                 <h2 class="font-orbitron text-2xl sm:text-3xl md:text-5xl font-black leading-tight mb-4">Google your name.<br><span class="text-red">We will wait.</span></h2>
-                <div class="relative w-full mb-5 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(217,31,61,.18)]" id="ava-video-wrap">
-                  <video id="ava-video" class="w-full" playsinline webkit-playsinline preload="auto" muted autoplay loop poster="" style="aspect-ratio:16/9;background:#08090f">
-                    <source src="/assets/ava_concierge.mp4?v=20260508-lipsync2" type="video/mp4">
+                <div class="relative w-full mb-5 rounded-2xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(217,31,61,.18)] ava-frame" id="ava-video-wrap">
+                  <video id="ava-video" class="w-full" playsinline webkit-playsinline preload="auto" muted autoplay loop poster="/assets/ava_concierge_poster.jpg?v=20260509-polished" style="aspect-ratio:16/9;background:#08090f">
+                    <source src="/assets/ava_concierge.mp4?v=20260509-polished" type="video/mp4">
                   </video>
-                  <div class="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#08090f] to-transparent pointer-events-none"></div>
-                  <button id="ava-play-btn" class="absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity hover:bg-black/20" onclick="this.style.display='none';document.getElementById('ava-video').muted=false;document.getElementById('ava-video').play()">
+                  <div class="ava-status text-[10px] sm:text-xs font-rajdhani tracking-wider"><span class="inline-block w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></span>CONCIERGE LIVE</div>
+                  <div class="ava-nameplate"><div class="font-orbitron text-[10px] sm:text-xs text-red tracking-widest">AVA STERLING</div><div class="text-[10px] sm:text-xs text-greyLight">Private Search Concierge™</div></div>
+                  <div class="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#08090f] to-transparent pointer-events-none z-[3]"></div>
+                  <button id="ava-play-btn" class="absolute inset-0 z-[5] flex items-center justify-center bg-black/30 transition-opacity hover:bg-black/20" onclick="this.style.display='none';document.getElementById('ava-video').muted=false;document.getElementById('ava-video').play()">
                     <div class="w-14 h-14 rounded-full bg-red/80 flex items-center justify-center backdrop-blur-sm border border-red/40"><svg class="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
                     <span class="absolute bottom-4 text-xs text-greyLight font-rajdhani tracking-wider">HEAR FROM AVA</span>
                   </button>
