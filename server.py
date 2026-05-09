@@ -1240,6 +1240,176 @@ SEO_GUIDES = {
             ('Should I ask customers for more reviews?', 'Follow platform rules and avoid incentives or pressure. A steady pattern of genuine customer feedback is safer than a sudden suspicious spike.'),
         ],
     },
+    'clean-up-my-google-results': {
+        'eyebrow': 'Clean up Google results',
+        'title': 'How Do I Clean Up My Google Results? | Fix My Name Online™',
+        'h1': 'How do I clean up my Google results?',
+        'description': 'Plain-English help for people asking how to clean up Google results for their name, business, old articles, bad reviews or embarrassing search results.',
+        'intro': 'When people say they want to clean up their Google results, they usually mean one thing: the search page is giving people the wrong first impression. The safe way starts with evidence, source checks and a plan for better current information.',
+        'sections': [
+            ('Check exactly what needs cleaning up', 'Write down the search phrase, result title, snippet, URL, image and date. A bad headline, old snippet, review box or copied page can each need a different response.'),
+            ('Do not make it louder', 'Avoid public arguments, repeated angry comments, threats or spammy posts. Those reactions can create more search signals around the same problem.'),
+            ('Look for realistic update or removal paths', 'Some results may have an outdated-content, privacy, correction, review-policy or publisher request pathway. Others may need a stronger positive search footprint instead.'),
+            ('Build better results people can trust', 'Useful profiles, bios, business pages, articles, FAQs and proof pages can help Google and searchers see a fuller current picture over time.'),
+        ],
+        'faqs': [
+            ('Can you clean up Google results instantly?', 'No. Search engines, publishers and platforms make their own decisions. A safe plan improves evidence, assets, discovery and monitoring over time.'),
+            ('What should I send first?', 'Send the exact search phrase, screenshots, URLs, your name or business name, and what worries you most.'),
+        ],
+    },
+    'old-stuff-showing-up-on-google': {
+        'eyebrow': 'Old stuff on Google',
+        'title': 'Why Is Old Stuff Showing Up on Google? | Fix My Name Online™',
+        'h1': 'Why is old stuff showing up when I Google myself?',
+        'description': 'What to do when old stuff, outdated pages, old articles, records or embarrassing results keep showing up on Google for your name.',
+        'intro': 'Old results can feel unfair because Google can make an old chapter look fresh. The page may be old, copied, re-indexed, newly linked or shown with a snippet that misses the full context.',
+        'sections': [
+            ('Work out whether the page or snippet is old', 'Sometimes the website still shows the old information. Sometimes the website changed but Google is showing an old title or snippet. That difference matters.'),
+            ('Save proof of the age and context', 'Keep screenshots, original dates, current facts, changed outcomes and the exact Google result. Evidence makes any request stronger.'),
+            ('Check official pathways first', 'There may be a publisher correction, outdated-content request, privacy pathway or platform process. Not every old page qualifies, but it should be checked properly.'),
+            ('Add the current version of the story', 'If old material remains online, accurate current assets can help searchers see who you are now, not only what happened years ago.'),
+        ],
+        'faqs': [
+            ('Can old information be removed from Google?', 'Sometimes a result or snippet can be updated or removed under specific policies, but there is no universal right to erase every old result.'),
+            ('Is this only for court records?', 'No. It can involve old articles, reviews, images, copied pages, complaint sites, directories or outdated profiles.'),
+        ],
+    },
+    'someone-googled-me-and-found-something-bad': {
+        'eyebrow': 'Someone searched me',
+        'title': 'Someone Googled Me and Found Something Bad | Fix My Name Online™',
+        'h1': 'Someone Googled me and found something bad. What now?',
+        'description': 'Private next steps when an employer, client, date, landlord or customer Googled your name and found something bad or embarrassing.',
+        'intro': 'The worst part is often the silence afterwards: the job goes cold, the client hesitates, the date changes tone or the customer stops replying. Before reacting, map exactly what they may have seen.',
+        'sections': [
+            ('Do the same search they likely did', 'Search your full name, business name, city, job title, old names and obvious risk words. Check web, images, news, reviews and suggestions.'),
+            ('Record the first impression', 'Most people only look for seconds. Save the headline, snippet, image, ranking position and source so you know what shaped their view.'),
+            ('Choose a private response', 'Depending on the issue, the next move may be monitoring, removal review, review defence, a correction request or stronger positive assets.'),
+            ('Do not over-explain publicly', 'Public crisis posts can draw more attention. Reputation repair should be calm, private-first and based on approved truthful information.'),
+        ],
+        'faqs': [
+            ('Should I contact the person who searched me?', 'Sometimes, but not always. First understand what appeared and whether a quiet fix, evidence pack or better public asset is safer.'),
+            ('Can this be handled discreetly?', 'Yes. The first step is a private Free Search Snapshot™ so the issue can be mapped before any public action.'),
+        ],
+    },
+    'bad-review-costing-me-customers': {
+        'eyebrow': 'Bad review damage',
+        'title': 'A Bad Review Is Costing Me Customers | Fix My Name Online™',
+        'h1': 'A bad review is costing me customers. What can I do?',
+        'description': 'Plain-English Google review defence for business owners worried that a fake, unfair or damaging review is costing calls, bookings and customers.',
+        'intro': 'One bad review can change how strangers see a business before they ever call. The best response is evidence, policy review, a calm public reply and stronger trust signals around the business.',
+        'sections': [
+            ('Save the review and the pattern', 'Record the review text, star rating, reviewer name, date, screenshots, booking history and any signs of fake, competitor, ex-staff or coordinated behaviour.'),
+            ('Check whether it may breach policy', 'Google decides review removals. A useful report connects facts to possible policy issues instead of simply saying the review is unfair.'),
+            ('Reply for future customers', 'A calm owner response can reassure the next person reading. Avoid threats, private details or emotional back-and-forth.'),
+            ('Strengthen the rest of the search page', 'Better business pages, FAQs, photos, accurate profiles and review hygiene can reduce the damage of one hostile result.'),
+        ],
+        'faqs': [
+            ('Can you delete a bad Google review?', 'No agency can directly delete Google reviews. We help document, report where appropriate, respond and repair surrounding trust signals.'),
+            ('Should I ask happy customers for reviews?', 'Follow platform rules. Genuine steady feedback is safer than pressure, incentives or a sudden suspicious spike.'),
+        ],
+    },
+    'old-court-record-showing-on-google': {
+        'eyebrow': 'Old court record search risk',
+        'title': 'Old Court Record Showing on Google | Fix My Name Online™',
+        'h1': 'Old court record showing on Google? Start with context and evidence',
+        'description': 'Private guidance when an old court record, tribunal page, appeal transcript or legal mention appears in Google search results for your name.',
+        'intro': 'Old court and tribunal pages can be complicated. Some are public records, some are copied by other sites, some miss context, and some show in Google in a way that feels newly damaging.',
+        'sections': [
+            ('Identify the source and copy sites', 'Check whether Google shows an official court page, publisher article, database, scraper site or copied version. The source affects the options.'),
+            ('Collect the missing context', 'Save dates, outcomes, appeal results, corrections, expungement or spent-conviction information where relevant, and screenshots of the search result.'),
+            ('Separate legal advice from reputation planning', 'Some matters need a lawyer. Reputation work can help with search mapping, evidence packs, publisher/platform pathways and truthful current assets.'),
+            ('Build a current search footprint carefully', 'If the record remains online, approved professional assets can help show more than one old result, without pretending the search engine can be controlled.'),
+        ],
+        'faqs': [
+            ('Can old court records always be removed?', 'No. It depends on the record, jurisdiction, source, legal status and platform policy. The first step is a careful review.'),
+            ('Is Fix My Name Online a law firm?', 'No. We are not a law firm and do not provide legal advice. We help with private search review and reputation pathways.'),
+        ],
+    },
+    'my-name-brings-up-embarrassing-results': {
+        'eyebrow': 'Embarrassing name results',
+        'title': 'My Name Brings Up Embarrassing Results | Fix My Name Online™',
+        'h1': 'My name brings up embarrassing results. What are my options?',
+        'description': 'Private help for embarrassing Google results tied to your name, old names, photos, articles, comments, reviews or associated search terms.',
+        'intro': 'Embarrassing search results can affect work, dating, family, finance and confidence. The first step is not shame or panic; it is a private map of what appears and what can realistically be done.',
+        'sections': [
+            ('List every search that triggers it', 'Check full name, old names, nicknames, locations, business names and image searches. Embarrassing results often appear only for certain combinations.'),
+            ('Classify the result', 'It may be outdated, inaccurate, sensitive, review-related, image-related, copied, defamatory, private or simply lacking context. Each type has different options.'),
+            ('Keep the response proportionate', 'Avoid public arguments, fake content or mass posting. A quiet, truthful repair plan is usually safer.'),
+            ('Create better public context', 'Approved bios, profiles, business pages, helpful articles and proof points can help the search page show the person or business as they are now.'),
+        ],
+        'faqs': [
+            ('Will this make the embarrassing result disappear?', 'No responsible service can promise that. We review possible pathways and build a safer search footprint over time.'),
+            ('Do I have to explain everything publicly?', 'No. Public assets should use only approved information. Sensitive details can stay private unless there is a clear reason to publish.'),
+        ],
+    },
+    'can-i-remove-my-name-from-google': {
+        'eyebrow': 'Remove name from Google',
+        'title': 'Can I Remove My Name From Google? | Fix My Name Online™',
+        'h1': 'Can I remove my name from Google?',
+        'description': 'Plain-English explanation of whether a person can remove their name from Google, what Google controls, and what private reputation repair can check.',
+        'intro': 'Many people ask if they can remove their name from Google. The honest answer is: sometimes specific results may have pathways, but Google is an index of pages across the web, not a single profile you can simply delete.',
+        'sections': [
+            ('Google usually shows pages from other websites', 'The result may come from a publisher, review site, social profile, directory, court database, forum or copied page. The source often controls the content.'),
+            ('Some personal information has special pathways', 'Certain privacy, outdated-content, explicit image, doxxing, impersonation or policy issues may be reviewable. Evidence and exact URLs matter.'),
+            ('Removing a name is different from repairing a search page', 'If results cannot be removed, the safer goal may be to build accurate current assets and reduce the power of old or incomplete results over time.'),
+            ('Start privately before contacting websites', 'A rushed message to a publisher or platform can backfire. Map the result and options before acting.'),
+        ],
+        'faqs': [
+            ('Can Google delete every result about me?', 'No. Google and source websites make their own decisions, and public-interest material may remain online.'),
+            ('What is the first step?', 'Send the name, URLs, screenshots and search phrases through a Free Search Snapshot™ for private review.'),
+        ],
+    },
+    'hide-bad-google-results': {
+        'eyebrow': 'Hide bad Google results',
+        'title': 'Can You Hide Bad Google Results? Safer Options Explained | Fix My Name Online™',
+        'h1': 'Can you hide bad Google results? Here is the safer way to think about it',
+        'description': 'For people searching how to hide bad Google results: what is realistic, what to avoid, and safer reputation repair options.',
+        'intro': 'People often search for how to hide bad Google results because they feel exposed. A responsible service should not promise to hide, bury or manipulate Google. The safer question is: what can be reviewed, corrected, updated or balanced with truthful current information?',
+        'sections': [
+            ('Avoid anyone promising secret control over Google', 'Guaranteed hiding, burying or instant removal claims are red flags. Search engines decide what ranks.'),
+            ('Check whether the result itself has a pathway', 'Some problems may qualify for correction, privacy review, outdated-content review, review reporting or publisher contact. Others will not.'),
+            ('Improve the search page honestly', 'Accurate profiles, pages, articles, FAQs, business proof and monitoring can give searchers a fuller view over time.'),
+            ('Protect future searches', 'Monitoring names, old names, business names and risk terms helps catch new issues early before they become the only thing people see.'),
+        ],
+        'faqs': [
+            ('Is hiding bad results the same as removal?', 'No. Removal means a specific result may be taken down, updated or de-indexed. Broader reputation repair focuses on the whole search page.'),
+            ('Can positive content help?', 'Truthful positive assets can help over time, but rankings and search outcomes are decided by search engines.'),
+        ],
+    },
+    'what-do-employers-see-when-they-google-me': {
+        'eyebrow': 'Employer search check',
+        'title': 'What Do Employers See When They Google Me? | Fix My Name Online™',
+        'h1': 'What do employers see when they Google me?',
+        'description': 'A private checklist for job seekers and professionals worried about what employers see when they Google a name before an interview or offer.',
+        'intro': 'Employers, recruiters and clients often search before making a decision. If the results show old issues, embarrassing pages, articles, images or thin profiles, the first impression may form before you speak.',
+        'sections': [
+            ('Search your name like a recruiter', 'Use your full name, city, profession, old names, LinkedIn name, business history and any likely risk words. Check web, images, news and videos.'),
+            ('Look for gaps as well as bad results', 'Sometimes the problem is not only a bad link. It is the absence of strong current professional assets that explain who you are now.'),
+            ('Prepare approved professional assets', 'A clear bio, service page, portfolio, profiles, articles, FAQs and proof points can make the search page more useful and current.'),
+            ('Handle sensitive results quietly', 'If an old article, record or complaint appears, review options and evidence before trying to explain it publicly.'),
+        ],
+        'faqs': [
+            ('Should I clean my results before applying for jobs?', 'It is wise to check early. Reputation repair takes time, so a private snapshot before a major application can prevent surprises.'),
+            ('Can this help professionals and business owners?', 'Yes. The same search risk affects executives, trades, consultants, creators, founders and everyday job seekers.'),
+        ],
+    },
+    'fix-my-online-reputation-fast': {
+        'eyebrow': 'Fast reputation help',
+        'title': 'How Can I Fix My Online Reputation Fast? | Fix My Name Online™',
+        'h1': 'How can I fix my online reputation fast without making it worse?',
+        'description': 'Urgent but careful steps for people wanting to fix their online reputation fast after bad Google results, reviews, articles or search surprises.',
+        'intro': 'When a search result is hurting jobs, customers or relationships, it feels urgent. Fast does not mean reckless. The first 24 hours should be about evidence, triage and choosing the safest next step.',
+        'sections': [
+            ('First: freeze the evidence', 'Screenshot the results, URLs, snippets, reviews, images and dates before anything changes. Good evidence prevents guesswork.'),
+            ('Second: stop risky reactions', 'Do not threaten, spam, fake reviews, make public accusations or publish panic posts. Those actions can become new reputation problems.'),
+            ('Third: triage the pathway', 'Decide whether the issue is removal review, review defence, monitoring, positive asset building or legal referral. Different problems need different tools.'),
+            ('Fourth: build the next visible proof', 'Even while review pathways are checked, useful current assets can be prepared so the search page has better material to discover.'),
+        ],
+        'faqs': [
+            ('What can be done quickly?', 'Evidence capture, risk triage, review-response drafts, profile cleanup and preparation of approved assets can happen quickly. Search ranking changes usually take longer.'),
+            ('Is urgent reputation help private?', 'Yes. The first step can be a private Free Search Snapshot™ before any public move is made.'),
+        ],
+    },
 
 }
 
@@ -2340,7 +2510,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v27-reputation-authority-cluster', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v28-layman-search-variants', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
