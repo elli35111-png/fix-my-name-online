@@ -268,6 +268,13 @@
       box.appendChild(div);
       while(box.children.length > 5) box.removeChild(box.firstChild);
     }
+    function conciergeDisplayText(data){
+      const reply=(data && data.reply || '').trim();
+      const next=(data && data.next_question || '').trim();
+      if(!next) return reply;
+      if(reply.toLowerCase().includes(next.toLowerCase())) return reply;
+      return reply + ' ' + next;
+    }
     async function callConcierge({topic, message=''}){
       const send=document.getElementById('concierge-send');
       if(send) {send.disabled=true; send.textContent='Private Concierge is thinking...';}
@@ -286,7 +293,7 @@
           scoreBox.classList.remove('hidden');
           scoreBox.textContent = 'Reputation Risk Score™ preview: ' + data.risk_score_preview.score + '/100 · ' + data.risk_score_preview.label;
         }
-        addTranscript('concierge', data.reply + (data.next_question ? ' ' + data.next_question : ''));
+        addTranscript('concierge', conciergeDisplayText(data));
         const input=document.getElementById('concierge-input');
         const submit=document.getElementById('concierge-submit');
         if(input) input.placeholder = data.next_question || 'Ready to submit';
