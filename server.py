@@ -1588,6 +1588,11 @@ def ad_free_snapshot_form():
     return page('Free Search Snapshot™ — FixMyNameOnline™', body, 'Start a private Free Search Snapshot™ for reputation-sensitive name, business, review, article and search-result problems.', canonical_path='/free-search-snapshot')
 
 
+@app.route('/free-snapshot')
+def free_snapshot_short_redirect():
+    return redirect('/free-search-snapshot', code=301)
+
+
 @app.route('/pricing')
 def pricing():
     return redirect('/#pricing', code=301)
@@ -2510,7 +2515,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v29-robots-explicit-allow', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v30-free-snapshot-redirect', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
