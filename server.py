@@ -815,9 +815,10 @@ def indexnow_key_file():
 @app.route('/sitemap.xml')
 def sitemap_xml():
     base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    personal_search_urls = ['/personal-search/ilija-cakar.html', '/personal-search/elli-cakar.html', '/personal-search/ilijah-cakar.html', '/personal-search/ilija-cakar-property-developer.html', '/personal-search/elli-cakar-madisonjade.html', '/personal-search/ilijah-cakar-first-page-strategy.html', '/personal-search/ilija-cakar-fix-my-name-online.html', '/personal-search/elli-cakar-digital-reputation.html', '/personal-search/ilijah-cakar-business-rebuild.html']
     guide_urls = ['/' + slug for slug in SEO_GUIDES.keys()]
     urls = []
-    for u in base_urls + guide_urls:
+    for u in base_urls + guide_urls + personal_search_urls:
         if u not in urls:
             urls.append(u)
     today = datetime.utcnow().strftime('%Y-%m-%d')
@@ -2515,7 +2516,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v30-free-snapshot-redirect', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v31-personal-search-assets', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
