@@ -1428,6 +1428,38 @@ SEO_GUIDES = {
 }
 
 
+def load_generated_seo_guides():
+    """Load Hermes SEO OS generated guides without hand-editing server.py.
+
+    Expected file: generated_seo_guides.json in the app root.
+    Shape matches SEO_GUIDES: {slug: {eyebrow,title,h1,description,intro,sections,faqs}}.
+    Invalid records are skipped so a bad generated page cannot take down the app.
+    """
+    path = Path('generated_seo_guides.json')
+    if not path.exists():
+        return
+    try:
+        data = json.loads(path.read_text(encoding='utf-8'))
+    except Exception:
+        return
+    if not isinstance(data, dict):
+        return
+    for slug, guide in data.items():
+        if not re.fullmatch(r'[a-z0-9][a-z0-9-]{2,90}', str(slug or '')):
+            continue
+        if not isinstance(guide, dict):
+            continue
+        required = ['eyebrow', 'title', 'h1', 'description', 'intro', 'sections', 'faqs']
+        if not all(k in guide for k in required):
+            continue
+        if not isinstance(guide.get('sections'), list) or not isinstance(guide.get('faqs'), list):
+            continue
+        SEO_GUIDES[str(slug)] = guide
+
+
+load_generated_seo_guides()
+
+
 def guide_schema(slug, guide):
     return f'''<script type="application/ld+json">{json.dumps({
         '@context': 'https://schema.org',
