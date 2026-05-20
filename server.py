@@ -824,7 +824,7 @@ def personal_search_hub():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/privacy', '/terms']
     personal_search_urls = ['/personal-search/']
     personal_search_dir = Path('personal-search')
     if personal_search_dir.exists():
@@ -933,6 +933,30 @@ def online_reputation_repair_page():
     )
 
 
+@app.route('/worldwide-reputation-repair')
+def worldwide_reputation_repair_page():
+    return acquisition_page(
+        'Worldwide Reputation Repair — FixMyNameOnline™',
+        'Worldwide reputation repair',
+        'Worldwide reputation repair for search problems that cross borders.',
+        'FixMyNameOnline™ supports clients worldwide with private search protection for names, businesses, old articles, review attacks, damaging snippets and associated-name search problems.',
+        [
+            'Worldwide private intake for individuals, professionals, founders and businesses',
+            'Name, old-name, business, location and associated-entity search mapping',
+            'Google results, review profiles, old articles, copied pages and image-result triage',
+            'Removal, privacy, outdated-content, publisher or platform pathway review where realistic',
+            'Truthful positive assets and monitoring built for international search visibility',
+        ],
+        [
+            ('Do you work outside Australia?', 'Yes. FixMyNameOnline™ is a worldwide service. MadisonJade Pty Ltd operates from Australia, but search reputation problems are global.'),
+            ('Can you handle overseas Google results?', 'We can map and review international search results, but each platform, publisher and jurisdiction has its own rules and no outcome is guaranteed.'),
+            ('What is the first step?', 'Start with the Free Search Snapshot™ and include the country, language, name variants, business names, URLs or screenshots if you have them.'),
+        ],
+        '/worldwide-reputation-repair',
+        'Worldwide reputation repair and private search protection for bad Google results, old articles, review attacks and associated-name search problems.'
+    )
+
+
 @app.route('/reputation-repair-australia')
 def reputation_repair_australia_page():
     return acquisition_page(
@@ -978,6 +1002,30 @@ def remove_negative_google_results_page():
         ],
         '/remove-negative-google-results',
         'Private options review for negative Google results, bad snippets, old articles, review damage and search reputation problems. No removal outcome guaranteed.'
+    )
+
+
+@app.route('/google-review-defence-worldwide')
+def google_review_defence_worldwide_page():
+    return acquisition_page(
+        'Google Review Defence Worldwide — FixMyNameOnline™',
+        'Google review defence worldwide',
+        'Google review defence for businesses wherever customers search first.',
+        'Private support for businesses worldwide dealing with fake, unfair, malicious, competitor, ex-staff or review-bombing issues on Google Business Profiles and review-led search results.',
+        [
+            'Worldwide review-risk triage for local and online businesses',
+            'Review pattern, timeline, relationship and evidence audit',
+            'Possible Google policy issue mapping and reporting notes',
+            'Calm public owner response drafts for future customers',
+            'Trust-recovery plan across website, profiles, search assets and monitoring',
+        ],
+        [
+            ('Can FMNO help with reviews outside Australia?', 'Yes. The service is worldwide. Google policies are global, but local facts, languages and business context still matter.'),
+            ('Can you guarantee Google will remove a review?', 'No. Google makes the final decision. We help document, report where appropriate, respond professionally and rebuild trust signals.'),
+            ('What should I send first?', 'Send the business name, country/location, Google Business Profile link, review screenshots and any evidence showing why the review may be fake or unfair.'),
+        ],
+        '/google-review-defence-worldwide',
+        'Worldwide Google review defence for fake, unfair or malicious reviews. Evidence audit, reporting notes, response drafts and trust recovery.'
     )
 
 
@@ -2657,7 +2705,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v33-commercial-seo-pages', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v34-worldwide-seo-pages', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
