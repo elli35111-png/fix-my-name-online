@@ -824,7 +824,7 @@ def personal_search_hub():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/google-review-defence', '/remove-bad-google-results', '/private-reputation-repair', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/privacy', '/terms']
     personal_search_urls = ['/personal-search/']
     personal_search_dir = Path('personal-search')
     if personal_search_dir.exists():
@@ -907,6 +907,102 @@ def acquisition_page(title, eyebrow, headline, subhead, bullets, faq_items, cano
     <div class="grid">{faq_html}</div>
     """
     return page(title, body, description=description, canonical_path=canonical_path)
+
+
+@app.route('/online-reputation-repair')
+def online_reputation_repair_page():
+    return acquisition_page(
+        'Online Reputation Repair — FixMyNameOnline™',
+        'Online reputation repair',
+        'Online reputation repair for people and businesses being judged by search.',
+        'Private search protection for bad Google results, old articles, damaging snippets, associated names, review problems and weak positive search footprints.',
+        [
+            'Name, business, old-name and associated-name search mapping',
+            'Bad result, article, review, image and complaint-page triage',
+            'Removal, privacy, outdated-content or platform-reporting pathway review where realistic',
+            'Truthful positive asset strategy for a stronger current search footprint',
+            'Monitoring plan for ranking movement, snippet changes and new risk signals',
+        ],
+        [
+            ('What is online reputation repair?', 'It is the structured process of reviewing what search engines show, checking realistic removal or reporting options, and building accurate approved assets that help people see the fuller current story.'),
+            ('Can you fix my search results quickly?', 'Evidence capture and planning can start quickly. Search visibility usually takes weeks or months, and no search engine result is guaranteed.'),
+            ('Is this only for Australia?', 'FixMyNameOnline™ is operated by MadisonJade Pty Ltd in Australia and supports clients worldwide.'),
+        ],
+        '/online-reputation-repair',
+        'Online reputation repair for bad Google results, old articles, damaging snippets, reviews and associated-name search problems. Private Australia-based worldwide service.'
+    )
+
+
+@app.route('/reputation-repair-australia')
+def reputation_repair_australia_page():
+    return acquisition_page(
+        'Reputation Repair Australia — FixMyNameOnline™',
+        'Reputation repair Australia',
+        'Australia-based reputation repair for serious search problems.',
+        'FixMyNameOnline™ is operated by MadisonJade Pty Ltd in Australia and helps individuals, professionals, founders and businesses handle Google result, review and search-footprint problems worldwide.',
+        [
+            'Australian operator and worldwide private intake',
+            'Personal name, business name, suburb/location and associated-name searches',
+            'Old articles, court mentions, outdated snippets, reviews and complaint pages',
+            'Evidence packs for possible correction, privacy, outdated-content or review pathways',
+            'Approved positive profiles, service pages, articles and trust assets',
+        ],
+        [
+            ('Do you only work with Australian clients?', 'No. The operator is Australian, but search damage can affect clients, employers, customers and platforms worldwide.'),
+            ('Is reputation repair legal in Australia?', 'Responsible work uses truthful approved content, evidence, monitoring and platform-appropriate requests. Legal advice should come from a qualified lawyer where needed.'),
+            ('What is the first step?', 'Start with the Free Search Snapshot™ so the actual search pattern can be mapped before any public action.'),
+        ],
+        '/reputation-repair-australia',
+        'Reputation repair Australia: private search protection, review defence, removal pathway review and positive footprint support by FixMyNameOnline™.'
+    )
+
+
+@app.route('/remove-negative-google-results')
+def remove_negative_google_results_page():
+    return acquisition_page(
+        'Remove Negative Google Results? Private Options Review — FixMyNameOnline™',
+        'Remove negative Google results',
+        'Negative Google results need evidence before action.',
+        'Private review for old articles, harmful snippets, search result pages, review profiles, copied pages, images and associated-name results that are hurting trust.',
+        [
+            'Exact search phrase, ranking position, title, snippet and URL capture',
+            'Source-page review: publisher, review platform, directory, forum, court page or copy site',
+            'Possible outdated-content, privacy, correction, review-policy or publisher pathway',
+            'Positive search-footprint plan if removal is not realistic',
+            'Private report with next-step recommendation and no public case disclosure',
+        ],
+        [
+            ('Can negative Google results be removed?', 'Sometimes there may be a valid pathway, but many results cannot be removed quickly or at all. The first step is evidence and realistic review.'),
+            ('What should I avoid?', 'Avoid threats, spam, fake profiles, public arguments or anyone claiming guaranteed Google control.'),
+            ('Can FMNO help if removal is not possible?', 'Yes. The strategy may shift to truthful positive assets, profile repair and monitoring so searchers see more than the negative result.'),
+        ],
+        '/remove-negative-google-results',
+        'Private options review for negative Google results, bad snippets, old articles, review damage and search reputation problems. No removal outcome guaranteed.'
+    )
+
+
+@app.route('/google-review-defence-australia')
+def google_review_defence_australia_page():
+    return acquisition_page(
+        'Google Review Defence Australia — FixMyNameOnline™',
+        'Google review defence Australia',
+        'Google review defence for Australian businesses under unfair review pressure.',
+        'Private support for businesses dealing with fake, unfair, malicious, competitor, ex-staff or review-bombing issues on Google Business Profiles.',
+        [
+            'Review pattern, timeline and business relationship audit',
+            'Possible Google policy issue mapping',
+            'Evidence notes for reporting or escalation where appropriate',
+            'Calm public owner response drafts for future customers',
+            'Trust-recovery plan across website, profiles, reviews and search assets',
+        ],
+        [
+            ('Can you delete fake Google reviews?', 'No business or agency can directly delete third-party Google reviews. Google decides. We help document, report where appropriate, respond and rebuild trust signals.'),
+            ('Is this for local Australian businesses?', 'Yes. It suits local services, clinics, trades, agencies, restaurants, professionals and brands affected by Google review trust damage.'),
+            ('What should I send first?', 'Send the business name, Google Business Profile link, review screenshots and any notes showing why the review may be fake or unfair.'),
+        ],
+        '/google-review-defence-australia',
+        'Google Review Defence Australia for fake, unfair or malicious Google reviews. Evidence audit, reporting notes, response drafts and trust recovery.'
+    )
 
 
 @app.route('/google-review-defence')
@@ -2561,7 +2657,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v32-personal-search-footprint', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': True, 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v33-commercial-seo-pages', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
