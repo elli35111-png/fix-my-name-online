@@ -1768,10 +1768,11 @@ def google_your_name_landing():
 
 @app.route('/free-search-snapshot')
 def ad_free_snapshot_form():
-    body = """
+    source_page = safe(request.args.get('source') or 'free_search_snapshot_page')
+    body = f"""
     <div class="card"><span class="pill">Start here</span><h1>Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll privately map the pattern and point you toward the safest next step.</p>
     <form method="post" action="/submit-snapshot" class="grid">
-      <input type="hidden" name="source_page" value="ad_landing_free_search_snapshot">
+      <input type="hidden" name="source_page" value="{source_page}">
       <div><label>Your name</label><input name="name" required autocomplete="name"></div>
       <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
@@ -1913,9 +1914,11 @@ def private_case_room(queue_id):
 
 @app.route('/app')
 def free_snapshot_form():
-    body = """
+    source_page = safe(request.args.get('source') or 'app_form')
+    body = f"""
     <div class="card"><span class="pill">Free first step</span><h1>Start your Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll use this to point you toward the right next step: alerts, removal review, review defence, or repair.</p>
     <form method="post" action="/submit-snapshot" class="grid">
+      <input type="hidden" name="source_page" value="{source_page}">
       <div><label>Your name</label><input name="name" required autocomplete="name"></div>
       <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
@@ -2711,7 +2714,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v36-commercial-seo-guides', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v37-source-tracked-snapshot-ctas', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
