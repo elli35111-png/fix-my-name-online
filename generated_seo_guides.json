@@ -213,5 +213,220 @@
         "FixMyNameOnline™ is designed as a private first step. Public assets are only created from approved, truthful information."
       ]
     ]
+  },
+  "remove-my-name-from-google-search": {
+    "eyebrow": "Name search removal review",
+    "title": "Remove My Name From Google Search — Private Options Review | Fix My Name Online™",
+    "h1": "Remove my name from Google search: what is realistic and what to check first",
+    "description": "Private guide for people asking how to remove their name from Google search: evidence capture, source review, privacy/outdated-content pathways and positive search repair.",
+    "intro": "If you are searching for how to remove your name from Google search, the first step is to separate what Google controls from what the original website controls. Some results may have privacy, outdated-content, legal, publisher or platform pathways. Others need a positive search-footprint plan instead of a promise nobody can honestly make.",
+    "sections": [
+      [
+        "Google is often showing someone else's page",
+        "Google usually indexes pages published by other websites. That means the source page, the snippet, the image, the cached result and the search query all need to be documented before deciding whether to contact Google, the publisher, a platform or a lawyer."
+      ],
+      [
+        "Evidence comes before requests",
+        "Save screenshots of the search results, the URL, page title, snippet, date, image result and the exact name or phrase searched. Good evidence makes privacy, outdated-content, correction or publisher requests stronger and prevents emotional guesswork."
+      ],
+      [
+        "Check removal pathways carefully",
+        "Possible pathways can include outdated-content refresh, privacy review, correction requests, platform-policy reports, publisher contact, noindex/anonymisation requests or legal advice. The available path depends on the facts and the source."
+      ],
+      [
+        "If removal is not realistic, build better current assets",
+        "A private reputation plan can create truthful, approved pages, profiles, business assets, articles and monitoring signals so people see more than one damaging result over time."
+      ],
+      [
+        "Avoid anyone promising Google control",
+        "No responsible service can promise to erase a name from Google or control rankings. The useful work is evidence, realistic review, safe requests where appropriate and stronger search protection."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can I remove my name from all Google results?",
+        "Usually not completely. Some pages may qualify for review, but many results remain controlled by the original website and Google's policies."
+      ],
+      [
+        "What should I send first?",
+        "Send the exact search phrase, links, screenshots, country/location, name variants and what result worries you most."
+      ],
+      [
+        "Is this private?",
+        "Yes. FixMyNameOnline™ starts with private intake and does not publish anything without approval."
+      ]
+    ]
+  },
+  "old-article-ruining-my-reputation": {
+    "eyebrow": "Old article reputation help",
+    "title": "Old Article Ruining My Reputation — Private Next Steps | Fix My Name Online™",
+    "h1": "Old article ruining your reputation? Start with evidence, not panic",
+    "description": "What to do when an old article is ruining your reputation in Google: evidence, publisher review, outdated snippets, privacy pathways and positive search assets.",
+    "intro": "An old article can feel new every time it appears near the top of Google. Before reacting, a careful review should check whether the article is accurate, whether the snippet is outdated, whether the page has been republished or copied, and what current truthful assets are missing.",
+    "sections": [
+      [
+        "Record exactly what people see",
+        "Capture the search phrase, ranking position, article title, snippet, URL, date shown by Google and any image or news result. The search page is the reputation problem, not just the article."
+      ],
+      [
+        "Check accuracy, context and age",
+        "Old material may be incomplete, missing an outcome, copied to a new page, or presented with a fresh date. These details can change which correction, privacy or outdated-content pathway makes sense."
+      ],
+      [
+        "Do not make the article louder",
+        "Public arguments, threats, repeated posting or linking to the article can create more signals. A private plan reduces unnecessary attention while preserving evidence."
+      ],
+      [
+        "Build current proof",
+        "If the article stays, the search result page still needs more accurate material: professional profiles, current business pages, interviews, FAQs, service proof and owned articles that show the fuller story."
+      ],
+      [
+        "Monitor the result over time",
+        "Snippet changes, duplicate copies and ranking movement should be tracked. Old-article cases are managed over weeks and months, not judged from one panic search."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can an old article be removed?",
+        "Sometimes there may be a pathway, but it depends on the source, accuracy, public interest, privacy facts and publisher policies."
+      ],
+      [
+        "Can Google update an old snippet?",
+        "Sometimes outdated snippets can be refreshed, but Google and the publisher make their own decisions."
+      ],
+      [
+        "What if it cannot be removed?",
+        "Then the strategy usually shifts to accurate current assets and monitoring so the article is not the only story people find."
+      ]
+    ]
+  },
+  "google-search-results-hurting-my-business": {
+    "eyebrow": "Business search repair",
+    "title": "Google Search Results Hurting My Business — Fix My Name Online™",
+    "h1": "Google search results hurting your business? Map the damage before you act",
+    "description": "Private business reputation repair guide for damaging Google results, bad reviews, complaint pages, outdated snippets and weak positive search assets.",
+    "intro": "When Google search results hurt a business, the impact shows up in fewer calls, colder leads, lost trust and awkward questions. The right first move is to map the exact search pattern and decide whether the issue is reviews, old pages, snippets, weak brand assets or a broader trust gap.",
+    "sections": [
+      [
+        "Map branded and buyer searches",
+        "Check the business name, owner name, suburb, service, review terms, complaint terms and common misspellings. A damaging result may only appear for one combination, but that combination can still cost customers."
+      ],
+      [
+        "Separate reviews from search assets",
+        "Bad Google reviews, third-party complaint pages, outdated directories and weak homepage snippets each need different actions. One generic reputation response will miss important pathways."
+      ],
+      [
+        "Strengthen owned proof",
+        "Businesses need current service pages, case-neutral proof, FAQs, profiles, policies, testimonials where allowed, and clear contact information so Google and customers can understand the company."
+      ],
+      [
+        "Prepare calm response notes",
+        "If reviews are part of the problem, public replies should reassure future customers and avoid defamatory fights. Evidence and policy mapping should happen privately."
+      ],
+      [
+        "Track leads and search movement",
+        "The plan should monitor rankings, snippets, calls, forms, click paths and new mentions so the business can see whether trust signals are improving."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can bad business search results be fixed quickly?",
+        "Evidence capture and page improvements can start quickly. Organic search repair usually takes time and no ranking position is controlled."
+      ],
+      [
+        "Should I reply to bad reviews?",
+        "Often yes, but carefully. The reply should be short, professional and written for future customers."
+      ],
+      [
+        "What should a business send first?",
+        "Send the business name, website, Google Business Profile, review links, complaint pages, screenshots and the search terms that worry you."
+      ]
+    ]
+  },
+  "online-reputation-repair-for-professionals": {
+    "eyebrow": "Professional reputation repair",
+    "title": "Online Reputation Repair for Professionals — Fix My Name Online™",
+    "h1": "Online reputation repair for professionals who get searched before they are trusted",
+    "description": "Private online reputation repair for professionals, founders, consultants and executives dealing with bad Google results, old articles, reviews or weak search profiles.",
+    "intro": "Professionals are searched before meetings, referrals, hiring decisions, finance conversations and partnerships. If page one is outdated, thin or damaging, reputation repair should build a more accurate professional search footprint while reviewing any realistic removal or correction pathway.",
+    "sections": [
+      [
+        "Audit the professional search page",
+        "Search the full name, role, business, location, previous roles, media mentions, reviews and risk terms. The issue may be one bad result or the absence of strong current proof."
+      ],
+      [
+        "Decide what can be public",
+        "Professional reputation repair should use truthful, approved information only: biography, services, credentials, current projects, media context, business pages and contact pathways."
+      ],
+      [
+        "Review sensitive results privately",
+        "Old articles, disputes, legal mentions, complaints or review attacks need careful evidence and wording. Some matters may require legal advice outside reputation work."
+      ],
+      [
+        "Build authority assets",
+        "Useful assets can include profile pages, founder notes, professional FAQs, service explainers, interviews, articles and cross-links from relevant owned properties."
+      ],
+      [
+        "Measure search coverage",
+        "Track which assets appear for name, business, role and location searches. Progress is coverage and trust improvement over time, not a guaranteed position."
+      ]
+    ],
+    "faqs": [
+      [
+        "Is this for executives and founders?",
+        "Yes. It suits professionals, founders, consultants, public-facing staff, property/business operators and anyone searched before trust is given."
+      ],
+      [
+        "Will public assets look like reputation repair?",
+        "They should not. Public assets should be natural, truthful and useful, not crisis-looking or overdone."
+      ],
+      [
+        "Can you guarantee page one?",
+        "No. Search engines decide rankings. The goal is to improve technical quality, usefulness, authority and discovery signals."
+      ]
+    ]
+  },
+  "fix-my-online-reputation-fast": {
+    "eyebrow": "Urgent reputation triage",
+    "title": "Fix My Online Reputation Fast — What Can Be Done First | Fix My Name Online™",
+    "h1": "Need to fix your online reputation fast? Start with the actions that do not make it worse",
+    "description": "Urgent online reputation repair guide: what can be done quickly, what takes time, and how to avoid making bad Google results, reviews or old links worse.",
+    "intro": "When reputation damage feels urgent, speed matters — but the wrong quick move can make the result louder. The fastest safe work is evidence capture, risk triage, controlled messaging, realistic pathway review and preparation of truthful current assets.",
+    "sections": [
+      [
+        "What can happen today",
+        "You can capture evidence, list search terms, identify the source, preserve screenshots, stop risky public reactions and prepare a private plan. Those steps reduce confusion immediately."
+      ],
+      [
+        "What usually takes longer",
+        "Indexing, ranking movement, publisher decisions, review-platform decisions and search-result changes usually take time. Anyone promising instant control over Google is creating risk."
+      ],
+      [
+        "Protect the first impression",
+        "Update obvious owned assets first: homepage, profiles, bios, service pages, contact details, social links and outdated descriptions that Google may already trust."
+      ],
+      [
+        "Choose the right lane",
+        "Urgent cases may be monitoring, removal review, review defence, positive-footprint building or legal referral. The source and sensitivity decide the lane."
+      ],
+      [
+        "Keep the work private until approved",
+        "For personal or sensitive cases, public publishing should be based on approved truthful information only. Intake and planning should stay discreet."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can online reputation be fixed fast?",
+        "Some preparation and risk reduction can happen quickly. Search engine ranking and third-party platform outcomes are not instant or guaranteed."
+      ],
+      [
+        "What should I not do?",
+        "Do not post angry explanations, threaten publishers, create fake profiles, buy spam links or send mass reports without evidence."
+      ],
+      [
+        "What is the safest first step?",
+        "Start with a private Free Search Snapshot™ so the issue is mapped before any public move is made."
+      ]
+    ]
   }
 }
