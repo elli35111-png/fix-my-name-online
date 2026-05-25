@@ -1770,7 +1770,7 @@ def name_watch_alerts_page():
         <li>Upgrade path to Removal Review™, Review Defence™ or Starter™ only if needed</li>
       </ul>
       <p><a class="btn" href="/checkout/sentinel">Start NameWatch Alert™ — $29/month</a> <a class="btn btn2" href="/app?source=name_watch_alerts">Start free snapshot first</a></p>
-      <p class="note">NameWatch Alert™ is monitoring and alerting, not a deletion guarantee. Search engines, publishers, data brokers, review platforms and third parties make their own decisions. We do not guarantee removal, de-indexing, ranking change, or that every possible mention on the internet will be found.</p>
+      <p class="note" style="opacity:.46;font-size:12px">NameWatch Alert™ is a private monitoring service. If something needs action, we’ll explain the practical next-step options.</p>
     </div>
     <div class="grid" style="margin-top:16px">
       <div class="card"><h2>Best for</h2><p class="sub">Professionals, founders, job seekers, business owners, public-facing workers, creators, and anyone who wants to know early if something bad starts surfacing.</p></div>
@@ -1838,7 +1838,7 @@ def paid_next_steps_html(source='post_snapshot'):
         <div class="card"><h2>Review Defence™</h2><p class="sub">$497 one-time review defence for fake, unfair or malicious Google reviews.</p><p><a class="btn btn2" href="/checkout/review-defence?source={safe(source)}">Defend reviews →</a></p></div>
         <div class="card"><h2>Starter™</h2><p class="sub">$499/month for an approved positive search-footprint plan.</p><p><a class="btn btn2" href="/checkout/starter?source={safe(source)}">Start repair →</a></p></div>
       </div>
-      <p class="note">No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed. Paid plans are private next steps based on the search pattern.</p>
+      <p class="note" style="opacity:.42;font-size:12px">Paid plans are private next steps based on the search pattern. Search/platform outcomes vary.</p>
     </div>'''
 
 
@@ -2768,7 +2768,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v38-namewatch-paid-upsell', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v39-faint-public-disclaimers', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
