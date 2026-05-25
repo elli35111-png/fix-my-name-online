@@ -83,13 +83,6 @@ TRIAGE_NEXT_STEPS = {
         'url': '/checkout/removal-review',
         'priority': 'high',
     },
-    'legal-options': {
-        'label': 'Legal options evidence pack',
-        'summary': 'This may need a careful legal-options pathway: preserve evidence, classify privacy/defamation/media/court-record flags, and prepare a lawyer-ready or publisher-ready request pack before any public move.',
-        'cta': 'Start private legal-options snapshot',
-        'url': '/free-search-snapshot?source=legal_options_triage',
-        'priority': 'urgent',
-    },
     'review-defence': {
         'label': 'Review Defence™',
         'summary': 'This looks like a reviews/reputation trust case. The next step is to audit the review pattern and prepare a careful platform-appropriate response/reporting path.',
@@ -559,15 +552,12 @@ def triage_snapshot(data):
     text = ' '.join([data.get('case_type', ''), data.get('names_to_check', ''), data.get('problem_links', ''), data.get('goal', '')]).lower()
     case_type = data.get('case_type', '').lower()
 
-    high_risk_words = ['urgent', 'criminal', 'police', 'media', 'journalist', 'press', 'dox', 'stalking', 'threat', 'high-risk', 'high risk', 'private case', 'sensitive']
-    legal_words = ['legal', 'lawyer', 'solicitor', 'defamation', 'privacy complaint', 'oaic', 'esafety', 'court', 'tribunal', 'suppression order', 'lawsuit', 'letter of demand', 'publisher request']
+    high_risk_words = ['urgent', 'criminal', 'police', 'media', 'journalist', 'press', 'lawsuit', 'defamation', 'dox', 'stalking', 'threat', 'high-risk', 'high risk', 'private case', 'sensitive']
     review_words = ['review', 'reviews', 'google review', '1 star', 'one star', 'fake review', 'malicious review']
     removal_words = ['remove', 'removed', 'de-index', 'deindex', 'delete', 'article', 'old news', 'news article', 'image', 'snippet', 'bad link', 'bad links', 'outdated']
     alert_words = ['alert', 'monitor', 'tracking', 'mentions', 'watch']
 
-    if any(w in text for w in legal_words):
-        key = 'legal-options'
-    elif 'high-risk' in case_type or any(w in text for w in high_risk_words):
+    if 'high-risk' in case_type or any(w in text for w in high_risk_words):
         key = 'high-risk'
     elif 'review' in case_type or any(w in text for w in review_words):
         key = 'review-defence'
@@ -894,7 +884,7 @@ def fix_my_name_online_exact_match():
 
 @app.route('/services')
 def services():
-    body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>Sentinel Alert™ for monitoring</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Legal Options Evidence Pack for defamation/privacy/court/media/publisher-review flags before lawyer or formal escalation</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p><a class=\"btn\" href=\"/legal-options-for-negative-google-results\">View legal-options pathway</a> <a class=\"btn btn2\" href=\"/free-search-snapshot?source=services_legal_options\">Start private snapshot</a></p><p class=\"note\">FixMyNameOnline™ is not a law firm and does not provide legal advice. Search engines, publishers, lawyers and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
+    body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>Sentinel Alert™ for monitoring</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p class=\"note\">Search engines and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
     return page('Services — FixMyNameOnline™', body, 'Private reputation repair, search protection, removal review support, Google review defence and positive asset planning by FixMyNameOnline™.')
 
 
@@ -1722,7 +1712,6 @@ def google_past_present_article():
 @app.route('/learn')
 def learn_hub():
     money_pages = '''
-    <div class="card full"><span class="pill">Legal options</span><h2><a href="/legal-options-for-negative-google-results">Legal options for negative Google results</a></h2><p class="sub">A private evidence-pack pathway for defamation, privacy, old court/media pages and publisher-review flags — without pretending FMNO is a law firm.</p></div>
     <div class="card full"><span class="pill">Worldwide service</span><h2><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></h2><p class="sub">Private search protection for people, founders and businesses dealing with reputation problems across countries, platforms and Google results.</p></div>
     <div class="card"><span class="pill">Start here</span><h2><a href="/online-reputation-repair">Online reputation repair</a></h2><p class="sub">Map bad Google results, old articles, damaging snippets, reviews and weak positive search footprints before choosing a repair path.</p></div>
     <div class="card"><span class="pill">Google results</span><h2><a href="/remove-negative-google-results">Remove negative Google results?</a></h2><p class="sub">A realistic private options review for negative search results, old pages, bad snippets, images and review-led search damage.</p></div>
@@ -1787,7 +1776,7 @@ def ad_free_snapshot_form():
       <div><label>Your name</label><input name="name" required autocomplete="name"></div>
       <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
-      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Legal options / defamation / privacy review</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
+      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
       <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations..."></textarea></div>
       <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
       <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
@@ -1933,7 +1922,7 @@ def free_snapshot_form():
       <div><label>Your name</label><input name="name" required autocomplete="name"></div>
       <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
-      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Legal options / defamation / privacy review</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
+      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
       <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations..."></textarea></div>
       <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
       <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
