@@ -107,9 +107,9 @@ PLAN_TEMPLATES = {
         ],
     },
     "sentinel": {
-        "name": "Sentinel Alert™",
+        "name": "NameWatch Alert™",
         "default_priority": "standard",
-        "description": "Monitoring-only plan. No human repair/content/removal work unless separately approved/upsold.",
+        "description": "$29/month Google-name monitoring and new-result alerts. Monitoring-only plan. No deletion, repair, content, removal or ranking work unless separately approved/upsold.",
         "tasks": [
             task("SEN-001", "Normalize customer watchlist and associated names", "IntakeAgent", ["intake_complete"]),
             task("SEN-002", "Build search/watch term matrix", "SearchMapper", ["brand_safety"], ["SEN-001"]),

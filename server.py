@@ -60,7 +60,7 @@ FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
 INTERNAL_EMAIL = os.environ.get('FMNO_INTERNAL_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'Elli35111@gmail.com'
 
 PLANS = {
-    'sentinel': {'name': 'Sentinel Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': 'https://buy.stripe.com/8x200iexwehrcsqbdjcZa03'},
+    'sentinel': {'name': 'NameWatch Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': 'https://buy.stripe.com/8x200iexwehrcsqbdjcZa03'},
     'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW', 'payment_link': 'https://buy.stripe.com/bJe14mfBA3CN8ca6X3cZa04'},
     'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE', 'payment_link': 'https://buy.stripe.com/7sY9AS610b5f6426X3cZa05'},
     'starter': {'name': 'Starter™', 'price': 499, 'mode': 'subscription', 'env': 'STRIPE_PRICE_STARTER', 'payment_link': 'https://buy.stripe.com/28E9AS8987T3bom1CJcZa06'},
@@ -70,9 +70,9 @@ PLANS = {
 
 TRIAGE_NEXT_STEPS = {
     'alerts': {
-        'label': 'Sentinel Alert™ monitoring',
-        'summary': 'This looks like a monitoring-first case: we should track mentions, searches, and new risk signals before deciding whether heavier work is needed.',
-        'cta': 'View Sentinel Alert™',
+        'label': 'NameWatch Alert™ monitoring',
+        'summary': 'This looks like a monitoring-first case: we should track Google results, name variants and new risk signals so the client is alerted before a problem grows.',
+        'cta': 'View NameWatch Alert™',
         'url': '/checkout/sentinel',
         'priority': 'standard',
     },
@@ -824,7 +824,7 @@ def personal_search_hub():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/name-watch-alerts', '/delete-me', '/google-alerts-for-my-name', '/privacy', '/terms']
     personal_search_urls = ['/personal-search/']
     personal_search_dir = Path('personal-search')
     if personal_search_dir.exists():
@@ -884,7 +884,7 @@ def fix_my_name_online_exact_match():
 
 @app.route('/services')
 def services():
-    body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>Sentinel Alert™ for monitoring</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p class=\"note\">Search engines and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
+    body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>NameWatch Alert™ for $29/month Google-name monitoring and new-result alerts</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p class=\"note\">Search engines and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
     return page('Services — FixMyNameOnline™', body, 'Private reputation repair, search protection, removal review support, Google review defence and positive asset planning by FixMyNameOnline™.')
 
 
@@ -1743,6 +1743,45 @@ def seo_guide(slug):
     return page(guide['title'], body, description=guide['description'], canonical_path='/' + slug)
 
 
+@app.route('/delete-me')
+def delete_me_style_redirect():
+    return redirect('/name-watch-alerts', code=301)
+
+
+@app.route('/google-alerts-for-my-name')
+def google_alerts_for_my_name_redirect():
+    return redirect('/name-watch-alerts', code=301)
+
+
+@app.route('/name-watch-alerts')
+def name_watch_alerts_page():
+    body = """
+    <div class="card">
+      <span class="pill">$29/month search monitoring</span>
+      <h1>NameWatch Alert™: know when something new appears around your name.</h1>
+      <p class="sub">A simple, low-cost monitoring layer for people who want early warning if a new Google result, article, review, image, snippet, associated-name result, or data-broker style listing starts showing around their name.</p>
+      <div class="recommend"><h2>Think “DeleteMe-style peace of mind” for Google-name risk.</h2><p>We do not promise every result can be deleted. Instead, NameWatch Alert™ watches the search pattern and alerts you when something needs attention, so you are not surprised by an employer, client, date, investor, journalist, or family member finding it first.</p></div>
+      <h2>What the $29/month plan includes</h2>
+      <ul>
+        <li>Monthly private Google-name sweep for supplied names, business names and associated names</li>
+        <li>Monitoring of obvious new articles, review pages, images, snippets and high-risk result changes</li>
+        <li>Email alert if we identify a new concerning result or material change</li>
+        <li>Simple private status note: clear / watch / review recommended</li>
+        <li>Upgrade path to Removal Review™, Review Defence™ or Starter™ only if needed</li>
+      </ul>
+      <p><a class="btn" href="/checkout/sentinel">Start NameWatch Alert™ — $29/month</a> <a class="btn btn2" href="/app?source=name_watch_alerts">Start free snapshot first</a></p>
+      <p class="note">NameWatch Alert™ is monitoring and alerting, not a deletion guarantee. Search engines, publishers, data brokers, review platforms and third parties make their own decisions. We do not guarantee removal, de-indexing, ranking change, or that every possible mention on the internet will be found.</p>
+    </div>
+    <div class="grid" style="margin-top:16px">
+      <div class="card"><h2>Best for</h2><p class="sub">Professionals, founders, job seekers, business owners, public-facing workers, creators, and anyone who wants to know early if something bad starts surfacing.</p></div>
+      <div class="card"><h2>Not for</h2><p class="sub">Immediate crisis removal, legal advice, guaranteed deletion, guaranteed Google suppression, or full data-broker removal across every site. Those need a separate review.</p></div>
+      <div class="card"><h2>What happens after payment?</h2><p class="sub">You complete private onboarding with the exact names, old names, locations, business names and search phrases to monitor. We set up the monitoring file and begin the first sweep.</p></div>
+      <div class="card"><h2>If something appears</h2><p class="sub">We send a private alert and recommend the next practical path: ignore/watch, Removal Review™, Review Defence™, or a broader search repair plan.</p></div>
+    </div>
+    """
+    return page('NameWatch Alert™ — $29/month Google-name monitoring | FixMyNameOnline™', body, 'NameWatch Alert™ is a $29/month private Google-name monitoring and new-result alert subscription by FixMyNameOnline™. Early warning for old links, reviews, articles, snippets, images and reputation risks.', canonical_path='/name-watch-alerts')
+
+
 @app.route('/google-your-name')
 def google_your_name_landing():
     body = """
@@ -1788,6 +1827,19 @@ def ad_free_snapshot_form():
 @app.route('/free-snapshot')
 def free_snapshot_short_redirect():
     return redirect('/free-search-snapshot', code=301)
+
+
+def paid_next_steps_html(source='post_snapshot'):
+    return f'''
+    <div class="recommend"><span class="pill">Choose a paid next step</span><h2>Turn the free snapshot into protection.</h2><p>Most people do not need a big package first. After the free snapshot, the easiest paid step is NameWatch Alert™ at $29/month. If there is already a clear link, article, review or broader search issue, choose the review or repair path.</p>
+      <div class="grid" style="margin-top:14px">
+        <div class="card"><h2>NameWatch Alert™</h2><p class="sub">$29/month Google-name monitoring and new-result alerts.</p><p><a class="btn" href="/checkout/sentinel?source={safe(source)}">Start $29/month →</a></p></div>
+        <div class="card"><h2>Removal Review™</h2><p class="sub">$297 one-time review for specific links, articles, images or snippets.</p><p><a class="btn btn2" href="/checkout/removal-review?source={safe(source)}">Review links →</a></p></div>
+        <div class="card"><h2>Review Defence™</h2><p class="sub">$497 one-time review defence for fake, unfair or malicious Google reviews.</p><p><a class="btn btn2" href="/checkout/review-defence?source={safe(source)}">Defend reviews →</a></p></div>
+        <div class="card"><h2>Starter™</h2><p class="sub">$499/month for an approved positive search-footprint plan.</p><p><a class="btn btn2" href="/checkout/starter?source={safe(source)}">Start repair →</a></p></div>
+      </div>
+      <p class="note">No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed. Paid plans are private next steps based on the search pattern.</p>
+    </div>'''
 
 
 @app.route('/pricing')
@@ -1907,6 +1959,7 @@ def private_case_room(queue_id):
       <h2 style="margin-top:22px">What you gave us</h2>
       <div class="card"><p><strong>Names/search:</strong><br>{safe(preview.get('names_to_check'))}</p><p><strong>Links/search clues:</strong><br>{safe(preview.get('problem_links'))}</p><p><strong>Goal:</strong><br>{safe(preview.get('goal'))}</p></div>
       <h2 style="margin-top:22px">Private timeline</h2><div class="grid">{timeline_html}</div>
+      {paid_next_steps_html('private_case_room')}
       <p class="note">FixMyNameOnline™ is operated by MadisonJade Pty Ltd. This score is an intake signal, not a guarantee of removal, ranking, de-indexing, platform action, or search result outcome.</p>
     </div>'''
     return page('Private Case Room™ — FixMyNameOnline™', body, 'Secure private reputation snapshot room for FixMyNameOnline™ Free Search Snapshot™ intake.', canonical_path='/private-case-room')
@@ -1971,6 +2024,7 @@ def submit_snapshot():
       <div class="recommend"><h2>Reputation Risk Score™: {safe(case_room['risk_score']['score'])}/100 · {safe(case_room['risk_score']['label'])}</h2><p>{safe(case_room['risk_score']['summary'])}</p><p><a class="btn" href="{safe('/private-case-room/' + queue_item['id'] + '?access_token=' + case_room['access_token'])}">Open Private Case Room™ →</a></p></div>
       <div class="recommend"><h2>Suggested next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn btn2" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
       <h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, repair, or a private high-risk review.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol>
+      {paid_next_steps_html('snapshot_received')}
       <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
     </div>"""
     body += conversion_tracking_event('Lead', {'content_name': 'Free Search Snapshot'})
@@ -2714,7 +2768,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v37-source-tracked-snapshot-ctas', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v38-namewatch-paid-upsell', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
