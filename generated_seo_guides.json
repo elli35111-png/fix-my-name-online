@@ -819,5 +819,200 @@
         "Start with a Free Search Snapshot so the visible risk can be mapped privately."
       ]
     ]
+  },
+  "false-information-about-me-online": {
+    "eyebrow": "False information about me online",
+    "title": "False Information About Me Online — What Can I Do? | Fix My Name Online™",
+    "h1": "False information about me online: what to check first",
+    "description": "Private steps when false information, false claims or inaccurate snippets show up online for your name.",
+    "intro": "False information online can damage trust fast. The first step is to save proof, separate factual errors from opinion, and work out whether correction, removal, de-indexing, review response or positive footprint work is the safest path.",
+    "sections": [
+      [
+        "Save evidence before reacting",
+        "Record the URL, screenshots, Google title, snippet, date, search phrase and any surrounding context. Evidence is stronger than an emotional explanation after the page changes."
+      ],
+      [
+        "Separate false facts from opinion",
+        "A factual error, fake identity, changed outcome, copied page, malicious review or misleading snippet may each have a different pathway. Not every unfair result qualifies for removal, but every serious result should be mapped carefully."
+      ],
+      [
+        "Check source and platform pathways",
+        "Depending on the source, the next step may be a publisher correction request, review-platform report, privacy/outdated-content pathway, legal advice, or a documented noindex/de-indexing request."
+      ],
+      [
+        "Build a truthful search footprint",
+        "While any review is pending, accurate current profiles, business pages, biographies, FAQs and helpful articles can help searchers see more than the false or incomplete claim."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can false information always be removed?",
+        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+      ],
+      [
+        "What should I send first?",
+        "Send the exact search phrase, URL, screenshot, date, source, what is false or outdated, and the outcome you want reviewed."
+      ],
+      [
+        "Is the first step private?",
+        "Yes. FixMyNameOnline™ starts with a private Free Search Snapshot™ and does not take public action from the intake alone."
+      ]
+    ]
+  },
+  "remove-false-google-results": {
+    "eyebrow": "False Google results",
+    "title": "Remove False Google Results? Options and Limits | Fix My Name Online™",
+    "h1": "Remove false Google results: options, limits and evidence",
+    "description": "How to approach false Google results with evidence, source requests, outdated-content checks and private reputation repair.",
+    "intro": "Google usually shows pages from other websites. If a result is false, the strongest path starts with screenshots, source review, publisher/platform options and a plan for current truthful assets.",
+    "sections": [
+      [
+        "Save evidence before reacting",
+        "Record the URL, screenshots, Google title, snippet, date, search phrase and any surrounding context. Evidence is stronger than an emotional explanation after the page changes."
+      ],
+      [
+        "Separate false facts from opinion",
+        "A factual error, fake identity, changed outcome, copied page, malicious review or misleading snippet may each have a different pathway. Not every unfair result qualifies for removal, but every serious result should be mapped carefully."
+      ],
+      [
+        "Check source and platform pathways",
+        "Depending on the source, the next step may be a publisher correction request, review-platform report, privacy/outdated-content pathway, legal advice, or a documented noindex/de-indexing request."
+      ],
+      [
+        "Build a truthful search footprint",
+        "While any review is pending, accurate current profiles, business pages, biographies, FAQs and helpful articles can help searchers see more than the false or incomplete claim."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can false information always be removed?",
+        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+      ],
+      [
+        "What should I send first?",
+        "Send the exact search phrase, URL, screenshot, date, source, what is false or outdated, and the outcome you want reviewed."
+      ],
+      [
+        "Is the first step private?",
+        "Yes. FixMyNameOnline™ starts with a private Free Search Snapshot™ and does not take public action from the intake alone."
+      ]
+    ]
+  },
+  "someone-posted-false-claims-about-me": {
+    "eyebrow": "False claims posted online",
+    "title": "Someone Posted False Claims About Me Online | Fix My Name Online™",
+    "h1": "Someone posted false claims about me. What now?",
+    "description": "Private next steps when someone posts false claims, allegations, reviews or complaint content about you online.",
+    "intro": "False claims can tempt people into public fights. A safer first move is to document the claim, source, date, URL, search phrase and impact, then decide whether to request correction, platform review, legal advice or search repair.",
+    "sections": [
+      [
+        "Save evidence before reacting",
+        "Record the URL, screenshots, Google title, snippet, date, search phrase and any surrounding context. Evidence is stronger than an emotional explanation after the page changes."
+      ],
+      [
+        "Separate false facts from opinion",
+        "A factual error, fake identity, changed outcome, copied page, malicious review or misleading snippet may each have a different pathway. Not every unfair result qualifies for removal, but every serious result should be mapped carefully."
+      ],
+      [
+        "Check source and platform pathways",
+        "Depending on the source, the next step may be a publisher correction request, review-platform report, privacy/outdated-content pathway, legal advice, or a documented noindex/de-indexing request."
+      ],
+      [
+        "Build a truthful search footprint",
+        "While any review is pending, accurate current profiles, business pages, biographies, FAQs and helpful articles can help searchers see more than the false or incomplete claim."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can false information always be removed?",
+        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+      ],
+      [
+        "What should I send first?",
+        "Send the exact search phrase, URL, screenshot, date, source, what is false or outdated, and the outcome you want reviewed."
+      ],
+      [
+        "Is the first step private?",
+        "Yes. FixMyNameOnline™ starts with a private Free Search Snapshot™ and does not take public action from the intake alone."
+      ]
+    ]
+  },
+  "false-allegations-showing-on-google": {
+    "eyebrow": "False allegations on Google",
+    "title": "False Allegations Showing on Google — Private Search Help | Fix My Name Online™",
+    "h1": "False allegations showing on Google need a calm evidence plan",
+    "description": "Private help for false allegations showing in Google results, snippets, articles, forums or reviews.",
+    "intro": "When allegations appear in Google results, the wording, source and snippet matter. A private evidence map helps decide what can be challenged and what stronger truthful assets should be built around the name.",
+    "sections": [
+      [
+        "Save evidence before reacting",
+        "Record the URL, screenshots, Google title, snippet, date, search phrase and any surrounding context. Evidence is stronger than an emotional explanation after the page changes."
+      ],
+      [
+        "Separate false facts from opinion",
+        "A factual error, fake identity, changed outcome, copied page, malicious review or misleading snippet may each have a different pathway. Not every unfair result qualifies for removal, but every serious result should be mapped carefully."
+      ],
+      [
+        "Check source and platform pathways",
+        "Depending on the source, the next step may be a publisher correction request, review-platform report, privacy/outdated-content pathway, legal advice, or a documented noindex/de-indexing request."
+      ],
+      [
+        "Build a truthful search footprint",
+        "While any review is pending, accurate current profiles, business pages, biographies, FAQs and helpful articles can help searchers see more than the false or incomplete claim."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can false information always be removed?",
+        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+      ],
+      [
+        "What should I send first?",
+        "Send the exact search phrase, URL, screenshot, date, source, what is false or outdated, and the outcome you want reviewed."
+      ],
+      [
+        "Is the first step private?",
+        "Yes. FixMyNameOnline™ starts with a private Free Search Snapshot™ and does not take public action from the intake alone."
+      ]
+    ]
+  },
+  "false-review-damaging-my-name": {
+    "eyebrow": "False review damage",
+    "title": "False Review Damaging My Name or Business | Fix My Name Online™",
+    "h1": "False review damaging your name or business?",
+    "description": "What to do when a false, fake or malicious review damages your name, business or reputation online.",
+    "intro": "A false review can cost calls, work and trust. The strongest response is evidence, platform-policy review, a calm owner response where appropriate, monitoring and stronger trust signals around the business or name.",
+    "sections": [
+      [
+        "Save evidence before reacting",
+        "Record the URL, screenshots, Google title, snippet, date, search phrase and any surrounding context. Evidence is stronger than an emotional explanation after the page changes."
+      ],
+      [
+        "Separate false facts from opinion",
+        "A factual error, fake identity, changed outcome, copied page, malicious review or misleading snippet may each have a different pathway. Not every unfair result qualifies for removal, but every serious result should be mapped carefully."
+      ],
+      [
+        "Check source and platform pathways",
+        "Depending on the source, the next step may be a publisher correction request, review-platform report, privacy/outdated-content pathway, legal advice, or a documented noindex/de-indexing request."
+      ],
+      [
+        "Build a truthful search footprint",
+        "While any review is pending, accurate current profiles, business pages, biographies, FAQs and helpful articles can help searchers see more than the false or incomplete claim."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can false information always be removed?",
+        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+      ],
+      [
+        "What should I send first?",
+        "Send the exact search phrase, URL, screenshot, date, source, what is false or outdated, and the outcome you want reviewed."
+      ],
+      [
+        "Is the first step private?",
+        "Yes. FixMyNameOnline™ starts with a private Free Search Snapshot™ and does not take public action from the intake alone."
+      ]
+    ]
   }
 }

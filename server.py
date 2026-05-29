@@ -43,7 +43,7 @@ app = Flask(__name__, static_folder='.', static_url_path='')
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
-SEO_DESCRIPTION = 'Fix My Name Online™ / FixMyNameOnline™ provides private reputation repair and search protection for individuals, professionals, businesses and public figures. Some people search the brand as Fix My Name On Line; the official site is fixmynameonline.com.'
+SEO_DESCRIPTION = 'Private reputation repair and search protection. Run a free Search Snapshot to see what comes up when people Google your name.'
 SEO_IMAGE = DOMAIN + '/og-image.png'
 DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
 DATA_DIR.mkdir(exist_ok=True)
@@ -193,6 +193,38 @@ def read_jsonl(path, limit=None):
             except Exception:
                 continue
     return rows[-limit:] if limit else rows
+
+
+def source_category(source, referrer=''):
+    combined = f"{source or ''} {referrer or ''}".lower()
+    if 'loh' in combined or 'legaloptionshub' in combined:
+        return 'loh'
+    if any(k in combined for k in ['facebook', 'instagram', 'tiktok', 'x.com', 'twitter', 'meta', 'social']):
+        return 'social'
+    if any(k in combined for k in ['ad', 'paid', 'utm_medium=cpc', 'utm_medium=paid', 'utm_source=meta', 'utm_source=facebook', 'gclid=', 'fbclid=']):
+        return 'paid'
+    if 'google.' in combined or 'bing.' in combined or 'duckduckgo' in combined:
+        return 'organic'
+    return 'direct'
+
+
+def attribution_from_request(form=None, json_payload=None):
+    form = form or {}
+    json_payload = json_payload or {}
+    args = request.args
+    source = (form.get('source_page') or json_payload.get('source_page') or args.get('source') or args.get('utm_source') or 'unknown')
+    referrer = (form.get('referrer') or json_payload.get('referrer') or request.headers.get('Referer') or '')
+    landing_url = (form.get('landing_url') or json_payload.get('landing_url') or request.url or '')
+    utm = {k: (form.get(k) or json_payload.get(k) or args.get(k) or '') for k in ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']}
+    return {
+        'source': str(source)[:160],
+        'source_page': str(source)[:160],
+        'source_category': source_category(source, referrer + ' ' + landing_url + ' ' + ' '.join(utm.values())),
+        'referrer': str(referrer)[:400],
+        'landing_url': str(landing_url)[:500],
+        'path': request.path,
+        'utm': {k: str(v)[:220] for k, v in utm.items() if v},
+    }
 
 
 def admin_authorized():
@@ -1816,7 +1848,7 @@ def ad_free_snapshot_form():
       <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
       <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
-      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations..."></textarea></div>
+      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations...">{prefill_name}</textarea></div>
       <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
       <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
       <div class="full"><button class="btn" type="submit">Submit Free Snapshot →</button> <a class="btn btn2" href="/questions">Ask a question first</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
@@ -1893,7 +1925,8 @@ def api_concierge_submit():
     triage = triage_snapshot(data)
     queue_item = make_queue_item('free_snapshot', data, triage)
     source = {**data, 'triage': triage, 'queue_id': queue_item['id'], 'concierge_collected': collected, 'concierge_transcript': transcript[-20:]}
-    append_jsonl(LEADS_FILE, {**source})
+    append_jsonl(LEADS_FILE, {**source, 'searched_name': data.get('names_to_check') or data.get('name'), 'submitted_at': utc_now()})
+    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': 'homepage_private_concierge', 'href': '/api/concierge/submit', 'location': request.path, 'source': data.get('source_category'), 'email': data.get('email'), 'searched_name': data.get('names_to_check') or data.get('name'), 'queue_id': queue_item['id'], 'referrer': data.get('referrer')})
     append_jsonl(CONCIERGE_TRANSCRIPTS_FILE, {'queue_id': queue_item['id'], 'collected': collected, 'transcript': transcript[-40:]})
     append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
     case = safe_create_fulfilment_case('free-snapshot', data, source, 'concierge_agent_v1')
@@ -1968,31 +2001,52 @@ def private_case_room(queue_id):
 @app.route('/app')
 def free_snapshot_form():
     source_page = safe(request.args.get('source') or 'app_form')
+    prefill_name = safe(request.args.get('name') or '')
     body = f"""
     <div class="card"><span class="pill">Free first step</span><h1>Start your Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll use this to point you toward the right next step: alerts, removal review, review defence, or repair.</p>
-    <form method="post" action="/submit-snapshot" class="grid">
+    <form method="post" action="/submit-snapshot" class="grid" id="snapshot-form">
       <input type="hidden" name="source_page" value="{source_page}">
-      <div><label>Your name</label><input name="name" required autocomplete="name"></div>
+      <input type="hidden" name="referrer" id="fmno-referrer" value="">
+      <input type="hidden" name="landing_url" id="fmno-landing-url" value="">
+      <input type="hidden" name="utm_source" id="utm_source" value=""><input type="hidden" name="utm_medium" id="utm_medium" value=""><input type="hidden" name="utm_campaign" id="utm_campaign" value=""><input type="hidden" name="utm_term" id="utm_term" value=""><input type="hidden" name="utm_content" id="utm_content" value=""><input type="hidden" name="gclid" id="gclid" value=""><input type="hidden" name="fbclid" id="fbclid" value="">
+      <div><label>Your name</label><input name="name" required autocomplete="name" value="{prefill_name}"></div>
       <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
       <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
       <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
-      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations..."></textarea></div>
+      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations...">{prefill_name}</textarea></div>
       <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
       <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
       <div class="full"><button class="btn" type="submit">Submit Free Snapshot →</button> <a class="btn btn2" href="/">Back</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
-    </form></div>"""
+    </form></div>
+    <script>
+    (function(){{
+      const qs=new URLSearchParams(window.location.search);
+      const fields=['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid'];
+      const ref=document.getElementById('fmno-referrer'); if(ref) ref.value=document.referrer||'';
+      const landing=document.getElementById('fmno-landing-url'); if(landing) landing.value=window.location.href;
+      fields.forEach(k=>{{const el=document.getElementById(k); if(el) el.value=qs.get(k)||'';}});
+      let started=false;
+      function fire(event,label){{try{{if(typeof gtag==='function') gtag('event',event,{{event_label:label||'',page_path:window.location.pathname}}); if(navigator.sendBeacon) navigator.sendBeacon('/api/track-click', new Blob([JSON.stringify({{event,label:label||'',href:'/submit-snapshot',location:window.location.pathname+window.location.search,source:'snapshot_form'}})],{{type:'application/json'}}));}}catch(e){{}}}}
+      const form=document.getElementById('snapshot-form');
+      if(form){{form.addEventListener('input',()=>{{if(!started){{started=true;fire('snapshot_start','app_form');}}}},{{once:false}}); form.addEventListener('submit',()=>fire('snapshot_submit','app_form'));}}
+    }})();
+    </script>"""
     return page('Free Search Snapshot™ — FixMyNameOnline™', body)
 
 
 @app.route('/submit-snapshot', methods=['POST'])
 def submit_snapshot():
-    data = {k: request.form.get(k, '').strip() for k in ['name', 'email', 'phone', 'case_type', 'names_to_check', 'problem_links', 'goal', 'source_page']}
+    base_fields = ['name', 'email', 'phone', 'case_type', 'names_to_check', 'problem_links', 'goal', 'source_page', 'referrer', 'landing_url', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']
+    data = {k: request.form.get(k, '').strip() for k in base_fields}
+    attribution = attribution_from_request(request.form)
+    data.update(attribution)
     if not data['name'] or not data['email']:
         return page('Missing details', '<div class="card"><h1 class="err">Missing details</h1><p>Please enter your name and email.</p><a class="btn" href="/app">Go back</a></div>'), 400
 
     triage = triage_snapshot(data)
     queue_item = make_queue_item('free_snapshot', data, triage)
-    append_jsonl(LEADS_FILE, {**data, 'triage': triage, 'queue_id': queue_item['id']})
+    append_jsonl(LEADS_FILE, {**data, 'searched_name': data.get('names_to_check') or data.get('name'), 'submitted_at': utc_now(), 'triage': triage, 'queue_id': queue_item['id']})
+    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': data.get('source_page'), 'href': '/submit-snapshot', 'location': request.path, 'source': data.get('source_category'), 'email': data.get('email'), 'searched_name': data.get('names_to_check') or data.get('name'), 'queue_id': queue_item['id'], 'referrer': data.get('referrer')})
     append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
     case_source = {**data, 'triage': triage, 'queue_id': queue_item['id']}
     case = safe_create_fulfilment_case('free-snapshot', data, case_source, 'free_snapshot')
@@ -2027,6 +2081,7 @@ def submit_snapshot():
       {paid_next_steps_html('snapshot_received')}
       <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
     </div>"""
+    body += conversion_tracking_event('snapshot_submit', {'content_name': 'Free Search Snapshot', 'source_category': data.get('source_category')})
     body += conversion_tracking_event('Lead', {'content_name': 'Free Search Snapshot'})
     return page('Snapshot received — FixMyNameOnline™', body)
 
@@ -2088,8 +2143,11 @@ def checkout(tier):
     if tier not in PLANS:
         return jsonify({'error': 'Invalid plan'}), 400
     plan = PLANS[tier]
+    attribution = attribution_from_request(request.args)
+    append_jsonl(CLICK_EVENTS_FILE, {'event': 'checkout_click', 'label': tier, 'href': request.url, 'location': request.path, 'source': attribution.get('source_category'), 'plan': plan.get('name'), 'price': plan.get('price'), 'referrer': attribution.get('referrer')})
     payment_link = plan.get('payment_link')
     if payment_link:
+        append_jsonl(CLICK_EVENTS_FILE, {'event': 'stripe_redirect', 'label': tier, 'href': payment_link, 'location': request.path, 'source': attribution.get('source_category'), 'plan': plan.get('name'), 'price': plan.get('price'), 'referrer': attribution.get('referrer')})
         return redirect(payment_link, code=302)
     if not stripe.api_key:
         return jsonify({'error': 'Stripe is not configured'}), 500
@@ -2317,6 +2375,7 @@ def webhook():
         tier = session.get('metadata', {}).get('tier') or 'starter'
         customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email', '')
         case = safe_create_fulfilment_case(tier, {'email': customer_email}, {'stripe_session_id': session.get('id'), 'tier': tier}, 'stripe_checkout')
+        append_jsonl(CLICK_EVENTS_FILE, {'event': 'purchase', 'label': tier, 'href': '/webhook', 'location': '/webhook', 'source': 'stripe', 'customer_email': customer_email, 'stripe_session_id': session.get('id'), 'case_id': case.get('id') if case else '', 'amount_total': session.get('amount_total'), 'currency': session.get('currency')})
         send_telegram_alert('FMNO checkout completed', {'customer_email': customer_email, 'tier': tier, 'session': session.get('id'), 'case_id': case.get('id') if case else ''})
     return '', 200
 
@@ -2768,7 +2827,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v39-faint-public-disclaimers', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v40-conversion-tracking-ladder', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
