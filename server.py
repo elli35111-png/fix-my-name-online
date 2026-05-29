@@ -856,7 +856,7 @@ def personal_search_hub():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/name-watch-alerts', '/delete-me', '/google-alerts-for-my-name', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/false-information-claims-online', '/bad-google-results-help', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/name-watch-alerts', '/delete-me', '/google-alerts-for-my-name', '/privacy', '/terms']
     personal_search_urls = ['/personal-search/']
     personal_search_dir = Path('personal-search')
     if personal_search_dir.exists():
@@ -877,8 +877,8 @@ def sitemap_xml():
 
 @app.route('/about')
 def about():
-    body = """<div class=\"card\"><h1>About FixMyNameOnline™</h1><p class=\"sub\">FixMyNameOnline™ is an Australia-based, worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.</p><p>We help individuals, professionals, business owners and public figures understand what appears around their name, document risk signals, review removal or platform-reporting pathways where appropriate, and build accurate positive assets over time.</p><p class=\"note\">We are not a law firm and do not provide legal advice. No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed.</p></div>"""
-    return page('About — FixMyNameOnline™', body, 'About FixMyNameOnline™, an Australia-based worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.')
+    body = """<div class=\"card\"><h1>About FixMyNameOnline™</h1><p class=\"sub\">FixMyNameOnline™ is an Australia-based, worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd.</p><p>We help individuals, professionals, business owners and public figures understand what appears around their name, document risk signals, review removal or platform-reporting pathways where appropriate, and build accurate positive assets over time.</p><div class=\"recommend\"><h2>Company and operator details</h2><p><strong>Operator:</strong> MadisonJade Pty Ltd<br><strong>ABN:</strong> 56661580936<br><strong>Base:</strong> South Australia, Australia<br><strong>Service area:</strong> Worldwide private search and reputation support</p><p>FixMyNameOnline™ is built as a private first-step service: search snapshot, review, action plan, monitoring and careful escalation where legitimate pathways exist.</p></div><h2>Public profiles</h2><ul><li><a href=\"https://x.com/Fixmyname_com\">FixMyNameOnline™ on X</a></li><li><a href=\"https://www.instagram.com/fixmynameonlinecom/\">FixMyNameOnline™ on Instagram</a></li><li><a href=\"https://www.tiktok.com/@fix.my.name.onlin\">FixMyNameOnline™ on TikTok</a></li></ul><p><a class=\"btn\" href=\"/app?source=about_company\">Start Free Search Snapshot™</a></p><p class=\"note\">We are not a law firm and do not provide legal advice. No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed.</p></div>"""
+    return page('About FixMyNameOnline™ — MadisonJade Pty Ltd', body, 'About FixMyNameOnline™, a worldwide private reputation repair and search protection service operated by MadisonJade Pty Ltd in Australia.', canonical_path='/about')
 
 
 @app.route('/fix-my-name-on-line')
@@ -1741,9 +1741,41 @@ def google_past_present_article():
     return page('When Google Makes Your Past Look Like Your Present | FixMyNameOnline™', body, description=description, canonical_path='/when-google-makes-your-past-look-like-your-present')
 
 
+
+FALSE_CLAIMS_SLUGS = ['false-information-about-me-online', 'remove-false-google-results', 'someone-posted-false-claims-about-me', 'false-allegations-showing-on-google', 'false-review-damaging-my-name']
+BAD_GOOGLE_SLUGS = ['bad-results-on-google-what-to-do', 'what-to-do-if-google-results-are-bad', 'negative-google-results-help', 'how-to-fix-bad-google-search-results', 'bad-search-results-for-my-name', 'old-news-article-on-google', 'old-stuff-showing-up-on-google', 'remove-outdated-google-search-results']
+JOB_PANIC_SLUGS = ['someone-googled-me-and-found-something-bad', 'what-shows-up-when-someone-googles-my-name', 'employer-googled-me-found-old-article', 'background-check-found-old-article', 'recruiter-found-negative-google-results']
+
+
+def guide_cards_for(slugs):
+    cards = []
+    for slug in slugs:
+        g = SEO_GUIDES.get(slug)
+        if not g:
+            continue
+        cards.append(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p><p><a class="btn btn2" href="/{safe(slug)}">Read guide →</a></p></div>''')
+    return ''.join(cards)
+
+
+@app.route('/false-information-claims-online')
+def false_information_claims_hub():
+    schema = json.dumps({'@context':'https://schema.org','@type':'CollectionPage','name':'False Information and False Claims Online','description':'Private guides for false information, false Google results, false allegations and false reviews showing online.','url':DOMAIN + '/false-information-claims-online'}, ensure_ascii=False)
+    body = f'''<script type="application/ld+json">{schema}</script><div class="card"><span class="pill">False information hub</span><h1>False information about you online? Start with evidence, not panic.</h1><p class="sub">This hub links the main private FixMyNameOnline™ guides for false claims, false Google results, false allegations and false reviews. Each pathway starts with a Free Search Snapshot™ so the issue can be mapped before any public action is considered.</p><div class="recommend"><h2>Quick answer</h2><p>If a false claim appears online, save the URL, screenshot, Google title/snippet, search phrase and date. Then separate factual errors from opinion and decide whether the path is a publisher correction, platform report, Google review/outdated-content process, legal advice, monitoring or positive search-footprint repair.</p><p><a class="btn" href="/app?source=false_claims_hub_top">Start Free Search Snapshot™ →</a></p></div></div><div class="grid" style="margin-top:16px">{guide_cards_for(FALSE_CLAIMS_SLUGS)}</div><div class="card" style="margin-top:16px"><h2>Related search-repair guides</h2><ul><li><a href="/bad-google-results-help">Bad Google Results hub</a></li><li><a href="/old-news-article-on-google">Old news article showing on Google</a></li><li><a href="/remove-negative-google-results">Remove negative Google results?</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li></ul><p><a class="btn" href="/app?source=false_claims_hub_bottom">Get private review →</a></p></div>'''
+    return page('False Information About Me Online — Private Help | Fix My Name Online™', body, 'Private help when false information, false claims, false Google results or false reviews appear online for your name or business.', canonical_path='/false-information-claims-online')
+
+
+@app.route('/bad-google-results-help')
+def bad_google_results_hub():
+    schema = json.dumps({'@context':'https://schema.org','@type':'CollectionPage','name':'Bad Google Results Help','description':'Private guides for bad Google results, old articles, outdated snippets, negative search results and personal name search problems.','url':DOMAIN + '/bad-google-results-help'}, ensure_ascii=False)
+    body = f'''<script type="application/ld+json">{schema}</script><div class="card"><span class="pill">Bad Google results hub</span><h1>Bad Google results: private steps before it costs you work, trust or peace.</h1><p class="sub">Use this hub when Google shows an old article, bad snippet, complaint page, review, court mention, associated name or result that gives people the wrong first impression.</p><div class="recommend"><h2>Quick answer</h2><p>Do not argue publicly first. Capture the result, identify the source, check whether removal/correction/outdated-content pathways are realistic, then build truthful current assets if the bad result cannot be changed quickly.</p><p><a class="btn" href="/app?source=bad_google_hub_top">Start Free Search Snapshot™ →</a></p></div></div><div class="grid" style="margin-top:16px">{guide_cards_for(BAD_GOOGLE_SLUGS + JOB_PANIC_SLUGS)}</div><div class="card" style="margin-top:16px"><h2>Related high-intent pathways</h2><ul><li><a href="/false-information-claims-online">False information and false claims hub</a></li><li><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></li><li><a href="/name-watch-alerts">NameWatch Alert™ monitoring</a></li><li><a href="/google-review-defence-worldwide">Google review defence worldwide</a></li></ul><p><a class="btn" href="/app?source=bad_google_hub_bottom">Get private review →</a></p></div>'''
+    return page('Bad Google Results Help — Private Search Repair | Fix My Name Online™', body, 'Private help for bad Google results, old articles, outdated snippets, negative results and personal or business search reputation problems.', canonical_path='/bad-google-results-help')
+
+
 @app.route('/learn')
 def learn_hub():
     money_pages = '''
+    <div class="card full"><span class="pill">False claims hub</span><h2><a href="/false-information-claims-online">False information and false claims online</a></h2><p class="sub">Private guides for false information about you online, false Google results, false allegations and false reviews damaging your name or business.</p></div>
+    <div class="card full"><span class="pill">Bad Google results hub</span><h2><a href="/bad-google-results-help">Bad Google results help</a></h2><p class="sub">Old articles, bad snippets, outdated pages, court mentions, associated names and search results that make the wrong first impression.</p></div>
     <div class="card full"><span class="pill">Worldwide service</span><h2><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></h2><p class="sub">Private search protection for people, founders and businesses dealing with reputation problems across countries, platforms and Google results.</p></div>
     <div class="card"><span class="pill">Start here</span><h2><a href="/online-reputation-repair">Online reputation repair</a></h2><p class="sub">Map bad Google results, old articles, damaging snippets, reviews and weak positive search footprints before choosing a repair path.</p></div>
     <div class="card"><span class="pill">Google results</span><h2><a href="/remove-negative-google-results">Remove negative Google results?</a></h2><p class="sub">A realistic private options review for negative search results, old pages, bad snippets, images and review-led search damage.</p></div>
@@ -1770,8 +1802,20 @@ def seo_guide(slug):
         return page('Not found — FixMyNameOnline™', '<div class="card"><h1>Page not found</h1><p><a class="btn" href="/">Back home</a></p></div>'), 404
     section_html = ''.join(f'<h2>{safe(heading)}</h2><p>{safe(text)}</p>' for heading, text in guide['sections'])
     faq_html = ''.join(f'<div class="card"><h2>{safe(q)}</h2><p>{safe(a)}</p></div>' for q, a in guide['faqs'])
-    related = ''.join(f'<li><a href="/{safe(other)}">{safe(g["h1"])}</a></li>' for other, g in SEO_GUIDES.items() if other != slug)
-    body = f'''{guide_schema(slug, guide)}<div class="card"><span class="pill">{safe(guide['eyebrow'])}</span><h1>{safe(guide['h1'])}</h1><p class="sub">{safe(guide['intro'])}</p>{section_html}<div class="recommend"><h2>Start with a private search snapshot</h2><p>If this sounds like your situation, send the name, business, links, reviews or search terms privately. We will map the issue before recommending alerts, removal review, review defence or a repair plan.</p><p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">See services</a></p></div><h2>Related Fix My Name Online™ guides</h2><ul><li><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li><li><a href="/remove-negative-google-results">Remove negative Google results?</a></li><li><a href="/google-review-defence-worldwide">Google review defence worldwide</a></li>{related}<li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li><li><a href="/remove-bad-google-results">Bad Google results options</a></li><li><a href="/google-review-defence">Google Review Defence™</a></li></ul><p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No ranking, removal, review-removal, de-indexing or search outcome is guaranteed.</p></div><div class="grid" style="margin-top:16px">{faq_html}</div>'''
+    if slug in FALSE_CLAIMS_SLUGS:
+        hub_link = '<li><a href="/false-information-claims-online">False information and false claims hub</a></li>'
+        related_slugs = [x for x in FALSE_CLAIMS_SLUGS if x != slug][:4] + ['bad-google-results-help', 'old-news-article-on-google']
+    elif slug in BAD_GOOGLE_SLUGS or slug in JOB_PANIC_SLUGS:
+        hub_link = '<li><a href="/bad-google-results-help">Bad Google results hub</a></li>'
+        related_slugs = [x for x in (BAD_GOOGLE_SLUGS + JOB_PANIC_SLUGS) if x != slug][:5] + ['false-information-claims-online']
+    else:
+        hub_link = '<li><a href="/learn">Reputation repair guide hub</a></li>'
+        related_slugs = ['false-information-claims-online', 'bad-google-results-help', 'worldwide-reputation-repair', 'remove-negative-google-results']
+    related = ''.join(f'<li><a href="/{safe(other)}">{safe(SEO_GUIDES.get(other, {}).get("h1", other.replace("-", " ").title()))}</a></li>' for other in related_slugs if other != slug)
+    top_cta = f'<div class="recommend"><h2>Need this checked privately?</h2><p>Send the exact name, Google result, link, review or search phrase. FMNO will map the risk before recommending monitoring, removal review, review defence or repair.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Start Free Search Snapshot™ →</a></p></div>'
+    mid_cta = f'<p><a class="btn btn2" href="/app?source={safe(slug)}_mid">Get a private snapshot for this issue →</a></p>'
+    bottom_cta = f'<div class="recommend"><h2>Start with a private search snapshot</h2><p>If this sounds like your situation, send the name, business, links, reviews or search terms privately. We will map the issue before recommending alerts, removal review, review defence or a repair plan.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">See services</a></p></div>'
+    body = f'''{guide_schema(slug, guide)}<div class="card"><p class="note"><a href="/">Home</a> → <a href="/learn">Learn</a> → {safe(guide['h1'])}</p><span class="pill">{safe(guide['eyebrow'])}</span><h1>{safe(guide['h1'])}</h1><p class="sub">{safe(guide['intro'])}</p>{top_cta}{section_html}{mid_cta}{bottom_cta}<h2>Related Fix My Name Online™ guides</h2><ul>{hub_link}<li><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li><li><a href="/remove-negative-google-results">Remove negative Google results?</a></li><li><a href="/google-review-defence-worldwide">Google review defence worldwide</a></li>{related}<li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li></ul><p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No ranking, removal, review-removal, de-indexing or search outcome is guaranteed.</p></div><div class="grid" style="margin-top:16px">{faq_html}</div>'''
     return page(guide['title'], body, description=guide['description'], canonical_path='/' + slug)
 
 
@@ -2827,7 +2871,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v40-conversion-tracking-ladder', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v41-rank-sprint-hubs-entity', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
