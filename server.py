@@ -1884,6 +1884,7 @@ def google_your_name_landing():
 @app.route('/free-search-snapshot')
 def ad_free_snapshot_form():
     source_page = safe(request.args.get('source') or 'free_search_snapshot_page')
+    prefill_name = safe(request.args.get('name') or request.args.get('names_to_check') or '')
     body = f"""
     <div class="card"><span class="pill">Start here</span><h1>Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll privately map the pattern and point you toward the safest next step.</p>
     <form method="post" action="/submit-snapshot" class="grid">
