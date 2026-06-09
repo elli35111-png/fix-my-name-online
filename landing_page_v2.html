@@ -322,7 +322,7 @@
           scoreBox.classList.remove('hidden');
           scoreBox.textContent = 'Reputation Risk Score™ preview: ' + data.risk_score_preview.score + '/100 · ' + data.risk_score_preview.label;
         }
-        addTranscript('concierge', conciergeDisplayText(data));
+        if (speak || message) addTranscript('concierge', conciergeDisplayText(data));
         const input=document.getElementById('concierge-input');
         const submit=document.getElementById('concierge-submit');
         if(input) input.placeholder = data.next_question || 'Ready to submit';
