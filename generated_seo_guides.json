@@ -1271,5 +1271,134 @@
         "Send your name, the search phrase, the old article URL or screenshot, and what role/client/opportunity is at risk."
       ]
     ]
+  },
+  "google-your-name-before-an-employer-does": {
+    "eyebrow": "Reputation Rescue",
+    "title": "Google Your Name Before an Employer Does — Private Search Snapshot | FixMyNameOnline™",
+    "h1": "Google your name before an employer does",
+    "description": "A private FixMyNameOnline™ guide to checking what employers, clients and strangers may see when they search your name, with realistic next steps and a Free Search Snapshot™.",
+    "intro": "Before an interview, pitch, client call or date, someone may quietly search your name. If the first page shows an old article, review, court mention, image, false claim or confusing namesake, that impression can form before you ever get to explain. Start by mapping what is visible, privately.",
+    "sections": [
+      [
+        "Search like a stranger, not like yourself",
+        "Use an incognito window, search your exact name, common variants, previous names, business names and location combinations. Your usual Google account can hide or personalise what other people see."
+      ],
+      [
+        "Classify each result",
+        "For every result on page one, ask: is it accurate, is it current, and could it harm trust before I explain? Save URLs, screenshots, dates and snippets so the problem is evidence-based, not panic-based."
+      ],
+      [
+        "Do not make the result louder",
+        "Public arguments, defensive posts and angry replies can create more indexed material around the same issue. A private review first is usually safer than reacting in public."
+      ],
+      [
+        "Know the possible pathways",
+        "Some results may have correction, outdated-content, privacy, publisher or platform-review pathways. Others may need stronger truthful positive search assets and monitoring instead of a removal claim."
+      ],
+      [
+        "Start with a Free Search Snapshot™",
+        "FixMyNameOnline™ maps the visible risk around your name and explains practical next-step options. It is private, discreet and designed to avoid public escalation."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can I remove bad Google results before an employer sees them?",
+        "Sometimes there may be a removal or de-indexing pathway, but it depends on the source, accuracy, privacy facts, age and platform policy. No responsible service can guarantee removal."
+      ],
+      [
+        "What if the result is old but technically true?",
+        "The plan may focus on context, current truthful assets, stronger profiles and search monitoring so the old result is not the only story people see."
+      ],
+      [
+        "Is the Free Search Snapshot private?",
+        "Yes. The first step is a private map of what is publicly visible and what practical options may exist."
+      ]
+    ]
+  },
+  "old-article-ruining-my-life": {
+    "eyebrow": "Private reputation repair",
+    "title": "Old Article Ruining My Life — What You Can Do Privately | FixMyNameOnline™",
+    "h1": "What to do if an old article is ruining your life",
+    "description": "Private steps if an old article, outdated story or search result is harming jobs, clients, relationships or trust. Start with a Free Search Snapshot™.",
+    "intro": "An old article can feel current every time Google shows it beside your name. The safest first step is to understand exactly what ranks, who controls it, whether a legitimate review pathway exists, and what current truthful material is missing.",
+    "sections": [
+      [
+        "Capture the evidence",
+        "Record the exact URL, headline, snippet, image result, date, ranking position and search phrase. Do this before contacting anyone or posting publicly."
+      ],
+      [
+        "Check whether the article can be reviewed",
+        "Publisher correction, anonymisation, noindex, outdated-content and privacy pathways vary by facts and jurisdiction. Some are realistic; some are not."
+      ],
+      [
+        "Build a fuller current footprint",
+        "If removal is unlikely, stronger truthful profiles, business pages, interviews, FAQs and service pages can help searchers see the present instead of only the past."
+      ],
+      [
+        "Monitor the search page",
+        "Old articles can move up or down after social discussion, new links, new images or copied pages. Monitoring turns the problem into a managed process."
+      ],
+      [
+        "Start privately",
+        "A Free Search Snapshot™ gives you a calm map of visible risk and next-step options before the problem gets louder."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can an old article be deleted from Google?",
+        "Sometimes Google can remove or de-index content in specific situations, but often the source publisher controls the page. A review is needed before making any claim."
+      ],
+      [
+        "Should I contact the journalist or publisher myself?",
+        "Sometimes, but only after preparing evidence and deciding the safest wording. A rushed emotional email can make the situation harder."
+      ],
+      [
+        "Can positive content help?",
+        "Truthful current assets can help broaden what searchers see, especially when removal is not realistic."
+      ]
+    ]
+  },
+  "someone-posted-false-claims-about-me-online": {
+    "eyebrow": "False claims online",
+    "title": "Someone Posted False Claims About Me Online — What Actually Works | FixMyNameOnline™",
+    "h1": "Someone posted false claims about you online: what actually works",
+    "description": "A private, practical guide to false claims online: evidence capture, platform review, search-risk mapping, and reputation repair options without public escalation.",
+    "intro": "False claims online can spread faster when you react publicly. The smarter first move is evidence capture, risk mapping and a calm review of what can be reported, corrected, de-indexed, responded to or outweighed with truthful current information.",
+    "sections": [
+      [
+        "Do not start with a public fight",
+        "Public replies can quote the false claim, create new indexed pages and train search engines that the topic matters. Start with evidence."
+      ],
+      [
+        "Save everything",
+        "Capture URLs, screenshots, account names, dates, comments, search snippets and any proof that the claim is false or misleading."
+      ],
+      [
+        "Use the right pathway",
+        "Depending on the platform and facts, options may include platform reporting, publisher contact, privacy requests, outdated-content review, legal advice, or a controlled response strategy."
+      ],
+      [
+        "Protect the search result page",
+        "Even if the false claim is removed, search snippets, screenshots and reposts can linger. Positive search assets and monitoring help close the loop."
+      ],
+      [
+        "Get a private map first",
+        "FixMyNameOnline™ can start with a Free Search Snapshot™ so you know what people actually see before choosing the next step."
+      ]
+    ],
+    "faqs": [
+      [
+        "Can false claims be removed?",
+        "Sometimes there are platform, publisher or legal pathways, but outcomes depend on evidence, policy, jurisdiction and public-interest factors."
+      ],
+      [
+        "Should I reply publicly?",
+        "Not before considering whether a reply will amplify the claim. A private strategy first is often safer."
+      ],
+      [
+        "What if the claim appears in Google search?",
+        "The page, snippet, image result and copied versions should be mapped. The response may combine reporting, correction, de-indexing review, positive assets and monitoring."
+      ]
+    ]
   }
 }
