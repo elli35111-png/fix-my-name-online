@@ -83,12 +83,15 @@ def test_voice_endpoint_silent_when_unconfigured():
         server.concierge_voice_configured = original
 
 
-def test_voice_config_unconfigured_without_keys():
-    # With no ElevenLabs/XI key in the environment, config must be None.
+def test_voice_config_uses_owned_bridge_without_render_keys():
+    # Render does not need a browser/system voice or exposed key; when direct
+    # ElevenLabs env is absent, the server uses the owned FPS Netlify Bill bridge.
     saved = {k: os.environ.pop(k, None) for k in ("ELEVENLABS_API_KEY", "XI_API_KEY")}
     try:
-        assert server.concierge_voice_config() is None
-        assert server.concierge_voice_configured() is False
+        cfg = server.concierge_voice_config()
+        assert cfg is not None
+        assert cfg.get("mode") == "bridge"
+        assert server.concierge_voice_configured() is True
     finally:
         for k, v in saved.items():
             if v is not None:

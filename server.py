@@ -509,13 +509,19 @@ def concierge_voice_config():
     the avatar stays silent rather than saying the wrong thing.
     """
     api_key = (os.environ.get('ELEVENLABS_API_KEY') or os.environ.get('XI_API_KEY') or '').strip()
-    if not api_key:
-        return None
-    return {
-        'api_key': api_key,
-        'voice_id': (os.environ.get('ELEVENLABS_VOICE_ID') or 'pqHfZKP75CvOlQylNhV4').strip(),
-        'model_id': (os.environ.get('ELEVENLABS_MODEL_ID') or 'eleven_turbo_v2_5').strip(),
-    }
+    if api_key:
+        return {
+            'mode': 'elevenlabs',
+            'api_key': api_key,
+            'voice_id': (os.environ.get('ELEVENLABS_VOICE_ID') or 'pqHfZKP75CvOlQylNhV4').strip(),
+            'model_id': (os.environ.get('ELEVENLABS_MODEL_ID') or 'eleven_turbo_v2_5').strip(),
+        }
+    # Temporary owned bridge: FPS Netlify voice function already has Bill configured.
+    # This keeps FMNO live without exposing keys while Render env is being finished.
+    bridge_url = (os.environ.get('FMNO_VOICE_BRIDGE_URL') or 'https://sales.firstpagestrategy.org/.netlify/functions/ava-voice').strip()
+    if bridge_url:
+        return {'mode': 'bridge', 'bridge_url': bridge_url}
+    return None
 
 
 def concierge_voice_configured():
@@ -531,16 +537,24 @@ def synthesize_concierge_voice(text):
     if not text:
         return None
     try:
-        r = requests.post(
-            f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}",
-            headers={'xi-api-key': cfg['api_key'], 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
-            json={
-                'text': text,
-                'model_id': cfg['model_id'],
-                'voice_settings': {'stability': 0.5, 'similarity_boost': 0.75, 'style': 0.2},
-            },
-            timeout=20,
-        )
+        if cfg.get('mode') == 'bridge':
+            r = requests.post(
+                cfg['bridge_url'],
+                headers={'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
+                json={'text': text},
+                timeout=24,
+            )
+        else:
+            r = requests.post(
+                f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}",
+                headers={'xi-api-key': cfg['api_key'], 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
+                json={
+                    'text': text,
+                    'model_id': cfg['model_id'],
+                    'voice_settings': {'stability': 0.5, 'similarity_boost': 0.75, 'style': 0.2},
+                },
+                timeout=20,
+            )
         if r.status_code != 200 or not r.content:
             app.logger.warning('Concierge voice failed %s: %s', r.status_code, r.text[:300])
             return None
