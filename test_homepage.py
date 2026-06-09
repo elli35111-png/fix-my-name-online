@@ -120,6 +120,21 @@ def test_concierge_section_moved_below_fold():
     assert 'id="private-search-concierge"' not in hero
 
 
+def test_concierge_no_autocall_on_load_and_initial_field_ready():
+    # First page load should not immediately burn a model/voice call or show a
+    # temporary thinking state. The first typed answer should map to names_to_check.
+    assert "setConciergeTopic('privacy', false)" not in HTML
+    assert "Do not auto-call the model" in HTML
+    assert "current_field:'names_to_check'" in HTML
+    assert "Private Concierge is thinking..." in HTML  # allowed only after explicit action
+
+
+def test_sticky_boost_bar_not_visible_until_scroll():
+    assert "transform:translate(-50%,140%)" in HTML
+    assert "boost-visible" in HTML
+    assert "window.scrollY > 420" in HTML
+
+
 def test_core_routes_preserved():
     c = client()
     for path in (
