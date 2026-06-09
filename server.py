@@ -109,9 +109,9 @@ TRIAGE_NEXT_STEPS = {
 BASE_STYLE = """
 :root{--dark:#08090f;--card:#151824;--red:#d91f3d;--grey:#9aa2b6;--light:#e8ecf5;}
 *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 5%,rgba(217,31,61,.16),transparent 28%),var(--dark);color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;line-height:1.5;padding:22px;}
-a{color:#ff4d66}.wrap{max-width:880px;margin:0 auto}.card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
-.logo{font-weight:900;letter-spacing:.12em;color:var(--red);font-size:15px;margin-bottom:22px}.sub{color:var(--grey)}h1{font-size:clamp(32px,6vw,58px);line-height:1.02;margin:0 0 14px}h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}
-label{display:block;font-weight:700;margin:14px 0 7px}input,select,textarea{width:100%;background:#0d1019;color:white;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:13px 14px;font:inherit}textarea{min-height:105px}.btn{display:inline-block;background:linear-gradient(135deg,var(--red),#a81229);border:0;border-radius:13px;color:white;font-weight:800;padding:14px 20px;text-decoration:none;cursor:pointer;font-size:16px}.btn2{background:transparent;border:1px solid rgba(255,255,255,.22)}.note{font-size:13px;color:var(--grey)}.pill{display:inline-block;border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);padding:7px 10px;border-radius:999px;color:#ffb0bd;font-size:13px;font-weight:700}.ok{color:#31d07a}.err{color:#ff6f85}.recommend{border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);border-radius:18px;padding:20px;margin:22px 0}@media(max-width:720px){body{padding:14px}.grid{grid-template-columns:1fr}.card{padding:20px} }
+a{color:#ff4d66}.wrap{max-width:980px;margin:0 auto}.card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+.logo{font-weight:900;letter-spacing:.12em;color:var(--red);font-size:15px;margin-bottom:22px}.sub{color:var(--grey)}h1{font-size:clamp(32px,6vw,58px);line-height:1.02;margin:0 0 14px}h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}.snapshot-shell{display:grid;grid-template-columns:1.05fr .75fr;gap:22px;align-items:start}.trust-strip{display:flex;flex-wrap:wrap;gap:10px 18px;color:var(--grey);font-size:12px;margin:18px 0}.trust-strip span:before{content:'•';color:#d4af37;margin-right:8px}.side-card{position:sticky;top:18px}.steps{display:grid;gap:12px}.step{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:16px;padding:14px}.step b{color:#ffb0bd}.microcopy{font-size:12px;color:var(--grey);margin-top:6px}.submit-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.progress{height:7px;background:#0d1019;border:1px solid rgba(255,255,255,.12);border-radius:999px;overflow:hidden;margin:10px 0 18px}.progress span{display:block;height:100%;width:18%;background:linear-gradient(90deg,var(--red),#ff6f85);transition:width .2s ease}
+label{display:block;font-weight:700;margin:14px 0 7px}input,select,textarea{width:100%;background:#0d1019;color:white;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:13px 14px;font:inherit}input:focus,select:focus,textarea:focus{outline:2px solid rgba(217,31,61,.35);border-color:rgba(217,31,61,.65)}textarea{min-height:105px}.btn{display:inline-block;background:linear-gradient(135deg,var(--red),#a81229);border:0;border-radius:13px;color:white;font-weight:800;padding:14px 20px;text-decoration:none;cursor:pointer;font-size:16px}.btn2{background:transparent;border:1px solid rgba(255,255,255,.22)}.note{font-size:13px;color:var(--grey)}.pill{display:inline-block;border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);padding:7px 10px;border-radius:999px;color:#ffb0bd;font-size:13px;font-weight:700}.ok{color:#31d07a}.err{color:#ff6f85}.recommend{border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);border-radius:18px;padding:20px;margin:22px 0}@media(max-width:820px){body{padding:14px}.grid,.snapshot-shell{grid-template-columns:1fr}.card{padding:20px}.side-card{position:static}.submit-row .btn{width:100%;text-align:center} }
 """
 
 
@@ -2128,21 +2128,26 @@ def free_snapshot_form():
     source_page = safe(request.args.get('source') or 'app_form')
     prefill_name = safe(request.args.get('name') or '')
     body = f"""
-    <div class="card"><span class="pill">Free first step</span><h1>Start your Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll use this to point you toward the right next step: alerts, removal review, review defence, or repair.</p>
-    <form method="post" action="/submit-snapshot" class="grid" id="snapshot-form">
-      <input type="hidden" name="source_page" value="{source_page}">
-      <input type="hidden" name="referrer" id="fmno-referrer" value="">
-      <input type="hidden" name="landing_url" id="fmno-landing-url" value="">
-      <input type="hidden" name="utm_source" id="utm_source" value=""><input type="hidden" name="utm_medium" id="utm_medium" value=""><input type="hidden" name="utm_campaign" id="utm_campaign" value=""><input type="hidden" name="utm_term" id="utm_term" value=""><input type="hidden" name="utm_content" id="utm_content" value=""><input type="hidden" name="gclid" id="gclid" value=""><input type="hidden" name="fbclid" id="fbclid" value="">
-      <div><label>Your name</label><input name="name" required autocomplete="name" value="{prefill_name}"></div>
-      <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
-      <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
-      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
-      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations...">{prefill_name}</textarea></div>
-      <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
-      <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
-      <div class="full"><button class="btn" type="submit">Submit Free Snapshot →</button> <a class="btn btn2" href="/">Back</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
-    </form></div>
+    <div class="snapshot-shell">
+      <div class="card"><span class="pill">Free first step</span><h1>Start your Free Search Snapshot™</h1><p class="sub">Tell us the name, business, old name, link, review or search phrase you are worried about. FMNO privately maps the issue and points you toward the safest next step only if there is a real next step.</p>
+      <div class="trust-strip"><span>Operated by MadisonJade Pty Ltd</span><span>ABN 56 661 580 936</span><span>Private intake · no public case disclosure</span></div>
+      <div class="progress" aria-hidden="true"><span id="snapshot-progress"></span></div>
+      <form method="post" action="/submit-snapshot" class="grid" id="snapshot-form">
+        <input type="hidden" name="source_page" value="{source_page}">
+        <input type="hidden" name="referrer" id="fmno-referrer" value="">
+        <input type="hidden" name="landing_url" id="fmno-landing-url" value="">
+        <input type="hidden" name="utm_source" id="utm_source" value=""><input type="hidden" name="utm_medium" id="utm_medium" value=""><input type="hidden" name="utm_campaign" id="utm_campaign" value=""><input type="hidden" name="utm_term" id="utm_term" value=""><input type="hidden" name="utm_content" id="utm_content" value=""><input type="hidden" name="gclid" id="gclid" value=""><input type="hidden" name="fbclid" id="fbclid" value="">
+        <div><label>Your name</label><input name="name" required autocomplete="name" value="{prefill_name}" placeholder="Your name or business name"><div class="microcopy">Used only for the private snapshot request.</div></div>
+        <div><label>Email</label><input name="email" type="email" required autocomplete="email" placeholder="Where should we send the private update?"><div class="microcopy">No public action happens from this form.</div></div>
+        <div><label>Phone optional</label><input name="phone" autocomplete="tel" placeholder="Optional, for urgent/sensitive cases"></div>
+        <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
+        <div class="full"><label>Names, businesses or search phrases to check</label><textarea name="names_to_check" placeholder="Full name, old names, nicknames, business names, associated names, locations, or search phrases people may type...">{prefill_name}</textarea><div class="microcopy">This can be your exact name, an old name, a business, or a phrase like “Jane Smith court”.</div></div>
+        <div class="full"><label>Bad links, reviews, article titles, screenshots or clues if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: old article title, Google review, complaint page, court mention, image result..."></textarea></div>
+        <div class="full"><label>What are you hoping to understand or fix?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
+        <div class="full submit-row"><button class="btn" type="submit" id="snapshot-submit">Submit Free Snapshot →</button><a class="btn btn2" href="/">Back</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
+      </form></div>
+      <div class="card side-card"><span class="pill">What happens next</span><div class="steps"><div class="step"><b>1 · Private map</b><br><span class="sub">We review the name/search pattern, obvious links, reviews and snippets.</span></div><div class="step"><b>2 · Pathway check</b><br><span class="sub">We identify whether alerting, removal review, review defence or repair fits.</span></div><div class="step"><b>3 · Human review</b><br><span class="sub">AI-assisted intake is validated before any sensitive next step.</span></div></div><div class="recommend"><b>Start free.</b><p class="note">If there is nothing serious, you are not pushed into a paid plan. If there is risk, we explain the practical next step.</p></div></div>
+    </div>
     <script>
     (function(){{
       const qs=new URLSearchParams(window.location.search);
@@ -2153,7 +2158,14 @@ def free_snapshot_form():
       let started=false;
       function fire(event,label){{try{{if(typeof gtag==='function') gtag('event',event,{{event_label:label||'',page_path:window.location.pathname}}); if(navigator.sendBeacon) navigator.sendBeacon('/api/track-click', new Blob([JSON.stringify({{event,label:label||'',href:'/submit-snapshot',location:window.location.pathname+window.location.search,source:'snapshot_form'}})],{{type:'application/json'}}));}}catch(e){{}}}}
       const form=document.getElementById('snapshot-form');
-      if(form){{form.addEventListener('input',()=>{{if(!started){{started=true;fire('snapshot_start','app_form');}}}},{{once:false}}); form.addEventListener('submit',()=>fire('snapshot_submit','app_form'));}}
+      const progress=document.getElementById('snapshot-progress');
+      function updateProgress(){{
+        if(!form||!progress) return;
+        const fields=['name','email','case_type','names_to_check','problem_links','goal'];
+        const done=fields.filter(k=>{{const el=form.elements[k]; return el && String(el.value||'').trim();}}).length;
+        progress.style.width=Math.max(18, Math.round((done/fields.length)*100))+'%';
+      }}
+      if(form){{form.addEventListener('input',()=>{{if(!started){{started=true;fire('snapshot_start','app_form');}} updateProgress();}},{{once:false}}); form.addEventListener('submit',()=>{{const btn=document.getElementById('snapshot-submit'); if(btn){{btn.disabled=true; btn.textContent='Submitting private snapshot...';}} fire('snapshot_submit','app_form');}}); updateProgress();}}
     }})();
     </script>"""
     return page('Free Search Snapshot™ — FixMyNameOnline™', body)

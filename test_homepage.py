@@ -158,6 +158,18 @@ def test_core_routes_preserved():
         assert c.get(path).status_code in (200, 301, 302), f"{path} broke"
 
 
+def test_snapshot_form_conversion_polish():
+    body = client().get("/app?source=qa_test").get_data(as_text=True)
+    assert "Start your Free Search Snapshot™" in body
+    assert "Operated by MadisonJade Pty Ltd" in body
+    assert "ABN 56 661 580 936" in body
+    assert "snapshot-shell" in body
+    assert "What happens next" in body
+    assert "id=\"snapshot-progress\"" in body
+    assert "Submitting private snapshot" in body
+    assert "Private intake · no public case disclosure" in body
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0
