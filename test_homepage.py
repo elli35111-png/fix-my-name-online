@@ -135,6 +135,16 @@ def test_sticky_boost_bar_not_visible_until_scroll():
     assert "window.scrollY > 420" in HTML
 
 
+def test_claude48_polish_guards():
+    assert "Operated by MadisonJade Pty Ltd" in HTML
+    assert "ABN 56 661 580 936" in HTML
+    assert "function applyVoiceMode()" in HTML
+    assert "TEXT CONCIERGE" in HTML
+    assert "hasAttribute('data-topic')" in HTML
+    assert "ava-no-video" in HTML
+    assert "prefers-reduced-motion" in HTML
+
+
 def test_core_routes_preserved():
     c = client()
     for path in (
