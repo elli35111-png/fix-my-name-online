@@ -502,6 +502,54 @@ def concierge_model_name():
     return 'MiniMax-M2.7-highspeed'
 
 
+def concierge_voice_config():
+    """Return ElevenLabs/Bill voice config when a premium voice key is configured.
+
+    FMNO should not use cheap browser TTS. If the premium provider is unavailable,
+    the avatar stays silent rather than saying the wrong thing.
+    """
+    api_key = (os.environ.get('ELEVENLABS_API_KEY') or os.environ.get('XI_API_KEY') or '').strip()
+    if not api_key:
+        return None
+    return {
+        'api_key': api_key,
+        'voice_id': (os.environ.get('ELEVENLABS_VOICE_ID') or 'pqHfZKP75CvOlQylNhV4').strip(),
+        'model_id': (os.environ.get('ELEVENLABS_MODEL_ID') or 'eleven_turbo_v2_5').strip(),
+    }
+
+
+def concierge_voice_configured():
+    return concierge_voice_config() is not None
+
+
+def synthesize_concierge_voice(text):
+    """Synthesize exactly the current concierge reply. Return None on failure."""
+    cfg = concierge_voice_config()
+    if not cfg:
+        return None
+    text = clean_concierge_text(text or '').strip()[:600]
+    if not text:
+        return None
+    try:
+        r = requests.post(
+            f"https://api.elevenlabs.io/v1/text-to-speech/{cfg['voice_id']}",
+            headers={'xi-api-key': cfg['api_key'], 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
+            json={
+                'text': text,
+                'model_id': cfg['model_id'],
+                'voice_settings': {'stability': 0.5, 'similarity_boost': 0.75, 'style': 0.2},
+            },
+            timeout=20,
+        )
+        if r.status_code != 200 or not r.content:
+            app.logger.warning('Concierge voice failed %s: %s', r.status_code, r.text[:300])
+            return None
+        return r.content, 'audio/mpeg'
+    except Exception as exc:
+        app.logger.warning('Concierge voice exception: %s', exc)
+        return None
+
+
 def call_concierge_model(topic, collected, user_message, next_question, ready):
     provider = concierge_provider_name()
     if provider == 'openrouter':
@@ -1943,7 +1991,25 @@ def api_concierge_chat():
         collected = payload.get('session')
     message = str(payload.get('message') or '').strip()
     current_field = str(payload.get('current_field') or '').strip()
-    return jsonify(make_concierge_response(topic, collected, message, current_field))
+    response = make_concierge_response(topic, collected, message, current_field)
+    response['voice_available'] = concierge_voice_configured()
+    return jsonify(response)
+
+
+@app.route('/api/concierge/voice', methods=['POST'])
+def api_concierge_voice():
+    """Speak only the current concierge reply using Bill/ElevenLabs if configured."""
+    if not concierge_voice_configured():
+        return Response(status=204)
+    payload = request.get_json(silent=True) or {}
+    text = str(payload.get('text') or '').strip()
+    if not text:
+        return Response(status=204)
+    result = synthesize_concierge_voice(text)
+    if not result:
+        return Response(status=204)
+    audio, mimetype = result
+    return Response(audio, mimetype=mimetype, headers={'Cache-Control': 'no-store'})
 
 
 @app.route('/api/concierge/submit', methods=['POST'])
@@ -2872,7 +2938,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v41-rank-sprint-hubs-entity', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v42-homepage-overhaul-bill-avatar', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
