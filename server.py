@@ -2085,7 +2085,7 @@ def api_concierge_submit():
 @app.route('/snapshot-received')
 def snapshot_received_light():
     ref = request.args.get('ref', '')
-    body = f'''<div class="card"><span class="pill ok">Received</span><h1>Your Free Search Snapshot™ request is in.</h1><p class="sub">Thank you. We saved the private concierge intake and will prepare the search snapshot pathway from here.</p><p class="note">Private reference: {safe(ref)}<br>No public action happens from this intake alone.</p><p><a class="btn" href="/">Back to site</a></p></div>'''
+    body = f'''<div class="card"><span class="pill ok">Received</span><h1>Your Private Reputation Risk Score™ is ready.</h1><p class="sub">Thank you. We saved the private concierge intake and will prepare the search snapshot pathway from here.</p><p class="note">Private reference: {safe(ref)}<br>No public action happens from this intake alone.</p><p><a class="btn" href="/">Back to site</a></p></div>'''
     return page('Snapshot received — FixMyNameOnline™', body)
 
 
@@ -2112,12 +2112,11 @@ def private_case_room(queue_id):
     <div class="card"><span class="pill ok">Private Case Room™</span><h1>Your private reputation snapshot room is open.</h1>
       <p class="sub">This is the secure first view for {safe(record.get('name'))}. No public action happens from this intake. This room is for private triage and next-step guidance only.</p>
       <div class="recommend"><h2>Reputation Risk Score™: {safe(score.get('score'))}/100 · {safe(score.get('label'))}</h2><p>{safe(score.get('summary'))}</p><ul>{factors}</ul></div>
-      <div class="grid"><div class="card"><h2>Recommended pathway</h2><p class="sub">{safe(score.get('recommendation') or triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/app'))}">{safe(triage.get('cta', 'View next step'))} →</a></p></div>
+      <div class="grid"><div class="card"><h2>Recommended pathway</h2><p class="sub">{safe(score.get('recommendation') or triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/app'))}">{safe(triage.get('cta', 'View next step'))} →</a></p><p class="note">One recommended path first. Bigger repair plans stay available after review.</p></div>
       <div class="card"><h2>Private reference</h2><p class="note">Reference: {safe(record.get('queue_id'))}<br>Case: {safe(record.get('case_id'))}<br>Status: {safe(record.get('status'))}</p></div></div>
       <h2 style="margin-top:22px">What you gave us</h2>
       <div class="card"><p><strong>Names/search:</strong><br>{safe(preview.get('names_to_check'))}</p><p><strong>Links/search clues:</strong><br>{safe(preview.get('problem_links'))}</p><p><strong>Goal:</strong><br>{safe(preview.get('goal'))}</p></div>
       <h2 style="margin-top:22px">Private timeline</h2><div class="grid">{timeline_html}</div>
-      {paid_next_steps_html('private_case_room')}
       <p class="note">FixMyNameOnline™ is operated by MadisonJade Pty Ltd. This score is an intake signal, not a guarantee of removal, ranking, de-indexing, platform action, or search result outcome.</p>
     </div>'''
     return page('Private Case Room™ — FixMyNameOnline™', body, 'Secure private reputation snapshot room for FixMyNameOnline™ Free Search Snapshot™ intake.', canonical_path='/private-case-room')
@@ -2129,7 +2128,7 @@ def free_snapshot_form():
     prefill_name = safe(request.args.get('name') or '')
     body = f"""
     <div class="snapshot-shell">
-      <div class="card"><span class="pill">Free first step</span><h1>Start your Free Search Snapshot™</h1><p class="sub">Tell us the name, business, old name, link, review or search phrase you are worried about. FMNO privately maps the issue and points you toward the safest next step only if there is a real next step.</p>
+      <div class="card"><span class="pill">Free private first step</span><h1>Get your Private Reputation Risk Score™</h1><p class="sub">Enter the name, business or search phrase you are worried about. We open a private case room with an initial risk score and the safest next step — without making anything public.</p>
       <div class="trust-strip"><span>Operated by MadisonJade Pty Ltd</span><span>ABN 56 661 580 936</span><span>Private intake · no public case disclosure</span></div>
       <div class="progress" aria-hidden="true"><span id="snapshot-progress"></span></div>
       <form method="post" action="/submit-snapshot" class="grid" id="snapshot-form">
@@ -2137,16 +2136,20 @@ def free_snapshot_form():
         <input type="hidden" name="referrer" id="fmno-referrer" value="">
         <input type="hidden" name="landing_url" id="fmno-landing-url" value="">
         <input type="hidden" name="utm_source" id="utm_source" value=""><input type="hidden" name="utm_medium" id="utm_medium" value=""><input type="hidden" name="utm_campaign" id="utm_campaign" value=""><input type="hidden" name="utm_term" id="utm_term" value=""><input type="hidden" name="utm_content" id="utm_content" value=""><input type="hidden" name="gclid" id="gclid" value=""><input type="hidden" name="fbclid" id="fbclid" value="">
-        <div><label>Your name</label><input name="name" required autocomplete="name" value="{prefill_name}" placeholder="Your name or business name"><div class="microcopy">Used only for the private snapshot request.</div></div>
-        <div><label>Email</label><input name="email" type="email" required autocomplete="email" placeholder="Where should we send the private update?"><div class="microcopy">No public action happens from this form.</div></div>
-        <div><label>Phone optional</label><input name="phone" autocomplete="tel" placeholder="Optional, for urgent/sensitive cases"></div>
-        <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
-        <div class="full"><label>Names, businesses or search phrases to check</label><textarea name="names_to_check" placeholder="Full name, old names, nicknames, business names, associated names, locations, or search phrases people may type...">{prefill_name}</textarea><div class="microcopy">This can be your exact name, an old name, a business, or a phrase like “Jane Smith court”.</div></div>
-        <div class="full"><label>Bad links, reviews, article titles, screenshots or clues if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: old article title, Google review, complaint page, court mention, image result..."></textarea></div>
-        <div class="full"><label>What are you hoping to understand or fix?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
-        <div class="full submit-row"><button class="btn" type="submit" id="snapshot-submit">Submit Free Snapshot →</button><a class="btn btn2" href="/">Back</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
+        <div><label>Name / business / search phrase</label><input name="name" required autocomplete="name" value="{prefill_name}" placeholder="Example: Jane Smith, ACME Plumbing, old business name"><div class="microcopy">This is the only search phrase required to start.</div></div>
+        <div><label>Email for private result</label><input name="email" type="email" required autocomplete="email" placeholder="Where should we send the private update?"><div class="microcopy">No public action happens from this form.</div></div>
+        <div class="full submit-row"><button class="btn" type="submit" id="snapshot-submit">Get Private Risk Score™ →</button><a class="btn btn2" href="/">Back</a><p class="note">Free first step. No public case disclosure. No rankings/removals guaranteed.</p></div>
+        <details class="full" id="optional-details"><summary style="cursor:pointer;color:#ffb0bd;font-weight:800;margin:10px 0">Optional: add links, review details or extra names if you already have them</summary>
+          <div class="grid" style="margin-top:10px">
+            <div><label>Phone optional</label><input name="phone" autocomplete="tel" placeholder="Optional, for urgent/sensitive cases"></div>
+            <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
+            <div class="full"><label>Extra names, old names or search phrases</label><textarea name="names_to_check" placeholder="Optional: old names, nicknames, business names, associated names, locations...">{prefill_name}</textarea><div class="microcopy">Leave blank if the first field is enough.</div></div>
+            <div class="full"><label>Bad links, reviews, article titles, screenshots or clues if you have them</label><textarea name="problem_links" placeholder="Optional: paste URLs or write article/review/search clues..."></textarea></div>
+            <div class="full"><label>What are you hoping to understand or fix?</label><textarea name="goal" placeholder="Optional: removal, review response, monitoring, better positive results, private advice..."></textarea></div>
+          </div>
+        </details>
       </form></div>
-      <div class="card side-card"><span class="pill">What happens next</span><div class="steps"><div class="step"><b>1 · Private map</b><br><span class="sub">We review the name/search pattern, obvious links, reviews and snippets.</span></div><div class="step"><b>2 · Pathway check</b><br><span class="sub">We identify whether alerting, removal review, review defence or repair fits.</span></div><div class="step"><b>3 · Human review</b><br><span class="sub">AI-assisted intake is validated before any sensitive next step.</span></div></div><div class="recommend"><b>Start free.</b><p class="note">If there is nothing serious, you are not pushed into a paid plan. If there is risk, we explain the practical next step.</p></div></div>
+      <div class="card side-card"><span class="pill">What you get</span><div class="steps"><div class="step"><b>1 · Private Risk Score™</b><br><span class="sub">A first signal for how serious the search/review/name problem looks.</span></div><div class="step"><b>2 · One recommended path</b><br><span class="sub">NameWatch, Removal Review, Review Defence or a bigger private review only if needed.</span></div><div class="step"><b>3 · Human review gate</b><br><span class="sub">No public action, request or publication happens without review and approval.</span></div></div><div class="recommend"><b>Start with name + email.</b><p class="note">If there is nothing serious, you are not pushed into a paid plan. If there is risk, we explain the practical next step.</p></div></div>
     </div>
     <script>
     (function(){{
@@ -2155,20 +2158,21 @@ def free_snapshot_form():
       const ref=document.getElementById('fmno-referrer'); if(ref) ref.value=document.referrer||'';
       const landing=document.getElementById('fmno-landing-url'); if(landing) landing.value=window.location.href;
       fields.forEach(k=>{{const el=document.getElementById(k); if(el) el.value=qs.get(k)||'';}});
-      let started=false;
-      function fire(event,label){{try{{if(typeof gtag==='function') gtag('event',event,{{event_label:label||'',page_path:window.location.pathname}}); if(navigator.sendBeacon) navigator.sendBeacon('/api/track-click', new Blob([JSON.stringify({{event,label:label||'',href:'/submit-snapshot',location:window.location.pathname+window.location.search,source:'snapshot_form'}})],{{type:'application/json'}}));}}catch(e){{}}}}
+      let started=false, step1=false;
+      function fire(event,label){{try{{if(typeof gtag==='function') gtag('event',event,{{event_label:label||'',page_path:window.location.pathname}}); const body=JSON.stringify({{event,label:label||'',href:'/submit-snapshot',location:window.location.pathname+window.location.search,source:'snapshot_form'}}); if(navigator.sendBeacon) navigator.sendBeacon('/api/track-click', new Blob([body],{{type:'application/json'}})); else fetch('/api/track-click',{{method:'POST',headers:{{'Content-Type':'application/json'}},body,keepalive:true}}).catch(()=>{{}});}}catch(e){{}}}}
       const form=document.getElementById('snapshot-form');
       const progress=document.getElementById('snapshot-progress');
       function updateProgress(){{
         if(!form||!progress) return;
-        const fields=['name','email','case_type','names_to_check','problem_links','goal'];
-        const done=fields.filter(k=>{{const el=form.elements[k]; return el && String(el.value||'').trim();}}).length;
-        progress.style.width=Math.max(18, Math.round((done/fields.length)*100))+'%';
+        const core=['name','email'];
+        const coreDone=core.filter(k=>{{const el=form.elements[k]; return el && String(el.value||'').trim();}}).length;
+        if(coreDone===2 && !step1){{step1=true; fire('form_step1_complete','name_email_complete');}}
+        progress.style.width=Math.max(18, Math.round((coreDone/core.length)*100))+'%';
       }}
-      if(form){{form.addEventListener('input',()=>{{if(!started){{started=true;fire('snapshot_start','app_form');}} updateProgress();}},{{once:false}}); form.addEventListener('submit',()=>{{const btn=document.getElementById('snapshot-submit'); if(btn){{btn.disabled=true; btn.textContent='Submitting private snapshot...';}} fire('snapshot_submit','app_form');}}); updateProgress();}}
+      if(form){{form.addEventListener('input',()=>{{if(!started){{started=true;fire('form_start','risk_score_form');}} updateProgress();}},{{once:false}}); form.addEventListener('submit',()=>{{const btn=document.getElementById('snapshot-submit'); if(btn){{btn.disabled=true; btn.textContent='Opening private case room...';}} fire('snapshot_submit','risk_score_form');}}); updateProgress();}}
     }})();
     </script>"""
-    return page('Free Search Snapshot™ — FixMyNameOnline™', body)
+    return page('Private Reputation Risk Score™ — FixMyNameOnline™', body)
 
 
 @app.route('/submit-snapshot', methods=['POST'])
@@ -2210,12 +2214,11 @@ def submit_snapshot():
     app.logger.info('Snapshot %s email status: %s', queue_item['id'], email_status)
 
     body = f"""
-    <div class="card"><span class="pill ok">Received</span><h1>Your Free Search Snapshot™ request is in.</h1>
-      <p class="sub">Thanks {safe(data['name'])}. We saved your details and opened your Private Case Room™ with an initial Reputation Risk Score™.</p>
+    <div class="card"><span class="pill ok">Received</span><h1>Your Private Reputation Risk Score™ is ready.</h1>
+      <p class="sub">Thanks {safe(data['name'])}. We saved your details and opened your Private Case Room™. Start with the recommended next step only if the risk looks real.</p>
       <div class="recommend"><h2>Reputation Risk Score™: {safe(case_room['risk_score']['score'])}/100 · {safe(case_room['risk_score']['label'])}</h2><p>{safe(case_room['risk_score']['summary'])}</p><p><a class="btn" href="{safe('/private-case-room/' + queue_item['id'] + '?access_token=' + case_room['access_token'])}">Open Private Case Room™ →</a></p></div>
-      <div class="recommend"><h2>Suggested next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn btn2" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
+      <div class="recommend"><h2>Recommended next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p><p class="note">Early-case queue is open while intake volume is low. Start only if the recommendation fits.</p></div>
       <h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, repair, or a private high-risk review.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol>
-      {paid_next_steps_html('snapshot_received')}
       <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
     </div>"""
     body += conversion_tracking_event('snapshot_submit', {'content_name': 'Free Search Snapshot', 'source_category': data.get('source_category')})
@@ -2964,7 +2967,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v42-homepage-overhaul-bill-avatar', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v43-private-risk-score-funnel', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':

@@ -160,13 +160,16 @@ def test_core_routes_preserved():
 
 def test_snapshot_form_conversion_polish():
     body = client().get("/app?source=qa_test").get_data(as_text=True)
-    assert "Start your Free Search Snapshot™" in body
+    assert "Get your Private Reputation Risk Score™" in body
+    assert "Name / business / search phrase" in body
+    assert "Email for private result" in body
+    assert "Optional: add links, review details or extra names" in body
     assert "Operated by MadisonJade Pty Ltd" in body
     assert "ABN 56 661 580 936" in body
     assert "snapshot-shell" in body
-    assert "What happens next" in body
+    assert "What you get" in body
     assert "id=\"snapshot-progress\"" in body
-    assert "Submitting private snapshot" in body
+    assert "Opening private case room" in body
     assert "Private intake · no public case disclosure" in body
 
 
