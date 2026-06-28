@@ -383,6 +383,18 @@ def send_internal_alert_email(subject, html_body, text_body=''):
     return results
 
 
+def record_email_alert_status(kind, subject, results, context=None):
+    append_jsonl(CLICK_EVENTS_FILE, {
+        'event': 'email_alert_status',
+        'label': kind,
+        'subject': subject,
+        'results': results,
+        'ok': bool(results) and all(bool(v) for v in results.values()),
+        'context': context or {},
+    })
+    return results
+
+
 def send_checkout_intent_alert(tier, plan, attribution, payment_link):
     html_body = f"""
     <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111;line-height:1.55\">
@@ -393,7 +405,9 @@ def send_checkout_intent_alert(tier, plan, attribution, payment_link):
       <p style=\"font-size:12px;color:#666\">This is checkout intent, not confirmed payment. A Stripe completed-payment webhook should follow for paid customers.</p>
     </div>
     """
-    return send_internal_alert_email(f"FMNO checkout intent: {plan.get('name')}", html_body)
+    subject = f"FMNO checkout intent: {plan.get('name')}"
+    results = send_internal_alert_email(subject, html_body)
+    return record_email_alert_status('checkout_intent', subject, results, {'tier': tier, 'plan': plan.get('name')})
 
 
 def infer_paid_tier_from_session(session):
@@ -438,7 +452,9 @@ def send_paid_customer_alert(tier, plan_name, customer_email, session, case=None
       <p><a href=\"{DOMAIN}/admin/fulfilment\">Open FMNO fulfilment dashboard</a></p>
     </div>
     """
-    return send_internal_alert_email(f"FMNO PAID CUSTOMER: {plan_name} — {customer_email or 'no email'}", html_body)
+    subject = f"FMNO PAID CUSTOMER: {plan_name} — {customer_email or 'no email'}"
+    results = send_internal_alert_email(subject, html_body)
+    return record_email_alert_status('paid_customer', subject, results, {'tier': tier, 'plan_name': plan_name, 'customer_email': customer_email, 'session_id': session.get('id')})
 
 
 CONCIERGE_FIELDS = [
@@ -2157,7 +2173,8 @@ def api_concierge_submit():
         'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
         'private_case_room': case_room.get('case_room_url'),
     })
-    send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
+    email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
+    record_email_alert_status('concierge_snapshot', f"FMNO concierge lead: {triage['label']} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'case_id': case.get('id') if case else '', 'email': data.get('email')})
     return jsonify({
         'ok': True,
         'queue_id': queue_item['id'],
@@ -2298,6 +2315,7 @@ def submit_snapshot():
         'private_case_room': case_room.get('case_room_url'),
     })
     email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
+    record_email_alert_status('snapshot', f"FMNO lead: {triage['label']} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'case_id': case.get('id') if case else '', 'email': data.get('email')})
     app.logger.info('Snapshot %s email status: %s', queue_item['id'], email_status)
 
     body = f"""
@@ -2355,6 +2373,7 @@ def submit_onboarding():
         'business': data.get('business'),
     })
     email_status = send_onboarding_emails(data, queue_item)
+    record_email_alert_status('onboarding', f"FMNO onboarding: {plan_label} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'plan': data.get('plan'), 'email': data.get('email')})
     app.logger.info('Onboarding %s email status: %s', queue_item['id'], email_status)
 
     body = f"""<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}</p><a class="btn" href="/">Back to site</a></div>"""
@@ -2502,6 +2521,7 @@ def submit_question():
         'question': data.get('question')[:700],
     })
     email_status = send_question_emails(data, queue_item, case_id=case_id)
+    record_email_alert_status('question', f"FMNO question — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'matched_case_id': case_id, 'email': data.get('email')})
     app.logger.info('Question %s email status: %s', queue_item['id'], email_status)
 
     body = f"""<div class="card"><span class="pill ok">Received</span><h1>Your private question is in.</h1><p class="sub">Thanks {safe(data['name'])}. We saved your question and will respond privately by email.</p><h2>What happens next</h2><ol><li>We match the question to your case/reference where possible.</li><li>We review it privately, especially if it involves sensitive, legal, review, platform or removal issues.</li><li>We reply before any public action is taken.</li></ol><p class="note">Private question reference: {safe(queue_item['id'])}{'<br>Matched case: ' + safe(case_id) if case_id else ''}<br>No legal advice or outcome guarantee is provided through this form.</p><a class="btn" href="/">Back to site</a></div>"""
@@ -3058,7 +3078,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v43-private-risk-score-funnel', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v44-email-alert-proof', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
