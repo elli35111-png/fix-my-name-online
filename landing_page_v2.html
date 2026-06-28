@@ -130,8 +130,19 @@
       <div class="inline-flex items-center justify-center gap-2 glass rounded-full px-4 py-2 mb-8 max-w-[92vw]"><span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span><span class="text-xs sm:text-sm text-greyLight whitespace-normal text-center">Private &amp; discreet · Worldwide reputation repair</span></div>
       <h1 class="font-orbitron text-4xl sm:text-5xl md:text-7xl font-black mb-6 leading-tight break-words">See what people see<br><span class="text-red">when they Google you.</span></h1>
       <p class="text-lg sm:text-xl text-greyLight max-w-2xl mx-auto mb-10 leading-relaxed">Bad Google results, old articles, fake reviews or associated names? Get a private Reputation Risk Score™ and the safest next step in under a minute.</p>
-      <div class="flex flex-col items-center gap-4 mb-5">
-        <a href="/app?source=homepage_hero_snapshot" class="btn-red px-10 py-5 rounded-xl font-bold text-lg sm:text-xl text-white w-full sm:w-auto" data-track="homepage_hero_snapshot">Get Private Risk Score™ →</a>
+      <form method="post" action="/submit-snapshot" class="glass rounded-2xl p-4 sm:p-5 max-w-2xl mx-auto mb-5 border border-red/25">
+        <input type="hidden" name="source_page" value="homepage_hero_mini_form">
+        <input type="hidden" name="case_type" value="Personal name / old Google results">
+        <div class="grid sm:grid-cols-[1fr_1fr_auto] gap-3 items-end text-left">
+          <label class="block text-xs text-greyLight font-semibold">Name or business to check<input name="name" required autocomplete="name" class="mt-1 w-full rounded-xl bg-dark/80 border border-white/15 px-4 py-3 text-sm text-white placeholder:text-grey" placeholder="Your name / business"></label>
+          <label class="block text-xs text-greyLight font-semibold">Email for private result<input name="email" required type="email" autocomplete="email" class="mt-1 w-full rounded-xl bg-dark/80 border border-white/15 px-4 py-3 text-sm text-white placeholder:text-grey" placeholder="you@email.com"></label>
+          <button class="btn-red px-6 py-3 rounded-xl font-bold text-white w-full sm:w-auto" type="submit">Get Free Score™</button>
+        </div>
+        <p class="text-[11px] text-grey mt-3 text-center">Free first step · opens a private case room · no public action.</p>
+      </form>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5">
+        <a href="/app?source=homepage_hero_snapshot" class="btn-red px-8 py-4 rounded-xl font-bold text-base sm:text-lg text-white w-full sm:w-auto" data-track="homepage_hero_snapshot">Use full snapshot form →</a>
+        <a href="/namewatch" class="glass px-8 py-4 rounded-xl font-bold text-base sm:text-lg text-white w-full sm:w-auto border border-white/15" data-track="homepage_namewatch">NameWatch $29/mo</a>
       </div>
       <p class="text-sm text-grey mb-4">Free first step · No public action · Nothing is shared. <a class="text-greyLight underline" href="#how-it-works">See how it works</a></p>
       <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mt-7 text-[11px] sm:text-xs text-grey">

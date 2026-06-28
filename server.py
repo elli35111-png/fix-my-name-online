@@ -364,6 +364,83 @@ def send_brevo_email(to_email, to_name, subject, html_body, text_body=''):
         return False
 
 
+def alert_email_recipients():
+    raw = os.environ.get('FMNO_ALERT_EMAILS') or os.environ.get('FMNO_ALERT_EMAIL') or INTERNAL_EMAIL or 'Elli35111@gmail.com'
+    recipients = []
+    for item in re.split(r'[,;\s]+', raw):
+        item = item.strip()
+        if item and '@' in item and item.lower() not in [x.lower() for x in recipients]:
+            recipients.append(item)
+    if 'Elli35111@gmail.com'.lower() not in [x.lower() for x in recipients]:
+        recipients.append('Elli35111@gmail.com')
+    return recipients
+
+
+def send_internal_alert_email(subject, html_body, text_body=''):
+    results = {}
+    for email in alert_email_recipients():
+        results[email] = send_brevo_email(email, 'Elli / FMNO Admin', subject, html_body, text_body)
+    return results
+
+
+def send_checkout_intent_alert(tier, plan, attribution, payment_link):
+    html_body = f"""
+    <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111;line-height:1.55\">
+      <h1>FMNO checkout intent</h1>
+      <p>A visitor clicked through to Stripe for a paid FMNO offer.</p>
+      <p><strong>Plan:</strong> {safe(plan.get('name'))}<br><strong>Tier:</strong> {safe(tier)}<br><strong>Price:</strong> ${safe(plan.get('price'))}<br><strong>Source:</strong> {safe(attribution.get('source_category'))}</p>
+      <p><strong>Stripe/payment link:</strong><br>{safe(payment_link)}</p>
+      <p style=\"font-size:12px;color:#666\">This is checkout intent, not confirmed payment. A Stripe completed-payment webhook should follow for paid customers.</p>
+    </div>
+    """
+    return send_internal_alert_email(f"FMNO checkout intent: {plan.get('name')}", html_body)
+
+
+def infer_paid_tier_from_session(session):
+    metadata = session.get('metadata') or {}
+    tier = metadata.get('tier') or metadata.get('plan') or metadata.get('plan_key') or ''
+    if tier in PLANS:
+        return tier
+    try:
+        amount = int(session.get('amount_total') or 0)
+    except Exception:
+        amount = 0
+    amount_map = {
+        2900: 'sentinel',
+        29700: 'removal-review',
+        49700: 'review-defence',
+        49900: 'starter',
+        99700: 'pro',
+        249700: 'premium',
+    }
+    if amount in amount_map:
+        return amount_map[amount]
+    mode = str(session.get('mode') or '').lower()
+    if mode == 'subscription':
+        return 'sentinel' if amount and amount <= 5000 else 'starter'
+    return 'starter'
+
+
+def send_paid_customer_alert(tier, plan_name, customer_email, session, case=None):
+    amount = session.get('amount_total')
+    if amount is not None:
+        try:
+            amount_display = f"${int(amount)/100:.2f} {str(session.get('currency') or '').upper()}"
+        except Exception:
+            amount_display = str(amount)
+    else:
+        amount_display = ''
+    html_body = f"""
+    <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111;line-height:1.55\">
+      <h1>FMNO PAID CUSTOMER</h1>
+      <p><strong>Plan:</strong> {safe(plan_name)}<br><strong>Tier:</strong> {safe(tier)}<br><strong>Customer email:</strong> {safe(customer_email)}<br><strong>Amount:</strong> {safe(amount_display)}</p>
+      <p><strong>Stripe session:</strong> {safe(session.get('id'))}<br><strong>Case ID:</strong> {safe(case.get('id') if case else '')}</p>
+      <p><a href=\"{DOMAIN}/admin/fulfilment\">Open FMNO fulfilment dashboard</a></p>
+    </div>
+    """
+    return send_internal_alert_email(f"FMNO PAID CUSTOMER: {plan_name} — {customer_email or 'no email'}", html_body)
+
+
 CONCIERGE_FIELDS = [
     ('names_to_check', 'What name, business name, old name, nickname, or associated name should we privately search first?'),
     ('country_state', 'What country, state, or city context should we consider for that search?'),
@@ -832,7 +909,7 @@ def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_
     """
     return {
         'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'Your Free Search Snapshot™ request is in', customer_html),
-        'internal_email_sent': send_brevo_email(INTERNAL_EMAIL, 'FMNO Admin', f"FMNO lead: {triage['label']} — {data.get('name', '')}", internal_html),
+        'internal_email_sent': send_internal_alert_email(f"FMNO lead: {triage['label']} — {data.get('name', '')}", internal_html),
     }
 
 
@@ -880,7 +957,7 @@ def send_onboarding_emails(data, queue_item):
     """
     return {
         'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'Private onboarding received — FixMyNameOnline™', customer_html),
-        'internal_email_sent': send_brevo_email(INTERNAL_EMAIL, 'FMNO Admin', f"FMNO onboarding: {plan_label} — {data.get('name', '')}", internal_html),
+        'internal_email_sent': send_internal_alert_email(f"FMNO onboarding: {plan_label} — {data.get('name', '')}", internal_html),
     }
 
 
@@ -1968,6 +2045,16 @@ def free_snapshot_short_redirect():
     return redirect('/free-search-snapshot', code=301)
 
 
+@app.route('/namewatch')
+def namewatch_short_redirect():
+    return redirect('/name-watch-alerts', code=301)
+
+
+@app.route('/name-watch')
+def name_watch_short_redirect():
+    return redirect('/name-watch-alerts', code=301)
+
+
 def paid_next_steps_html(source='post_snapshot'):
     return f'''
     <div class="recommend"><span class="pill">Choose a paid next step</span><h2>Turn the free snapshot into protection.</h2><p>Most people do not need a big package first. After the free snapshot, the easiest paid step is NameWatch Alert™ at $29/month. If there is already a clear link, article, review or broader search issue, choose the review or repair path.</p>
@@ -2288,6 +2375,8 @@ def checkout(tier):
     payment_link = plan.get('payment_link')
     if payment_link:
         append_jsonl(CLICK_EVENTS_FILE, {'event': 'stripe_redirect', 'label': tier, 'href': payment_link, 'location': request.path, 'source': attribution.get('source_category'), 'plan': plan.get('name'), 'price': plan.get('price'), 'referrer': attribution.get('referrer')})
+        if os.environ.get('FMNO_EMAIL_CHECKOUT_INTENT', '0') == '1':
+            send_checkout_intent_alert(tier, plan, attribution, payment_link)
         return redirect(payment_link, code=302)
     if not stripe.api_key:
         return jsonify({'error': 'Stripe is not configured'}), 500
@@ -2384,7 +2473,7 @@ def send_question_emails(data, queue_item, case_id=None):
     """
     return {
         'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'Private question received — FixMyNameOnline™', customer_html),
-        'internal_email_sent': send_brevo_email(INTERNAL_EMAIL, 'FMNO Admin', f"FMNO question — {data.get('name', '')}", internal_html),
+        'internal_email_sent': send_internal_alert_email(f"FMNO question — {data.get('name', '')}", internal_html),
     }
 
 
@@ -2512,11 +2601,13 @@ def webhook():
         return 'Invalid signature', 400
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        tier = session.get('metadata', {}).get('tier') or 'starter'
+        tier = infer_paid_tier_from_session(session)
+        plan_name = PLANS.get(tier, {}).get('name', tier)
         customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email', '')
-        case = safe_create_fulfilment_case(tier, {'email': customer_email}, {'stripe_session_id': session.get('id'), 'tier': tier}, 'stripe_checkout')
+        case = safe_create_fulfilment_case(tier, {'email': customer_email}, {'stripe_session_id': session.get('id'), 'tier': tier, 'plan_name': plan_name}, 'stripe_checkout')
         append_jsonl(CLICK_EVENTS_FILE, {'event': 'purchase', 'label': tier, 'href': '/webhook', 'location': '/webhook', 'source': 'stripe', 'customer_email': customer_email, 'stripe_session_id': session.get('id'), 'case_id': case.get('id') if case else '', 'amount_total': session.get('amount_total'), 'currency': session.get('currency')})
         send_telegram_alert('FMNO checkout completed', {'customer_email': customer_email, 'tier': tier, 'session': session.get('id'), 'case_id': case.get('id') if case else ''})
+        send_paid_customer_alert(tier, plan_name, customer_email, session, case=case)
     return '', 200
 
 
