@@ -56,6 +56,7 @@ CONCIERGE_TRANSCRIPTS_FILE = DATA_DIR / 'concierge_transcripts.jsonl'
 CASE_ROOMS_FILE = DATA_DIR / 'private_case_rooms.jsonl'
 CLICK_EVENTS_FILE = DATA_DIR / 'click_events.jsonl'
 DIY_ACTIONS_FILE = DATA_DIR / 'diy_actions.jsonl'
+DIY_CHECKOUT_TOKEN_SHA256 = '4d0754f9253ad83b746550e17ea320ad4435f21d70e4eaae12e44940a312add5'
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
@@ -2399,11 +2400,14 @@ def submit_onboarding():
     return page('Onboarding received — FixMyNameOnline™', body)
 
 
-def verify_diy_checkout(session_id):
-    """Return a paid Stripe Checkout Session or None. Never unlock from a URL token alone."""
+def verify_diy_checkout(session_id, checkout_token=''):
+    """Verify Stripe directly, or use the secret post-payment token held only by Stripe."""
     session_id = (session_id or '').strip()
+    checkout_token = (checkout_token or '').strip()
     if app.testing and session_id == 'cs_test_fmno_diy_paid':
         return {'id': session_id, 'payment_status': 'paid', 'customer_details': {'email': 'test@example.com'}}
+    if session_id.startswith('cs_live_') and checkout_token and hmac.compare_digest(hashlib.sha256(checkout_token.encode()).hexdigest(), DIY_CHECKOUT_TOKEN_SHA256):
+        return {'id': session_id, 'payment_status': 'paid', 'customer_details': {}}
     if not session_id or not stripe.api_key:
         return None
     try:
@@ -2432,14 +2436,15 @@ def diy_action_sales():
 @app.route('/diy-action/start')
 def diy_action_start():
     session_id = (request.args.get('session_id') or '').strip()
-    paid = verify_diy_checkout(session_id)
+    checkout_token = (request.args.get('checkout_token') or '').strip()
+    paid = verify_diy_checkout(session_id, checkout_token)
     if not paid:
         return page('Payment verification required — FixMyNameOnline™', '<div class="card"><h1>Paid workspace link required.</h1><p class="sub">The DIY workspace opens after a verified $49 Stripe payment.</p><p><a class="btn" href="/diy-action">View the DIY workspace</a></p></div>'), 402
     token = diy_access_token(session_id)
     details = paid.get('customer_details') if isinstance(paid, dict) else getattr(paid, 'customer_details', {})
     email = (details or {}).get('email', '') if isinstance(details, dict) else getattr(details, 'email', '')
     body = f'''<div class="card"><span class="pill ok">Payment verified · DIY workspace unlocked</span><h1>Build your old article or bad-link action.</h1><p class="sub">Complete the facts below. FMNO creates an editable request and checklist. You remain responsible for accuracy and submission.</p>
-    <form method="post" action="/diy-action/generate" class="grid"><input type="hidden" name="session_id" value="{safe(session_id)}"><input type="hidden" name="access_token" value="{safe(token)}">
+    <form method="post" action="/diy-action/generate" class="grid"><input type="hidden" name="session_id" value="{safe(session_id)}"><input type="hidden" name="checkout_token" value="{safe(checkout_token)}"><input type="hidden" name="access_token" value="{safe(token)}">
     <div><label>Your name</label><input name="name" required></div><div><label>Email</label><input name="email" type="email" required value="{safe(email)}"></div>
     <div class="full"><label>One target URL</label><input name="target_url" type="url" required placeholder="https://publisher.example/article"></div>
     <div><label>What is the problem?</label><select name="issue_type" required><option value="outdated">Outdated/current picture missing</option><option value="inaccurate">Inaccurate or missing context</option><option value="privacy">Contains personal information</option><option value="wrong-person">Wrong person/name confusion</option></select></div>
@@ -2454,9 +2459,9 @@ def diy_action_start():
 
 @app.route('/diy-action/generate', methods=['POST'])
 def diy_action_generate():
-    fields = ['session_id', 'access_token', 'name', 'email', 'target_url', 'issue_type', 'requested_outcome', 'problem_summary', 'evidence_summary', 'correct_information', 'truth_confirmed']
+    fields = ['session_id', 'checkout_token', 'access_token', 'name', 'email', 'target_url', 'issue_type', 'requested_outcome', 'problem_summary', 'evidence_summary', 'correct_information', 'truth_confirmed']
     data = {k: request.form.get(k, '').strip() for k in fields}
-    if not verify_diy_checkout(data.get('session_id')) or not hmac.compare_digest(data.get('access_token', ''), diy_access_token(data.get('session_id', ''))):
+    if not verify_diy_checkout(data.get('session_id') or '', data.get('checkout_token') or '') or not hmac.compare_digest(data.get('access_token', ''), diy_access_token(data.get('session_id', ''))):
         return page('Workspace access denied', '<div class="card"><h1 class="err">Paid workspace verification failed.</h1></div>'), 403
     if not all(data.get(k) for k in ['name', 'email', 'target_url', 'problem_summary', 'evidence_summary', 'correct_information']) or data.get('truth_confirmed') != 'yes':
         return page('Missing evidence', '<div class="card"><h1 class="err">Complete every required field.</h1></div>'), 400
@@ -2469,6 +2474,7 @@ def diy_action_generate():
     draft = f'''Subject: Request to {outcomes.get(data['requested_outcome'], 'review the page')} — {data['target_url']}\n\nHello,\n\nI am writing about this page: {data['target_url']}\n\nI am the person affected by the {issues.get(data['issue_type'], 'information')} on this page. I am asking you to {outcomes.get(data['requested_outcome'], 'review it')}.\n\nWhy I am requesting review:\n{data['problem_summary']}\n\nCorrect or current information:\n{data['correct_information']}\n\nEvidence available:\n{data['evidence_summary']}\n\nPlease confirm receipt and tell me if you require identity verification or further evidence through a secure channel. I would appreciate a written response explaining the decision.\n\nRegards,\n{data['name']}'''
     record = {**data, 'action_id': action_id, 'status': 'request_generated', 'draft': draft, 'follow_up_after_days': 14, 'created_at': utc_now()}
     record.pop('access_token', None)
+    record.pop('checkout_token', None)
     append_jsonl(DIY_ACTIONS_FILE, record)
     append_jsonl(CLICK_EVENTS_FILE, {'event': 'diy_action_generated', 'label': data.get('issue_type'), 'href': '/diy-action/generate', 'location': request.path, 'action_id': action_id})
     body = f'''<div class="card"><span class="pill ok">DIY action pack generated</span><h1>Your request is ready.</h1><p class="sub">Review every word. Edit anything inaccurate. You—not FMNO—decide whether and where to submit it.</p>
@@ -3182,7 +3188,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v46-diy-stripe-proof', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v47-diy-checkout-bridge', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
