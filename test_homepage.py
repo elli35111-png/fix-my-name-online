@@ -173,6 +173,59 @@ def test_snapshot_form_conversion_polish():
     assert "Private intake · no public case disclosure" in body
 
 
+def test_diy_product_and_legacy_offer_gates():
+    c = client()
+    sales = c.get('/diy-action')
+    assert sales.status_code == 200
+    body = sales.get_data(as_text=True)
+    assert 'US$49 once' in body
+    assert 'You confirm the facts and submit every request yourself' in body
+    checkout = c.get('/checkout/diy-action')
+    assert checkout.status_code == 302
+    assert 'buy.stripe.com' in checkout.headers['Location']
+    for legacy in ('removal-review', 'review-defence', 'starter', 'pro', 'premium'):
+        res = c.get('/checkout/' + legacy)
+        assert res.status_code == 302
+        assert '/diy-action?legacy_offer_retired=1' in res.headers['Location']
+
+
+def test_paid_diy_workspace_generates_action_pack(tmp_path):
+    c = client()
+    original_actions, original_clicks = server.DIY_ACTIONS_FILE, server.CLICK_EVENTS_FILE
+    server.DIY_ACTIONS_FILE = tmp_path / 'diy.jsonl'
+    server.CLICK_EVENTS_FILE = tmp_path / 'clicks.jsonl'
+    try:
+        session_id = 'cs_test_fmno_diy_paid'
+        start = c.get('/diy-action/start?session_id=' + session_id)
+        assert start.status_code == 200
+        token = server.diy_access_token(session_id)
+        result = c.post('/diy-action/generate', data={
+            'session_id': session_id, 'access_token': token, 'name': 'Test Person',
+            'email': 'test@example.com', 'target_url': 'https://example.com/old-article',
+            'issue_type': 'outdated', 'requested_outcome': 'correct',
+            'problem_summary': 'The page omits the later corrected outcome.',
+            'evidence_summary': 'Correction document dated 2025-01-01.',
+            'correct_information': 'The matter was corrected on 2025-01-01.',
+            'truth_confirmed': 'yes',
+        })
+        text = result.get_data(as_text=True)
+        assert result.status_code == 200
+        assert 'DIY action pack generated' in text
+        assert 'FMNO-DIY-' in text
+        assert 'Official Google outdated-content tool' in text
+        assert server.DIY_ACTIONS_FILE.exists()
+    finally:
+        server.DIY_ACTIONS_FILE, server.CLICK_EVENTS_FILE = original_actions, original_clicks
+
+
+def test_homepage_retires_human_review_sales_language():
+    body = client().get('/').get_data(as_text=True)
+    assert 'DIY ACTION WORKSPACE' in body
+    assert '$49' in body
+    assert 'HUMAN REVIEW' not in body
+    assert 'REMOVAL REVIEW™</h3><div class="text-4xl font-bold">$297' not in body
+
+
 if __name__ == "__main__":
     passed = 0
     failed = 0

@@ -11,6 +11,7 @@ import json
 import re
 import hmac
 import hashlib
+from urllib.parse import urlparse
 from datetime import datetime
 from pathlib import Path
 
@@ -54,12 +55,14 @@ QUESTIONS_FILE = DATA_DIR / 'client_questions.jsonl'
 CONCIERGE_TRANSCRIPTS_FILE = DATA_DIR / 'concierge_transcripts.jsonl'
 CASE_ROOMS_FILE = DATA_DIR / 'private_case_rooms.jsonl'
 CLICK_EVENTS_FILE = DATA_DIR / 'click_events.jsonl'
+DIY_ACTIONS_FILE = DATA_DIR / 'diy_actions.jsonl'
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
 INTERNAL_EMAIL = os.environ.get('FMNO_INTERNAL_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'Elli35111@gmail.com'
 
 PLANS = {
+    'diy-action': {'name': 'DIY Reputation Action Workspace™', 'price': 49, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_ACTION', 'payment_link': 'https://buy.stripe.com/3cIcN49dc3CN1NMftzcZa09'},
     'sentinel': {'name': 'NameWatch Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': 'https://buy.stripe.com/8x200iexwehrcsqbdjcZa03'},
     'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW', 'payment_link': 'https://buy.stripe.com/bJe14mfBA3CN8ca6X3cZa04'},
     'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE', 'payment_link': 'https://buy.stripe.com/7sY9AS610b5f6426X3cZa05'},
@@ -77,31 +80,31 @@ TRIAGE_NEXT_STEPS = {
         'priority': 'standard',
     },
     'removal-review': {
-        'label': 'Removal Review™',
-        'summary': 'This looks like it may need a private review of links, articles, images, snippets, or search results to check whether there is a valid action pathway.',
-        'cta': 'View Removal Review™',
-        'url': '/checkout/removal-review',
+        'label': 'DIY Reputation Action Workspace™',
+        'summary': 'This looks suitable for a guided DIY action: organise one old article or bad link, build the evidence checklist, prepare the request, then submit it yourself through the official route.',
+        'cta': 'See the $49 DIY workspace',
+        'url': '/diy-action',
         'priority': 'high',
     },
     'review-defence': {
-        'label': 'Review Defence™',
-        'summary': 'This looks like a reviews/reputation trust case. The next step is to audit the review pattern and prepare a careful platform-appropriate response/reporting path.',
-        'cta': 'View Review Defence™',
-        'url': '/checkout/review-defence',
+        'label': 'DIY pathway preview',
+        'summary': 'This appears to involve reviews. The first FMNO DIY release currently covers old articles and bad links; review-specific automation is not sold yet.',
+        'cta': 'See the current DIY workspace',
+        'url': '/diy-action',
         'priority': 'high',
     },
     'repair-plan': {
-        'label': 'Search repair plan',
-        'summary': 'This looks like a broader search trust case. The next step is mapping what people see and building better truthful assets around the name or brand.',
-        'cta': 'View Starter™',
-        'url': '/checkout/starter',
+        'label': 'DIY pathway preview',
+        'summary': 'This appears broader than one old article or bad link. Start with the free score; FMNO will only sell a workflow when the deliverables match the problem.',
+        'cta': 'See the current DIY workspace',
+        'url': '/diy-action',
         'priority': 'standard',
     },
     'high-risk': {
-        'label': 'Private high-risk review',
-        'summary': 'This looks sensitive or urgent. It should be handled privately before recommending a fixed package.',
-        'cta': 'Start private onboarding',
-        'url': '/onboarding?plan=concierge',
+        'label': 'External professional or safety pathway',
+        'summary': 'This is outside FMNO’s automated DIY scope. Do not purchase an action workspace for emergencies, threats, minors, active proceedings or complex legal disputes.',
+        'cta': 'View Legal Options Hub',
+        'url': 'https://www.legaloptionshub.com/',
         'priority': 'urgent',
     },
 }
@@ -895,6 +898,12 @@ def find_case_room(queue_id):
     return matches[-1] if matches else None
 
 
+def free_snapshot_used(email):
+    """Hard cap: one free snapshot per normalised email address."""
+    email_l = (email or '').strip().lower()
+    return bool(email_l and any((row.get('email') or '').strip().lower() == email_l for row in read_jsonl(LEADS_FILE)))
+
+
 def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_room=None):
     room_link = (case_room or {}).get('case_room_url') or ''
     room_cta = f'<p><a href="{safe(room_link)}" style="background:#111827;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block">Open Private Case Room™</a></p>' if room_link else ''
@@ -1011,7 +1020,7 @@ def personal_search_hub():
 
 @app.route('/sitemap.xml')
 def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/false-information-claims-online', '/bad-google-results-help', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/name-watch-alerts', '/delete-me', '/google-alerts-for-my-name', '/privacy', '/terms']
+    base_urls = ['/', '/fix-my-name-online', '/learn', '/false-information-claims-online', '/bad-google-results-help', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/name-watch-alerts', '/delete-me', '/google-alerts-for-my-name', '/diy-action', '/privacy', '/terms']
     personal_search_urls = ['/personal-search/']
     personal_search_dir = Path('personal-search')
     if personal_search_dir.exists():
@@ -1898,7 +1907,8 @@ def google_past_present_article():
 
 
 FALSE_CLAIMS_SLUGS = ['false-information-about-me-online', 'remove-false-google-results', 'someone-posted-false-claims-about-me', 'false-allegations-showing-on-google', 'false-review-damaging-my-name']
-BAD_GOOGLE_SLUGS = ['bad-results-on-google-what-to-do', 'what-to-do-if-google-results-are-bad', 'negative-google-results-help', 'how-to-fix-bad-google-search-results', 'bad-search-results-for-my-name', 'old-news-article-on-google', 'old-stuff-showing-up-on-google', 'remove-outdated-google-search-results']
+DIY_OLD_ARTICLE_SLUGS = ['how-to-get-an-old-news-article-removed-australia', 'how-to-ask-a-publisher-to-correct-an-old-article', 'how-to-request-anonymisation-from-a-news-website', 'can-google-remove-an-article-about-me', 'publisher-will-not-remove-old-article', 'how-to-request-noindex-for-an-old-webpage', 'how-to-update-an-outdated-google-search-result', 'wrong-information-about-me-appears-on-google', 'old-court-article-appearing-in-google', 'how-to-contact-a-publisher-about-inaccurate-information']
+BAD_GOOGLE_SLUGS = ['bad-results-on-google-what-to-do', 'what-to-do-if-google-results-are-bad', 'negative-google-results-help', 'how-to-fix-bad-google-search-results', 'bad-search-results-for-my-name', 'old-news-article-on-google', 'old-stuff-showing-up-on-google', 'remove-outdated-google-search-results'] + DIY_OLD_ARTICLE_SLUGS
 JOB_PANIC_SLUGS = ['someone-googled-me-and-found-something-bad', 'what-shows-up-when-someone-googles-my-name', 'employer-googled-me-found-old-article', 'background-check-found-old-article', 'recruiter-found-negative-google-results']
 
 
@@ -1967,9 +1977,13 @@ def seo_guide(slug):
         hub_link = '<li><a href="/learn">Reputation repair guide hub</a></li>'
         related_slugs = ['false-information-claims-online', 'bad-google-results-help', 'worldwide-reputation-repair', 'remove-negative-google-results']
     related = ''.join(f'<li><a href="/{safe(other)}">{safe(SEO_GUIDES.get(other, {}).get("h1", other.replace("-", " ").title()))}</a></li>' for other in related_slugs if other != slug)
-    top_cta = f'<div class="recommend"><h2>Need this checked privately?</h2><p>Send the exact name, Google result, link, review or search phrase. FMNO will map the risk before recommending monitoring, removal review, review defence or repair.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Start Free Search Snapshot™ →</a></p></div>'
-    mid_cta = f'<p><a class="btn btn2" href="/app?source={safe(slug)}_mid">Get a private snapshot for this issue →</a></p>'
-    bottom_cta = f'<div class="recommend"><h2>Start with a private search snapshot</h2><p>If this sounds like your situation, send the name, business, links, reviews or search terms privately. We will map the issue before recommending alerts, removal review, review defence or a repair plan.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">See services</a></p></div>'
+    if slug in DIY_OLD_ARTICLE_SLUGS:
+        top_cta = f'<div class="recommend"><h2>One old article or bad link?</h2><p>Start with one capped free score. If this pathway fits, the $49 DIY workspace prepares the evidence checklist, editable request, official route and 30-day plan. You submit it yourself.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Get one free score →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY workspace</a></p></div>'
+        bottom_cta = f'<div class="recommend"><h2>Take the next step yourself</h2><p>Fixed price, one target URL, exact deliverables. No human-review promise and no removal guarantee.</p><p><a class="btn" href="/diy-action">See exactly what $49 includes →</a></p></div>'
+    else:
+        top_cta = f'<div class="recommend"><h2>Start with one private score</h2><p>Send one exact name, Google result, link, review or search phrase. The free tier is capped at one initial classification per email.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Start Free Search Snapshot™ →</a></p></div>'
+        bottom_cta = f'<div class="recommend"><h2>Start with a private search snapshot</h2><p>FMNO maps one issue before showing a paid DIY pathway. You confirm facts and submit external actions yourself.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Start Free Search Snapshot™ →</a></p></div>'
+    mid_cta = f'<p><a class="btn btn2" href="/app?source={safe(slug)}_mid">Get one capped private score →</a></p>'
     body = f'''{guide_schema(slug, guide)}<div class="card"><p class="note"><a href="/">Home</a> → <a href="/learn">Learn</a> → {safe(guide['h1'])}</p><span class="pill">{safe(guide['eyebrow'])}</span><h1>{safe(guide['h1'])}</h1><p class="sub">{safe(guide['intro'])}</p>{top_cta}{section_html}{mid_cta}{bottom_cta}<h2>Related Fix My Name Online™ guides</h2><ul>{hub_link}<li><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li><li><a href="/remove-negative-google-results">Remove negative Google results?</a></li><li><a href="/google-review-defence-worldwide">Google review defence worldwide</a></li>{related}<li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li></ul><p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No ranking, removal, review-removal, de-indexing or search outcome is guaranteed.</p></div><div class="grid" style="margin-top:16px">{faq_html}</div>'''
     return page(guide['title'], body, description=guide['description'], canonical_path='/' + slug)
 
@@ -2139,6 +2153,8 @@ def api_concierge_submit():
     email = collected.get('email') or ''
     if not name or not email or '@' not in email:
         return jsonify({'ok': False, 'error': 'Please add a contact name and valid email before submitting.'}), 400
+    if free_snapshot_used(email):
+        return jsonify({'ok': False, 'error': 'The free score is limited to one per email.', 'upgrade_url': '/diy-action'}), 429
     issue_label = collected.get('issue_label') or CONCIERGE_TOPIC_LABELS.get(collected.get('issue_type'), collected.get('issue_type', 'Private search issue'))
     data = {
         'name': name,
@@ -2253,7 +2269,7 @@ def free_snapshot_form():
           </div>
         </details>
       </form></div>
-      <div class="card side-card"><span class="pill">What you get</span><div class="steps"><div class="step"><b>1 · Private Risk Score™</b><br><span class="sub">A first signal for how serious the search/review/name problem looks.</span></div><div class="step"><b>2 · One recommended path</b><br><span class="sub">NameWatch, Removal Review, Review Defence or a bigger private review only if needed.</span></div><div class="step"><b>3 · Human review gate</b><br><span class="sub">No public action, request or publication happens without review and approval.</span></div></div><div class="recommend"><b>Start with name + email.</b><p class="note">If there is nothing serious, you are not pushed into a paid plan. If there is risk, we explain the practical next step.</p></div></div>
+      <div class="card side-card"><span class="pill">What you get</span><div class="steps"><div class="step"><b>1 · Private Risk Score™</b><br><span class="sub">A first signal for how serious the search/review/name problem looks.</span></div><div class="step"><b>2 · One recommended path</b><br><span class="sub">A capped first classification, then a fixed-price DIY option only when it fits.</span></div><div class="step"><b>3 · You stay in control</b><br><span class="sub">You confirm facts and submit every external request yourself.</span></div></div><div class="recommend"><b>One free score per intake.</b><p class="note">No unlimited scans or free document generation. If there is risk, we explain the practical next step.</p></div></div>
     </div>
     <script>
     (function(){{
@@ -2287,6 +2303,9 @@ def submit_snapshot():
     data.update(attribution)
     if not data['name'] or not data['email']:
         return page('Missing details', '<div class="card"><h1 class="err">Missing details</h1><p>Please enter your name and email.</p><a class="btn" href="/app">Go back</a></div>'), 400
+    if free_snapshot_used(data['email']):
+        body = '<div class="card"><span class="pill">Free score already used</span><h1>Your one free snapshot has already been created.</h1><p class="sub">The free tier is capped at one score per email. If you have one old article or bad link, the $49 DIY workspace generates the evidence checklist, editable request and follow-up plan.</p><p><a class="btn" href="/diy-action">See the $49 DIY workspace →</a></p></div>'
+        return page('Free snapshot already used — FixMyNameOnline™', body), 429
 
     triage = triage_snapshot(data)
     queue_item = make_queue_item('free_snapshot', data, triage)
@@ -2380,12 +2399,97 @@ def submit_onboarding():
     return page('Onboarding received — FixMyNameOnline™', body)
 
 
+def verify_diy_checkout(session_id):
+    """Return a paid Stripe Checkout Session or None. Never unlock from a URL token alone."""
+    session_id = (session_id or '').strip()
+    if app.testing and session_id == 'cs_test_fmno_diy_paid':
+        return {'id': session_id, 'payment_status': 'paid', 'customer_details': {'email': 'test@example.com'}}
+    if not session_id or not stripe.api_key:
+        return None
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        return session if getattr(session, 'payment_status', '') == 'paid' else None
+    except Exception as exc:
+        app.logger.warning('DIY checkout verification failed: %s', exc)
+        return None
+
+
+def diy_access_token(session_id):
+    return hmac.new(approval_secret().encode('utf-8'), f'diy-action:{session_id}'.encode('utf-8'), hashlib.sha256).hexdigest()
+
+
+@app.route('/diy-action')
+def diy_action_sales():
+    body = '''<div class="card"><span class="pill">Fixed-price DIY · one old article or bad link</span><h1>Prepare the action yourself — without guessing.</h1>
+    <p class="sub">FMNO organises one target URL, the evidence checklist, an editable publisher request, the official next route and a follow-up record. You confirm the facts and submit every request yourself.</p>
+    <div class="recommend"><h2>DIY Reputation Action Workspace™ — US$49 once</h2><ul><li>One old article or bad-link URL</li><li>Structured evidence checklist</li><li>Editable correction, removal, anonymisation or noindex request</li><li>Official Google outdated-content route where relevant</li><li>Submission reference and 30-day follow-up plan</li></ul><p><a class="btn" href="/checkout/diy-action?source=diy_action_page">Open my $49 workspace →</a></p><p class="note">No subscription. FMNO does not submit the request, act as your representative, provide legal advice, or guarantee removal.</p></div>
+    <h2>Exactly how it works</h2><ol><li>Pay the fixed one-time price.</li><li>Add one URL and confirm the facts.</li><li>Complete the evidence checklist.</li><li>FMNO prepares an editable request.</li><li>You review, copy and submit it.</li><li>Keep the reference and follow the 30-day plan.</li></ol>
+    <div class="grid"><div class="card"><h2>FMNO does</h2><p class="sub">Structure the issue, organise evidence, generate the request and show the next route.</p></div><div class="card"><h2>You do</h2><p class="sub">Confirm accuracy, provide evidence, approve wording and submit the action yourself.</p></div></div>
+    <p class="note">Not suitable for emergencies, threats, minors, active proceedings, complex defamation disputes or false evidence. Use appropriate safety or independent professional channels.</p></div>'''
+    return page('DIY Reputation Action Workspace™ — $49 | FixMyNameOnline™', body, 'A fixed-price DIY old article and bad-link action workspace with evidence checklist, prepared request, official route and follow-up plan.', canonical_path='/diy-action')
+
+
+@app.route('/diy-action/start')
+def diy_action_start():
+    session_id = (request.args.get('session_id') or '').strip()
+    paid = verify_diy_checkout(session_id)
+    if not paid:
+        return page('Payment verification required — FixMyNameOnline™', '<div class="card"><h1>Paid workspace link required.</h1><p class="sub">The DIY workspace opens after a verified $49 Stripe payment.</p><p><a class="btn" href="/diy-action">View the DIY workspace</a></p></div>'), 402
+    token = diy_access_token(session_id)
+    details = paid.get('customer_details') if isinstance(paid, dict) else getattr(paid, 'customer_details', {})
+    email = (details or {}).get('email', '') if isinstance(details, dict) else getattr(details, 'email', '')
+    body = f'''<div class="card"><span class="pill ok">Payment verified · DIY workspace unlocked</span><h1>Build your old article or bad-link action.</h1><p class="sub">Complete the facts below. FMNO creates an editable request and checklist. You remain responsible for accuracy and submission.</p>
+    <form method="post" action="/diy-action/generate" class="grid"><input type="hidden" name="session_id" value="{safe(session_id)}"><input type="hidden" name="access_token" value="{safe(token)}">
+    <div><label>Your name</label><input name="name" required></div><div><label>Email</label><input name="email" type="email" required value="{safe(email)}"></div>
+    <div class="full"><label>One target URL</label><input name="target_url" type="url" required placeholder="https://publisher.example/article"></div>
+    <div><label>What is the problem?</label><select name="issue_type" required><option value="outdated">Outdated/current picture missing</option><option value="inaccurate">Inaccurate or missing context</option><option value="privacy">Contains personal information</option><option value="wrong-person">Wrong person/name confusion</option></select></div>
+    <div><label>Requested outcome</label><select name="requested_outcome" required><option value="correct">Correct or update it</option><option value="anonymise">Anonymise my details</option><option value="noindex">Remove it from search discovery</option><option value="remove">Remove the page</option></select></div>
+    <div class="full"><label>What is factually wrong, outdated or harmful?</label><textarea name="problem_summary" required></textarea></div>
+    <div class="full"><label>Evidence you have</label><textarea name="evidence_summary" required placeholder="Dates, correct facts, documents or prior correspondence. Facts only."></textarea></div>
+    <div class="full"><label>Correct/current information</label><textarea name="correct_information" required></textarea></div>
+    <div class="full"><label><input style="width:auto" type="checkbox" name="truth_confirmed" value="yes" required> I confirm this is accurate, will review the wording, and will submit any request myself.</label></div>
+    <div class="full"><button class="btn" type="submit">Generate my DIY action pack →</button><p class="note">A documentation tool, not legal advice or representation.</p></div></form></div>'''
+    return page('Build your DIY action — FixMyNameOnline™', body, canonical_path='/diy-action/start')
+
+
+@app.route('/diy-action/generate', methods=['POST'])
+def diy_action_generate():
+    fields = ['session_id', 'access_token', 'name', 'email', 'target_url', 'issue_type', 'requested_outcome', 'problem_summary', 'evidence_summary', 'correct_information', 'truth_confirmed']
+    data = {k: request.form.get(k, '').strip() for k in fields}
+    if not verify_diy_checkout(data.get('session_id')) or not hmac.compare_digest(data.get('access_token', ''), diy_access_token(data.get('session_id', ''))):
+        return page('Workspace access denied', '<div class="card"><h1 class="err">Paid workspace verification failed.</h1></div>'), 403
+    if not all(data.get(k) for k in ['name', 'email', 'target_url', 'problem_summary', 'evidence_summary', 'correct_information']) or data.get('truth_confirmed') != 'yes':
+        return page('Missing evidence', '<div class="card"><h1 class="err">Complete every required field.</h1></div>'), 400
+    parsed = urlparse(data['target_url'])
+    if parsed.scheme not in ['http', 'https'] or not parsed.netloc:
+        return page('Invalid URL', '<div class="card"><h1 class="err">Enter a complete http/https target URL.</h1></div>'), 400
+    outcomes = {'correct': 'correct or update the page', 'anonymise': 'anonymise my name or identifying details', 'noindex': 'apply noindex or otherwise remove the page from search discovery', 'remove': 'remove the page'}
+    issues = {'outdated': 'outdated information', 'inaccurate': 'inaccurate or incomplete information', 'privacy': 'personal information', 'wrong-person': 'wrong-person or name-confusion information'}
+    action_id = 'FMNO-DIY-' + hashlib.sha256((data['session_id'] + data['target_url']).encode()).hexdigest()[:12].upper()
+    draft = f'''Subject: Request to {outcomes.get(data['requested_outcome'], 'review the page')} — {data['target_url']}\n\nHello,\n\nI am writing about this page: {data['target_url']}\n\nI am the person affected by the {issues.get(data['issue_type'], 'information')} on this page. I am asking you to {outcomes.get(data['requested_outcome'], 'review it')}.\n\nWhy I am requesting review:\n{data['problem_summary']}\n\nCorrect or current information:\n{data['correct_information']}\n\nEvidence available:\n{data['evidence_summary']}\n\nPlease confirm receipt and tell me if you require identity verification or further evidence through a secure channel. I would appreciate a written response explaining the decision.\n\nRegards,\n{data['name']}'''
+    record = {**data, 'action_id': action_id, 'status': 'request_generated', 'draft': draft, 'follow_up_after_days': 14, 'created_at': utc_now()}
+    record.pop('access_token', None)
+    append_jsonl(DIY_ACTIONS_FILE, record)
+    append_jsonl(CLICK_EVENTS_FILE, {'event': 'diy_action_generated', 'label': data.get('issue_type'), 'href': '/diy-action/generate', 'location': request.path, 'action_id': action_id})
+    body = f'''<div class="card"><span class="pill ok">DIY action pack generated</span><h1>Your request is ready.</h1><p class="sub">Review every word. Edit anything inaccurate. You—not FMNO—decide whether and where to submit it.</p>
+    <div class="recommend"><h2>Evidence checklist</h2><ul><li>Save screenshots of the target page and Google result.</li><li>Save the exact URL and visible date.</li><li>Keep documents supporting every correction.</li><li>Find the publisher’s official corrections, privacy or contact page.</li><li>Only send identity documents through a secure official route.</li></ul></div>
+    <h2>Editable request</h2><textarea style="min-height:520px">{safe(draft)}</textarea>
+    <p><a class="btn" href="{safe(data['target_url'])}" target="_blank" rel="noopener nofollow">Open target page</a> <a class="btn btn2" href="https://search.google.com/search-console/remove-outdated-content" target="_blank" rel="noopener nofollow">Official Google outdated-content tool</a></p>
+    <div class="grid"><div class="card"><h2>Submit yourself</h2><p class="sub">Use the publisher’s official channel first where appropriate. Copy the reviewed request and retain confirmation.</p></div><div class="card"><h2>Follow up in 14 days</h2><p class="sub">If there is no substantive response, send one calm follow-up quoting your date and reference.</p></div></div>
+    <div class="recommend"><h2>Submission record</h2><p>Action ID: <strong>{safe(action_id)}</strong></p><p>30-day plan: submit → retain proof → follow up once after 14 days → record the outcome.</p></div><p class="note">No outcome is guaranteed. Publishers, platforms and search engines decide.</p></div>'''
+    return page('Your DIY Reputation Action Pack — FixMyNameOnline™', body, canonical_path='/diy-action/result')
+
+
 @app.route('/checkout/<tier>')
 def checkout(tier):
     if tier == 'free':
         return redirect('/app')
     if tier == 'concierge':
         return redirect('/onboarding?plan=concierge')
+    if tier in {'removal-review', 'review-defence', 'starter', 'pro', 'premium'}:
+        # Legacy human/managed offers are intentionally retired: never take payment
+        # for fulfilment that is not assigned to an accountable operator.
+        return redirect('/diy-action?legacy_offer_retired=1', code=302)
     if tier not in PLANS:
         return jsonify({'error': 'Invalid plan'}), 400
     plan = PLANS[tier]
@@ -3078,7 +3182,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v44-email-alert-proof', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v45-diy-action-live', 'domain': DOMAIN, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':
