@@ -56,15 +56,15 @@ CONCIERGE_TRANSCRIPTS_FILE = DATA_DIR / 'concierge_transcripts.jsonl'
 CASE_ROOMS_FILE = DATA_DIR / 'private_case_rooms.jsonl'
 CLICK_EVENTS_FILE = DATA_DIR / 'click_events.jsonl'
 DIY_ACTIONS_FILE = DATA_DIR / 'diy_actions.jsonl'
-DIY_CHECKOUT_TOKEN_SHA256 = '4d0754f9253ad83b746550e17ea320ad4435f21d70e4eaae12e44940a312add5'
+DIY_CHECKOUT_TOKEN_SHA256 = os.environ.get('FMNO_DIY_CHECKOUT_TOKEN_SHA256', '')
 
 FROM_EMAIL = os.environ.get('FMNO_FROM_EMAIL', 'admin@fixmynameonline.com')
 FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
 INTERNAL_EMAIL = os.environ.get('FMNO_INTERNAL_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'Elli35111@gmail.com'
 
 PLANS = {
-    'diy-action': {'name': 'DIY Reputation Action Workspace™', 'price': 49, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_ACTION', 'payment_link': 'https://buy.stripe.com/3cIcN49dc3CN1NMftzcZa09'},
-    'sentinel': {'name': 'NameWatch Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': 'https://buy.stripe.com/8x200iexwehrcsqbdjcZa03'},
+    'diy-action': {'name': 'DIY Reputation Action Workspace™', 'price': 49, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_ACTION', 'payment_link': os.environ.get('FMNO_DIY_PAYMENT_LINK', '')},
+    'sentinel': {'name': 'NameWatch Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': os.environ.get('FMNO_SENTINEL_PAYMENT_LINK', '')},
     'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW', 'payment_link': 'https://buy.stripe.com/bJe14mfBA3CN8ca6X3cZa04'},
     'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE', 'payment_link': 'https://buy.stripe.com/7sY9AS610b5f6426X3cZa05'},
     'starter': {'name': 'Starter™', 'price': 499, 'mode': 'subscription', 'env': 'STRIPE_PRICE_STARTER', 'payment_link': 'https://buy.stripe.com/28E9AS8987T3bom1CJcZa06'},
@@ -2508,7 +2508,7 @@ def checkout(tier):
             send_checkout_intent_alert(tier, plan, attribution, payment_link)
         return redirect(payment_link, code=302)
     if not stripe.api_key:
-        return jsonify({'error': 'Stripe is not configured'}), 500
+        return page('Checkout temporarily unavailable — FixMyNameOnline™', '<div class="card"><span class="pill">Checkout migration</span><h1>Checkout is temporarily unavailable.</h1><p class="sub">FMNO billing is being moved to its own isolated payment account. No payment has been taken.</p><p><a class="btn" href="/diy-action">Return to the DIY workspace</a></p></div>'), 503
     price_id = os.environ.get(plan['env'])
     if not price_id:
         return jsonify({'error': f'Missing Stripe price env var: {plan["env"]}'}), 500
@@ -3188,7 +3188,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v47-diy-checkout-bridge', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v48-fmno-stripe-isolation', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':

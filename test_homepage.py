@@ -181,8 +181,8 @@ def test_diy_product_and_legacy_offer_gates():
     assert 'US$49 once' in body
     assert 'You confirm the facts and submit every request yourself' in body
     checkout = c.get('/checkout/diy-action')
-    assert checkout.status_code == 302
-    assert 'buy.stripe.com' in checkout.headers['Location']
+    assert checkout.status_code == 503
+    assert 'Checkout is temporarily unavailable' in checkout.get_data(as_text=True)
     for legacy in ('removal-review', 'review-defence', 'starter', 'pro', 'premium'):
         res = c.get('/checkout/' + legacy)
         assert res.status_code == 302
