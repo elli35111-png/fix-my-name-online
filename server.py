@@ -172,7 +172,7 @@ def page(title, body, description=None, canonical_path=None):
     desc = description or SEO_DESCRIPTION
     path = canonical_path or request.path or '/'
     canonical = DOMAIN + (path if path.startswith('/') else '/' + path)
-    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta name=\"twitter:card\" content=\"summary\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\">{tracking_head()}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™ · MADISONJADE PTY LTD</div>{body}</div></body></html>"""
+    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta name=\"twitter:card\" content=\"summary\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\">{tracking_head()}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™</div>{body}</div></body></html>"""
 
 
 def append_jsonl(path, payload):
@@ -581,6 +581,8 @@ def concierge_provider_name():
     configured = (os.environ.get('CONCIERGE_PROVIDER') or '').strip().lower()
     if configured:
         return configured
+    if os.environ.get('ANTHROPIC_API_KEY'):
+        return 'anthropic'
     # FMNO public concierge should default to MiniMax. OpenRouter remains a fallback
     # only when MiniMax-style keys are absent and an OpenRouter key is explicitly live.
     if os.environ.get('MINIMAX_API_KEY') or os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY'):
@@ -596,6 +598,8 @@ def concierge_model_name():
         return os.environ.get('CONCIERGE_MODEL', '').strip()
     if provider == 'openrouter':
         return 'google/gemini-2.5-flash'
+    if provider == 'anthropic':
+        return 'claude-haiku-4-5-20251001'
     return 'MiniMax-M2.7-highspeed'
 
 
@@ -663,7 +667,10 @@ def synthesize_concierge_voice(text):
 
 def call_concierge_model(topic, collected, user_message, next_question, ready):
     provider = concierge_provider_name()
-    if provider == 'openrouter':
+    if provider == 'anthropic':
+        api_key = (os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('CONCIERGE_API_KEY') or '').strip()
+        default_base = 'https://api.anthropic.com/v1/messages'
+    elif provider == 'openrouter':
         api_key = (os.environ.get('OPENROUTER_API_KEY') or os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or '').strip()
         default_base = 'https://openrouter.ai/api/v1/chat/completions'
     else:
@@ -674,14 +681,25 @@ def call_concierge_model(topic, collected, user_message, next_question, ready):
         return None
     url = (os.environ.get('CONCIERGE_BASE_URL') or default_base).strip()
     model = concierge_model_name()
-    payload = {
-        'model': model,
-        'messages': build_concierge_messages(topic, collected, user_message, next_question, ready),
-        'temperature': 0.25,
-        'max_tokens': 1000,
-        'response_format': {'type': 'json_object'},
-    }
-    headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
+    messages = build_concierge_messages(topic, collected, user_message, next_question, ready)
+    if provider == 'anthropic':
+        payload = {
+            'model': model,
+            'system': messages[0]['content'],
+            'messages': [message for message in messages if message.get('role') != 'system'],
+            'temperature': 0.25,
+            'max_tokens': 1000,
+        }
+        headers = {'x-api-key': api_key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json'}
+    else:
+        payload = {
+            'model': model,
+            'messages': messages,
+            'temperature': 0.25,
+            'max_tokens': 1000,
+            'response_format': {'type': 'json_object'},
+        }
+        headers = {'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'}
     if provider == 'openrouter':
         headers.update({'HTTP-Referer': DOMAIN, 'X-Title': 'FixMyNameOnline Concierge'})
     try:
@@ -690,9 +708,12 @@ def call_concierge_model(topic, collected, user_message, next_question, ready):
             app.logger.warning('Concierge model failed %s: %s', r.status_code, r.text[:500])
             return None
         data = r.json()
-        content = (((data.get('choices') or [{}])[0].get('message') or {}).get('content')
-                   or (data.get('choices') or [{}])[0].get('text')
-                   or data.get('reply') or '')
+        if provider == 'anthropic':
+            content = ''.join(block.get('text', '') for block in data.get('content', []) if block.get('type') == 'text')
+        else:
+            content = (((data.get('choices') or [{}])[0].get('message') or {}).get('content')
+                       or (data.get('choices') or [{}])[0].get('text')
+                       or data.get('reply') or '')
         return parse_model_json(content)
     except Exception as exc:
         app.logger.warning('Concierge model exception: %s', exc)
@@ -725,6 +746,16 @@ def make_concierge_response(topic, collected, user_message='', current_field='')
         'country_state': collected.get('country_state', ''),
     }
     preview_triage = triage_snapshot(preview_data) if (collected.get('names_to_check') or topic) else {}
+    recommended_pathway = clean_concierge_text(model_data.get('recommended_pathway') or 'Free Search Snapshot™')
+    pathway_key = recommended_pathway.lower().replace('™', '').replace('-', '_').replace(' ', '_')
+    recommended_pathway = {
+        'free_search_snapshot': 'Free Search Snapshot™',
+        'diy_action': 'DIY Reputation Action Workspace™',
+        'diy_reputation_action_workspace': 'DIY Reputation Action Workspace™',
+        'removal_review': 'DIY Reputation Action Workspace™',
+        'namewatch': 'NameWatch Alert™',
+        'namewatch_alert': 'NameWatch Alert™',
+    }.get(pathway_key, recommended_pathway)
     return {
         'ok': True,
         'reply': reply,
@@ -733,7 +764,7 @@ def make_concierge_response(topic, collected, user_message='', current_field='')
         'collected': collected,
         'ready_to_submit': ready,
         'risk_level': risk_level,
-        'recommended_pathway': clean_concierge_text(model_data.get('recommended_pathway') or 'Free Search Snapshot™'),
+        'recommended_pathway': recommended_pathway,
         'risk_score_preview': reputation_risk_score(preview_data, preview_triage),
         'cta': 'Submit Free Search Snapshot™' if ready else None,
         'model_used': bool(model_data),
@@ -851,7 +882,7 @@ def reputation_risk_score(data, triage=None, report=None):
         'band': band,
         'label': label,
         'factors': factors[:5],
-        'recommendation': (report or {}).get('recommended_package') or triage.get('label') or 'Free Search Snapshot™',
+        'recommendation': triage.get('label') or (report or {}).get('recommended_package') or 'Free Search Snapshot™',
         'summary': 'This score is an intake signal only. It helps prioritise the private snapshot and next-step recommendation; it is not a guarantee of ranking, removal, or platform outcome.',
     }
 
@@ -2226,7 +2257,7 @@ def private_case_room(queue_id):
         ('1', 'Private intake received', 'Your issue has been captured into a confidential case room.'),
         ('2', 'Reputation Risk Score™ created', 'The first score helps prioritise the private snapshot and next-step pathway.'),
         ('3', 'Snapshot review / QC', 'FMNO reviews the search context before recommending paid work or sending next instructions.'),
-        ('4', 'Choose next path', 'You decide whether to continue with alerts, removal review, review defence, repair, or private concierge support.'),
+        ('4', 'Choose next path', 'You decide whether to continue with a DIY action, monitoring, or private guidance.'),
     ]
     timeline_html = ''.join(f'<div class="card"><span class="pill">Step {n}</span><h2>{safe(title)}</h2><p class="sub">{safe(text)}</p></div>' for n, title, text in timeline)
     body = f'''
@@ -3192,8 +3223,8 @@ def api_track_click():
 @app.route('/health')
 def health():
     provider = concierge_provider_name()
-    configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v49-production-checkout', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256 or (stripe.api_key and os.environ.get('STRIPE_PRICE_DIY_ACTION'))), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('ANTHROPIC_API_KEY') if provider == 'anthropic' else os.environ.get('MINIMAX_API_KEY')))
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v50-anthropic-concierge-qa', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256 or (stripe.api_key and os.environ.get('STRIPE_PRICE_DIY_ACTION'))), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':

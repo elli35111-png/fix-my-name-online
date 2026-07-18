@@ -173,6 +173,13 @@ def test_snapshot_form_conversion_polish():
     assert "Private intake · no public case disclosure" in body
 
 
+def test_inner_page_header_is_fmno_only():
+    body = client().get('/diy-action').get_data(as_text=True)
+    assert '<div class="logo">FIXMYNAMEONLINE™</div>' in body
+    assert 'FIXMYNAMEONLINE™ · MADISONJADE PTY LTD' not in body
+
+
+
 def test_diy_product_and_legacy_offer_gates():
     c = client()
     sales = c.get('/diy-action')
