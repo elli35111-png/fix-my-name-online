@@ -189,6 +189,27 @@ def test_diy_product_and_legacy_offer_gates():
         assert '/diy-action?legacy_offer_retired=1' in res.headers['Location']
 
 
+def test_diy_checkout_redirects_paid_customer_to_workspace(monkeypatch):
+    captured = {}
+
+    class FakeSession:
+        @staticmethod
+        def create(**kwargs):
+            captured.update(kwargs)
+            return type('CheckoutSession', (), {'url': 'https://checkout.stripe.test/fmno'})()
+
+    monkeypatch.setattr(server.stripe.checkout, 'Session', FakeSession)
+    monkeypatch.setattr(server.stripe, 'api_key', 'sk_test_fmno')
+    monkeypatch.setenv('STRIPE_PRICE_DIY_ACTION', 'price_fmno_diy')
+    response = client().get('/checkout/diy-action')
+    assert response.status_code == 302
+    assert response.headers['Location'] == 'https://checkout.stripe.test/fmno'
+    assert captured['success_url'] == server.DOMAIN + '/diy-action/start?session_id={CHECKOUT_SESSION_ID}'
+    assert captured['line_items'] == [{'price': 'price_fmno_diy', 'quantity': 1}]
+    assert captured['metadata']['tier'] == 'diy-action'
+
+
+
 def test_paid_diy_workspace_generates_action_pack(tmp_path):
     c = client()
     original_actions, original_clicks = server.DIY_ACTIONS_FILE, server.CLICK_EVENTS_FILE

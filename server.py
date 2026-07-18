@@ -2513,10 +2513,15 @@ def checkout(tier):
     if not price_id:
         return jsonify({'error': f'Missing Stripe price env var: {plan["env"]}'}), 500
     try:
+        success_url = (
+            f'{DOMAIN}/diy-action/start?session_id={{CHECKOUT_SESSION_ID}}'
+            if tier == 'diy-action'
+            else f'{DOMAIN}/success.html?tier={tier}&session_id={{CHECKOUT_SESSION_ID}}'
+        )
         session = stripe.checkout.Session.create(
             mode=plan['mode'],
             line_items=[{'price': price_id, 'quantity': 1}],
-            success_url=f'{DOMAIN}/success.html?tier={tier}&session_id={{CHECKOUT_SESSION_ID}}',
+            success_url=success_url,
             cancel_url=f'{DOMAIN}/cancel.html',
             allow_promotion_codes=True,
             metadata={'tier': tier, 'plan_name': plan['name']},
