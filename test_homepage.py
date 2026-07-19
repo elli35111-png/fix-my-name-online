@@ -13,6 +13,8 @@ These tests focus on the conversion-oriented homepage rules requested:
 
 import os
 import re
+import json
+from xml.etree import ElementTree as ET
 
 os.environ.setdefault("FMNO_DATA_DIR", "data")
 
@@ -175,7 +177,8 @@ def test_snapshot_form_conversion_polish():
 
 def test_inner_page_header_is_fmno_only():
     body = client().get('/diy-action').get_data(as_text=True)
-    assert '<div class="logo">FIXMYNAMEONLINE™</div>' in body
+    assert '<a class="logo" href="/">FIX MY NAME ONLINE™</a>' in body
+    assert 'aria-label="Main navigation"' in body
     assert 'FIXMYNAMEONLINE™ · MADISONJADE PTY LTD' not in body
 
 
@@ -252,6 +255,44 @@ def test_homepage_retires_human_review_sales_language():
     assert '$49' in body
     assert 'HUMAN REVIEW' not in body
     assert 'REMOVAL REVIEW™</h3><div class="text-4xl font-bold">$297' not in body
+
+
+def test_exact_brand_and_query_guides_are_index_ready():
+    c = client()
+    for path in ('/fix-my-name-online', '/fix-your-name-online', '/how-to-fix-your-reputation-online'):
+        res = c.get(path)
+        body = res.get_data(as_text=True)
+        assert res.status_code == 200
+        assert 'name="robots" content="index,follow,max-image-preview:large"' in body
+        assert '<link rel="canonical" href="https://fixmynameonline.com' + path + '">' in body
+        match = re.search(r'<script type="application/ld\+json">(.*?)</script>', body, re.S)
+        assert match
+        schema = json.loads(match.group(1))
+        assert schema['@context'] == 'https://schema.org'
+    assert 'does not process legal name changes' in c.get('/fix-my-name-online').get_data(as_text=True)
+
+
+def test_sitemap_index_separates_core_guides_and_profiles():
+    c = client()
+    root = ET.fromstring(c.get('/sitemap.xml').data)
+    locations = [node.text for node in root.findall('{http://www.sitemaps.org/schemas/sitemap/0.9}sitemap/{http://www.sitemaps.org/schemas/sitemap/0.9}loc')]
+    assert locations == [
+        'https://fixmynameonline.com/sitemap-core.xml',
+        'https://fixmynameonline.com/sitemap-guides.xml',
+        'https://fixmynameonline.com/sitemap-personal-search.xml',
+    ]
+    core = c.get('/sitemap-core.xml').get_data(as_text=True)
+    assert 'https://fixmynameonline.com/fix-your-name-online' in core
+    assert 'https://fixmynameonline.com/how-to-fix-your-reputation-online' in core
+
+
+def test_near_duplicate_generated_guides_are_noindex_and_not_submitted():
+    assert server.LOW_VALUE_SEO_GUIDES
+    slug = sorted(server.LOW_VALUE_SEO_GUIDES - {'fix-my-name-on-line'})[0]
+    body = client().get('/' + slug).get_data(as_text=True)
+    assert 'name="robots" content="noindex,follow"' in body
+    guide_sitemap = client().get('/sitemap-guides.xml').get_data(as_text=True)
+    assert f'https://fixmynameonline.com/{slug}<' not in guide_sitemap
 
 
 if __name__ == "__main__":

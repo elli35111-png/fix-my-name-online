@@ -45,7 +45,7 @@ stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
 SEO_DESCRIPTION = 'Private reputation repair and search protection. Run a free Search Snapshot to see what comes up when people Google your name.'
-SEO_IMAGE = DOMAIN + '/og-image.png'
+SEO_IMAGE = DOMAIN + '/assets/fmno-past-present-facebook-square.png'
 DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
 DATA_DIR.mkdir(exist_ok=True)
 LEADS_FILE = DATA_DIR / 'snapshot_leads.jsonl'
@@ -114,8 +114,8 @@ BASE_STYLE = """
 :root{--dark:#08090f;--card:#151824;--red:#d91f3d;--grey:#9aa2b6;--light:#e8ecf5;}
 *{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at 20% 5%,rgba(217,31,61,.16),transparent 28%),var(--dark);color:white;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;line-height:1.5;padding:22px;}
 a{color:#ff4d66}.wrap{max-width:980px;margin:0 auto}.card{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.11);border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
-.logo{font-weight:900;letter-spacing:.12em;color:var(--red);font-size:15px;margin-bottom:22px}.sub{color:var(--grey)}h1{font-size:clamp(32px,6vw,58px);line-height:1.02;margin:0 0 14px}h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}.snapshot-shell{display:grid;grid-template-columns:1.05fr .75fr;gap:22px;align-items:start}.trust-strip{display:flex;flex-wrap:wrap;gap:10px 18px;color:var(--grey);font-size:12px;margin:18px 0}.trust-strip span:before{content:'•';color:#d4af37;margin-right:8px}.side-card{position:sticky;top:18px}.steps{display:grid;gap:12px}.step{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:16px;padding:14px}.step b{color:#ffb0bd}.microcopy{font-size:12px;color:var(--grey);margin-top:6px}.submit-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.progress{height:7px;background:#0d1019;border:1px solid rgba(255,255,255,.12);border-radius:999px;overflow:hidden;margin:10px 0 18px}.progress span{display:block;height:100%;width:18%;background:linear-gradient(90deg,var(--red),#ff6f85);transition:width .2s ease}
-label{display:block;font-weight:700;margin:14px 0 7px}input,select,textarea{width:100%;background:#0d1019;color:white;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:13px 14px;font:inherit}input:focus,select:focus,textarea:focus{outline:2px solid rgba(217,31,61,.35);border-color:rgba(217,31,61,.65)}textarea{min-height:105px}.btn{display:inline-block;background:linear-gradient(135deg,var(--red),#a81229);border:0;border-radius:13px;color:white;font-weight:800;padding:14px 20px;text-decoration:none;cursor:pointer;font-size:16px}.btn2{background:transparent;border:1px solid rgba(255,255,255,.22)}.note{font-size:13px;color:var(--grey)}.pill{display:inline-block;border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);padding:7px 10px;border-radius:999px;color:#ffb0bd;font-size:13px;font-weight:700}.ok{color:#31d07a}.err{color:#ff6f85}.recommend{border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);border-radius:18px;padding:20px;margin:22px 0}@media(max-width:820px){body{padding:14px}.grid,.snapshot-shell{grid-template-columns:1fr}.card{padding:20px}.side-card{position:static}.submit-row .btn{width:100%;text-align:center} }
+.site-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:22px}.logo{font-weight:900;letter-spacing:.12em;color:var(--red);font-size:15px;text-decoration:none}.seo-nav{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px 14px;font-size:13px}.seo-nav a{color:var(--light);text-decoration:none}.seo-nav a:hover{text-decoration:underline}.sub{color:var(--grey)}h1{font-size:clamp(32px,6vw,58px);line-height:1.02;margin:0 0 14px}h2{margin-top:0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.full{grid-column:1/-1}.snapshot-shell{display:grid;grid-template-columns:1.05fr .75fr;gap:22px;align-items:start}.trust-strip{display:flex;flex-wrap:wrap;gap:10px 18px;color:var(--grey);font-size:12px;margin:18px 0}.trust-strip span:before{content:'•';color:#d4af37;margin-right:8px}.side-card{position:sticky;top:18px}.steps{display:grid;gap:12px}.step{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);border-radius:16px;padding:14px}.step b{color:#ffb0bd}.microcopy{font-size:12px;color:var(--grey);margin-top:6px}.submit-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.progress{height:7px;background:#0d1019;border:1px solid rgba(255,255,255,.12);border-radius:999px;overflow:hidden;margin:10px 0 18px}.progress span{display:block;height:100%;width:18%;background:linear-gradient(90deg,var(--red),#ff6f85);transition:width .2s ease}
+label{display:block;font-weight:700;margin:14px 0 7px}input,select,textarea{width:100%;background:#0d1019;color:white;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:13px 14px;font:inherit}input:focus,select:focus,textarea:focus{outline:2px solid rgba(217,31,61,.35);border-color:rgba(217,31,61,.65)}textarea{min-height:105px}.btn{display:inline-block;background:linear-gradient(135deg,var(--red),#a81229);border:0;border-radius:13px;color:white;font-weight:800;padding:14px 20px;text-decoration:none;cursor:pointer;font-size:16px}.btn2{background:transparent;border:1px solid rgba(255,255,255,.22)}.note{font-size:13px;color:var(--grey)}.pill{display:inline-block;border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);padding:7px 10px;border-radius:999px;color:#ffb0bd;font-size:13px;font-weight:700}.ok{color:#31d07a}.err{color:#ff6f85}.recommend{border:1px solid rgba(217,31,61,.35);background:rgba(217,31,61,.08);border-radius:18px;padding:20px;margin:22px 0}@media(max-width:820px){body{padding:14px}.site-head{align-items:flex-start;flex-direction:column}.seo-nav{justify-content:flex-start}.grid,.snapshot-shell{grid-template-columns:1fr}.card{padding:20px}.side-card{position:static}.submit-row .btn{width:100%;text-align:center} }
 """
 
 
@@ -168,11 +168,42 @@ try {{
 </script>'''
 
 
-def page(title, body, description=None, canonical_path=None):
+def page(title, body, description=None, canonical_path=None, schema_items=None, robots='index,follow,max-image-preview:large'):
     desc = description or SEO_DESCRIPTION
     path = canonical_path or request.path or '/'
     canonical = DOMAIN + (path if path.startswith('/') else '/' + path)
-    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta name=\"twitter:card\" content=\"summary\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\">{tracking_head()}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><div class=\"logo\">FIXMYNAMEONLINE™</div>{body}</div></body></html>"""
+    graph = [
+        {
+            '@type': 'Organization', '@id': DOMAIN + '/#organization',
+            'name': 'Fix My Name Online™',
+            'alternateName': ['FixMyNameOnline™', 'FixMyNameOnline', 'Fix My Name Online', 'Fix My Name On Line'],
+            'url': DOMAIN + '/', 'legalName': 'MadisonJade Pty Ltd',
+            'areaServed': 'Worldwide',
+            'sameAs': ['https://x.com/Fixmyname_com', 'https://www.instagram.com/fixmynameonlinecom/', 'https://www.tiktok.com/@fix.my.name.onlin', 'https://www.youtube.com/@FMNOReputationTV'],
+        },
+        {
+            '@type': 'WebSite', '@id': DOMAIN + '/#website', 'url': DOMAIN + '/',
+            'name': 'Fix My Name Online™', 'alternateName': ['FixMyNameOnline™', 'Fix My Name On Line'],
+            'publisher': {'@id': DOMAIN + '/#organization'},
+        },
+        {
+            '@type': 'WebPage', '@id': canonical + '#webpage', 'url': canonical,
+            'name': title, 'description': desc,
+            'isPartOf': {'@id': DOMAIN + '/#website'}, 'about': {'@id': DOMAIN + '/#organization'},
+            'breadcrumb': {'@id': canonical + '#breadcrumb'},
+        },
+        {
+            '@type': 'BreadcrumbList', '@id': canonical + '#breadcrumb',
+            'itemListElement': [
+                {'@type': 'ListItem', 'position': 1, 'name': 'Fix My Name Online™', 'item': DOMAIN + '/'},
+                {'@type': 'ListItem', 'position': 2, 'name': title, 'item': canonical},
+            ],
+        },
+    ]
+    if schema_items:
+        graph.extend(schema_items)
+    schema_json = json.dumps({'@context': 'https://schema.org', '@graph': graph}, ensure_ascii=False).replace('</', '<\\/')
+    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><meta name=\"robots\" content=\"{safe(robots)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta property=\"og:image\" content=\"{safe(SEO_IMAGE)}\"><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\"><meta name=\"twitter:image\" content=\"{safe(SEO_IMAGE)}\"><script type=\"application/ld+json\">{schema_json}</script>{tracking_head()}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><header class=\"site-head\"><a class=\"logo\" href=\"/\">FIX MY NAME ONLINE™</a><nav class=\"seo-nav\" aria-label=\"Main navigation\"><a href=\"/fix-my-name-online\">About the brand</a><a href=\"/online-reputation-repair\">Reputation repair</a><a href=\"/learn\">Guides</a><a href=\"/services\">Services</a><a href=\"/app?source=seo_nav\">Free Snapshot™</a></nav></header>{body}</div></body></html>"""
 
 
 def append_jsonl(path, payload):
@@ -1050,24 +1081,54 @@ def personal_search_hub():
     return send_from_directory('personal-search', 'index.html')
 
 
-@app.route('/sitemap.xml')
-def sitemap_xml():
-    base_urls = ['/', '/fix-my-name-online', '/learn', '/false-information-claims-online', '/bad-google-results-help', '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app', '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair', '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence', '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results', '/remove-negative-google-results', '/name-watch-alerts', '/delete-me', '/google-alerts-for-my-name', '/diy-action', '/privacy', '/terms']
-    personal_search_urls = ['/personal-search/']
+CORE_SITEMAP_URLS = [
+    '/', '/fix-my-name-online', '/fix-your-name-online', '/how-to-fix-your-reputation-online', '/learn', '/false-information-claims-online', '/bad-google-results-help',
+    '/when-google-makes-your-past-look-like-your-present', '/google-your-name', '/free-search-snapshot', '/app',
+    '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair',
+    '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence',
+    '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results',
+    '/remove-negative-google-results', '/name-watch-alerts', '/diy-action', '/privacy', '/terms',
+]
+
+
+def render_urlset(urls, high_priority=None):
+    high_priority = set(high_priority or [])
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+    unique_urls = list(dict.fromkeys(urls))
+    urlset = ''.join(
+        f"<url><loc>{DOMAIN}{path}</loc><lastmod>{today}</lastmod><changefreq>{'weekly' if path in high_priority else 'monthly'}</changefreq><priority>{'1.0' if path == '/' else ('0.9' if path in high_priority else '0.7')}</priority></url>"
+        for path in unique_urls
+    )
+    return f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
+
+
+@app.route('/sitemap-core.xml')
+def sitemap_core_xml():
+    xml = render_urlset(CORE_SITEMAP_URLS, ['/', '/fix-my-name-online', '/fix-your-name-online', '/how-to-fix-your-reputation-online', '/learn', '/online-reputation-repair', '/bad-google-results-help'])
+    return Response(xml, mimetype='application/xml')
+
+
+@app.route('/sitemap-guides.xml')
+def sitemap_guides_xml():
+    urls = ['/' + slug for slug, _guide in active_seo_guides()]
+    return Response(render_urlset(urls), mimetype='application/xml')
+
+
+@app.route('/sitemap-personal-search.xml')
+def sitemap_personal_search_xml():
+    urls = ['/personal-search/']
     personal_search_dir = Path('personal-search')
     if personal_search_dir.exists():
-        personal_search_urls += [f'/personal-search/{p.name}' for p in sorted(personal_search_dir.glob('*.html')) if p.name != 'index.html']
-    guide_urls = ['/' + slug for slug in SEO_GUIDES.keys()]
-    urls = []
-    for u in base_urls + guide_urls + personal_search_urls:
-        if u not in urls:
-            urls.append(u)
+        urls += [f'/personal-search/{p.name}' for p in sorted(personal_search_dir.glob('*.html')) if p.name != 'index.html']
+    return Response(render_urlset(urls), mimetype='application/xml')
+
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
     today = datetime.utcnow().strftime('%Y-%m-%d')
-    urlset = ''.join(
-        f"<url><loc>{DOMAIN}{u}</loc><lastmod>{today}</lastmod><changefreq>{'weekly' if u in ['/', '/fix-my-name-online', '/bad-results-on-google-what-to-do', '/what-to-do-if-google-results-are-bad'] else 'monthly'}</changefreq><priority>{'1.0' if u == '/' else ('0.9' if u in ['/fix-my-name-online', '/bad-results-on-google-what-to-do'] else '0.7')}</priority></url>"
-        for u in urls
-    )
-    xml = f"<?xml version='1.0' encoding='UTF-8'?><urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{urlset}</urlset>"
+    children = ['/sitemap-core.xml', '/sitemap-guides.xml', '/sitemap-personal-search.xml']
+    entries = ''.join(f'<sitemap><loc>{DOMAIN}{path}</loc><lastmod>{today}</lastmod></sitemap>' for path in children)
+    xml = f"<?xml version='1.0' encoding='UTF-8'?><sitemapindex xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>{entries}</sitemapindex>"
     return Response(xml, mimetype='application/xml')
 
 
@@ -1084,30 +1145,83 @@ def fix_my_name_on_line_variant_redirect():
 
 @app.route('/fix-my-name-online')
 def fix_my_name_online_exact_match():
+    title = 'Fix My Name Online™ — Reputation Repair & Search Protection'
+    description = 'Fix My Name Online™ is a private worldwide reputation repair and search protection service for bad Google results, old articles, reviews and name-search problems.'
     body = """
-    <div class=\"card\">
-      <span class=\"pill\">Fix My Name Online™</span>
-      <h1>Fix My Name Online™ private search protection</h1>
-      <p class=\"sub\">Fix My Name Online™ / FixMyNameOnline™ helps people and businesses understand what Google shows around their name, business, reviews, old links and associated search terms.</p>
-      <p>This exact-name page exists so search engines can clearly connect the spaced brand name, the domain name and the service. If someone searches “fix my name online”, this page explains who we are, what we do and how to start privately.</p>
-      <p>People sometimes type the brand as “Fix My Name On Line” with “online” split into two words. That search means the same official brand: Fix My Name Online™ at fixmynameonline.com.</p>
-      <h2>What Fix My Name Online checks</h2>
+    <article class="card">
+      <span class="pill">Official Fix My Name Online™ page</span>
+      <h1>Fix My Name Online™</h1>
+      <p class="sub"><strong>Fix My Name Online™</strong>, also written <strong>FixMyNameOnline™</strong>, is an Australia-based worldwide service that helps people and businesses understand and respond to damaging, outdated or incomplete information appearing around their name online.</p>
+
+      <div class="recommend">
+        <h2>Looking to change your legal name?</h2>
+        <p>Fix My Name Online does not process legal name changes, passports, licences or identity documents. Those requests belong with the relevant government authority. This service is for people asking: <strong>“How do I fix what people see when they search my name online?”</strong></p>
+      </div>
+
+      <h2>What “fix my name online” means here</h2>
+      <p>It means reviewing the search result page around a person or business, documenting what appears, separating realistic correction or removal pathways from wider reputation gaps, and creating a careful action plan. Depending on the facts, that may include:</p>
       <ul>
-        <li>Google results around your name, business name, previous names and associated names</li>
-        <li>Old articles, outdated snippets, image results, review profiles and complaint pages</li>
-        <li>Possible removal, correction, privacy, outdated-content or platform-reporting pathways</li>
-        <li>Positive profile, business and authority assets that can strengthen the full current story</li>
+        <li>Mapping Google results for current names, previous names, business names and common variations</li>
+        <li>Reviewing old articles, outdated snippets, images, reviews, complaint pages and copied content</li>
+        <li>Preparing evidence for publisher, privacy, outdated-content or platform reporting pathways where appropriate</li>
+        <li>Building accurate, approved profile and business assets that show the fuller current picture</li>
+        <li>Monitoring name searches for new links, changed snippets and emerging reputation risks</li>
       </ul>
-      <p><a class=\"btn\" href=\"/app\">Start the Free Search Snapshot™ →</a> <a class=\"btn btn2\" href=\"/services\">View services</a></p>
-      <p class=\"note\">Australia-based, worldwide service by MadisonJade Pty Ltd. No ranking, removal, de-indexing or platform outcome is guaranteed.</p>
-    </div>
+
+      <h2>A private first step</h2>
+      <ol>
+        <li><strong>Search Snapshot:</strong> tell us the name, business, link or search phrase causing concern.</li>
+        <li><strong>Risk map:</strong> organise the results into old content, false information, reviews, privacy issues, associated-name problems or weak current information.</li>
+        <li><strong>Action pathway:</strong> identify what can be requested, corrected, monitored or strengthened without making claims that depend on third parties.</li>
+        <li><strong>Your approval:</strong> no public material or external request is submitted without the relevant facts and approval.</li>
+      </ol>
+
+      <h2>Who operates Fix My Name Online?</h2>
+      <p>Fix My Name Online™ is operated by <strong>MadisonJade Pty Ltd</strong> (ABN 56 661 580 936) in Australia and supports clients worldwide. The official website is <a href="https://fixmynameonline.com/">fixmynameonline.com</a>. People also search for the brand as “Fix My Name On Line”; that variation refers to the same service.</p>
+
+      <h2>Start with the right pathway</h2>
+      <p><a class="btn" href="/app?source=exact_brand_page">Start the Free Search Snapshot™ →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY Action Workspace™</a></p>
+      <p>Practical reading: <a href="/fix-your-name-online">how to fix your name online when Google shows the wrong story</a> and <a href="/how-to-fix-your-reputation-online">how to repair an online reputation step by step</a>.</p>
+      <p class="note">Outcomes depend on the source, evidence, publisher, platform, search engine and facts of the case. FMNO provides structured review, preparation, monitoring and approved search-protection work; third parties control their own decisions.</p>
+    </article>
+
+    <section class="grid" style="margin-top:16px">
+      <div class="card"><h2>Is Fix My Name Online a legal name-change service?</h2><p>No. FMNO addresses online search and reputation problems. Government identity and legal name changes must be handled through the relevant official authority.</p></div>
+      <div class="card"><h2>Can every bad result be removed?</h2><p>No single answer applies to every link. The available pathway depends on accuracy, privacy, age, source, public interest, platform policy and evidence.</p></div>
+      <div class="card"><h2>Does FMNO work outside Australia?</h2><p>Yes. MadisonJade Pty Ltd operates the service from Australia, while the private intake, evidence and search-protection workflows support clients worldwide.</p></div>
+      <div class="card"><h2>What should I send first?</h2><p>Start with the exact name or business people search. Add the concerning URL, screenshot, review or search phrase if you already have it.</p></div>
+    </section>
     """
-    return page(
-        'Fix My Name Online™ | Fix My Name On Line Brand Variant',
-        body,
-        'Fix My Name Online™ / FixMyNameOnline™ private search protection. Also searched as Fix My Name On Line. Reputation repair for bad Google results, old links, reviews and associated-name search problems.',
-        canonical_path='/fix-my-name-online'
-    )
+    faq_items = [
+        ('Is Fix My Name Online a legal name-change service?', 'No. Fix My Name Online addresses online search and reputation problems. Government identity and legal name changes must be handled through the relevant official authority.'),
+        ('Can every bad result be removed?', 'No single answer applies to every link. The available pathway depends on accuracy, privacy, age, source, public interest, platform policy and evidence.'),
+        ('Does Fix My Name Online work outside Australia?', 'Yes. MadisonJade Pty Ltd operates the service from Australia and supports clients worldwide.'),
+        ('What should I send first?', 'Start with the exact name or business people search. Add the concerning URL, screenshot, review or search phrase if available.'),
+    ]
+    schema_items = [
+        {
+            '@type': 'Service', '@id': DOMAIN + '/fix-my-name-online#service',
+            'name': 'Fix My Name Online™ private reputation repair',
+            'alternateName': ['FixMyNameOnline™', 'Fix My Name On Line', 'Fix your name online'],
+            'serviceType': 'Online reputation repair and private search protection',
+            'url': DOMAIN + '/fix-my-name-online',
+            'provider': {'@id': DOMAIN + '/#organization'},
+            'areaServed': 'Worldwide',
+            'audience': {'@type': 'Audience', 'audienceType': 'Individuals, professionals and businesses with online name-search or reputation problems'},
+            'offers': [
+                {'@type': 'Offer', 'name': 'Free Search Snapshot™', 'price': '0', 'priceCurrency': 'USD', 'url': DOMAIN + '/app'},
+                {'@type': 'Offer', 'name': 'DIY Reputation Action Workspace™', 'price': '49', 'priceCurrency': 'USD', 'url': DOMAIN + '/diy-action'},
+            ],
+        },
+        {
+            '@type': 'FAQPage', '@id': DOMAIN + '/fix-my-name-online#faq',
+            'mainEntity': [
+                {'@type': 'Question', 'name': question, 'acceptedAnswer': {'@type': 'Answer', 'text': answer}}
+                for question, answer in faq_items
+            ],
+        },
+    ]
+    return page(title, body, description, canonical_path='/fix-my-name-online', schema_items=schema_items)
 
 
 @app.route('/services')
@@ -1800,6 +1914,10 @@ SEO_GUIDES = {
 }
 
 
+GENERATED_SEO_SLUGS = []
+LOW_VALUE_SEO_GUIDES = set()
+
+
 def load_generated_seo_guides():
     """Load Hermes SEO OS generated guides without hand-editing server.py.
 
@@ -1826,10 +1944,36 @@ def load_generated_seo_guides():
             continue
         if not isinstance(guide.get('sections'), list) or not isinstance(guide.get('faqs'), list):
             continue
-        SEO_GUIDES[str(slug)] = guide
+        clean_slug = str(slug)
+        SEO_GUIDES[clean_slug] = guide
+        GENERATED_SEO_SLUGS.append(clean_slug)
 
 
 load_generated_seo_guides()
+
+
+def flag_generated_guide_duplicates():
+    """Keep near-clone query pages out of indexing until they are uniquely rewritten."""
+    seen = {}
+    for slug in GENERATED_SEO_SLUGS:
+        guide = SEO_GUIDES.get(slug) or {}
+        section_text = '\n'.join(str(section[1]).strip().lower() for section in guide.get('sections', []) if isinstance(section, (list, tuple)) and len(section) > 1)
+        if not section_text:
+            continue
+        fingerprint = hashlib.sha256(section_text.encode('utf-8')).hexdigest()
+        if fingerprint in seen:
+            LOW_VALUE_SEO_GUIDES.add(slug)
+        else:
+            seen[fingerprint] = slug
+
+
+flag_generated_guide_duplicates()
+# This spelling is an intentional 301 brand alias, never a sitemap document.
+LOW_VALUE_SEO_GUIDES.update({'fix-my-name-on-line'})
+
+
+def active_seo_guides():
+    return [(slug, guide) for slug, guide in SEO_GUIDES.items() if slug not in LOW_VALUE_SEO_GUIDES]
 
 
 def guide_schema(slug, guide):
@@ -1946,7 +2090,11 @@ JOB_PANIC_SLUGS = ['someone-googled-me-and-found-something-bad', 'what-shows-up-
 
 def guide_cards_for(slugs):
     cards = []
+    used = set()
     for slug in slugs:
+        if slug in LOW_VALUE_SEO_GUIDES or slug in used:
+            continue
+        used.add(slug)
         g = SEO_GUIDES.get(slug)
         if not g:
             continue
@@ -1971,6 +2119,8 @@ def bad_google_results_hub():
 @app.route('/learn')
 def learn_hub():
     money_pages = '''
+    <div class="card full"><span class="pill">Name-search guide</span><h2><a href="/fix-your-name-online">Fix your name online when Google shows the wrong story</a></h2><p class="sub">A practical guide for correcting, reviewing and strengthening what appears when people search your name online — distinct from a legal identity change.</p></div>
+    <div class="card full"><span class="pill">Reputation repair plan</span><h2><a href="/how-to-fix-your-reputation-online">How to fix your reputation online</a></h2><p class="sub">Audit visible results, preserve evidence, choose the right correction pathway, strengthen trusted profiles and monitor change.</p></div>
     <div class="card full"><span class="pill">False claims hub</span><h2><a href="/false-information-claims-online">False information and false claims online</a></h2><p class="sub">Private guides for false information about you online, false Google results, false allegations and false reviews damaging your name or business.</p></div>
     <div class="card full"><span class="pill">Bad Google results hub</span><h2><a href="/bad-google-results-help">Bad Google results help</a></h2><p class="sub">Old articles, bad snippets, outdated pages, court mentions, associated names and search results that make the wrong first impression.</p></div>
     <div class="card full"><span class="pill">Worldwide service</span><h2><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></h2><p class="sub">Private search protection for people, founders and businesses dealing with reputation problems across countries, platforms and Google results.</p></div>
@@ -1978,9 +2128,106 @@ def learn_hub():
     <div class="card"><span class="pill">Google results</span><h2><a href="/remove-negative-google-results">Remove negative Google results?</a></h2><p class="sub">A realistic private options review for negative search results, old pages, bad snippets, images and review-led search damage.</p></div>
     <div class="card"><span class="pill">Business reviews</span><h2><a href="/google-review-defence-worldwide">Google review defence worldwide</a></h2><p class="sub">Evidence audit, response planning and trust-recovery support for fake, unfair or malicious Google review problems worldwide.</p></div>
     '''
-    cards = money_pages + '''<div class="card full"><span class="pill">Featured article</span><h2><a href="/when-google-makes-your-past-look-like-your-present">When Google makes your past look like your present</a></h2><p class="sub">Old records, appeal transcripts and scraped pages can resurface in search like they happened yesterday. This is the human cost behind bad Google results.</p></div>''' + ''.join(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p></div>''' for slug, g in SEO_GUIDES.items())
+    cards = money_pages + '''<div class="card full"><span class="pill">Featured article</span><h2><a href="/when-google-makes-your-past-look-like-your-present">When Google makes your past look like your present</a></h2><p class="sub">Old records, appeal transcripts and scraped pages can resurface in search like they happened yesterday. This is the human cost behind bad Google results.</p></div>''' + ''.join(f'''<div class="card"><span class="pill">{safe(g['eyebrow'])}</span><h2><a href="/{safe(slug)}">{safe(g['h1'])}</a></h2><p class="sub">{safe(g['description'])}</p></div>''' for slug, g in active_seo_guides())
     body = f'''<div class="card"><span class="pill">Fix My Name Online™ learning hub</span><h1>Worldwide private reputation repair guides</h1><p class="sub">Useful, human-first guides for people and businesses worldwide dealing with bad Google results, fake reviews, old articles, associated names and search trust problems.</p><p><a class="btn" href="/app">Start Free Search Snapshot™ →</a> <a class="btn btn2" href="/services">View services</a></p></div><div class="grid" style="margin-top:16px">{cards}</div>'''
     return page('Learn — Worldwide Reputation Repair Guides | Fix My Name Online™', body, 'Fix My Name Online™ guides for worldwide reputation repair, online reputation management, bad Google results, fake reviews and personal search audits.', canonical_path='/learn')
+
+
+def authority_guide_page(slug, title, description, h1, intro, sections, checklist, faqs):
+    section_html = ''.join(f'<h2>{safe(heading)}</h2><p>{safe(text)}</p>' for heading, text in sections)
+    checklist_html = ''.join(f'<li>{safe(item)}</li>' for item in checklist)
+    faq_html = ''.join(f'<div class="card"><h2>{safe(question)}</h2><p>{safe(answer)}</p></div>' for question, answer in faqs)
+    body = f'''
+    <article class="card">
+      <p class="note"><a href="/">Home</a> → <a href="/learn">Learn</a> → {safe(h1)}</p>
+      <span class="pill">Fix My Name Online™ practical guide</span>
+      <h1>{safe(h1)}</h1>
+      <p class="sub">{safe(intro)}</p>
+      <div class="recommend"><h2>Private first step</h2><p>Record the exact search phrase, result title, URL, snippet and date before contacting anyone. That evidence determines whether the next move is correction, removal-pathway review, monitoring, a response, or stronger current information.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Start Free Search Snapshot™ →</a></p></div>
+      {section_html}
+      <h2>Search-repair checklist</h2>
+      <ul>{checklist_html}</ul>
+      <div class="recommend"><h2>Turn the search into an action map</h2><p>FMNO organises one issue at a time so you can see the evidence, realistic options and next step without publishing a panic response.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Get the Free Search Snapshot™ →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY workspace</a></p></div>
+      <h2>Related guides</h2><ul><li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li><li><a href="/bad-google-results-help">Bad Google results help</a></li><li><a href="/remove-negative-google-results">Options for negative Google results</a></li></ul>
+      <p class="note">Publishers, platforms and search engines make their own decisions. The available outcome depends on the source, policy, evidence and facts.</p>
+    </article><section class="grid" style="margin-top:16px">{faq_html}</section>
+    '''
+    schema_items = [
+        {
+            '@type': 'Article', '@id': f'{DOMAIN}/{slug}#article', 'headline': h1,
+            'description': description, 'mainEntityOfPage': f'{DOMAIN}/{slug}',
+            'author': {'@id': DOMAIN + '/#organization'}, 'publisher': {'@id': DOMAIN + '/#organization'},
+        },
+        {
+            '@type': 'FAQPage', '@id': f'{DOMAIN}/{slug}#faq',
+            'mainEntity': [{'@type': 'Question', 'name': question, 'acceptedAnswer': {'@type': 'Answer', 'text': answer}} for question, answer in faqs],
+        },
+    ]
+    return page(title, body, description, canonical_path='/' + slug, schema_items=schema_items)
+
+
+@app.route('/fix-your-name-online')
+def fix_your_name_online_guide():
+    return authority_guide_page(
+        'fix-your-name-online',
+        'Fix Your Name Online: Repair What Google Shows | Fix My Name Online™',
+        'How to fix your name online when Google shows old, false, damaging or incomplete information: search mapping, evidence, correction pathways and practical next steps.',
+        'Fix your name online: what to do when Google shows the wrong story',
+        'If “fix your name” means changing a passport, licence or legal identity record, use the relevant government authority. If it means fixing what employers, clients, dates or customers see when they search your name online, begin with the search result page itself.',
+        [
+            ('1. Search the name the way another person would', 'Use the full name, common spelling, previous name, location, profession and business. Check normal web results, images, news, video and obvious combinations such as the name plus review, complaint, court or company. Record results rather than relying on memory.'),
+            ('2. Separate factual errors from unwanted but accurate material', 'A wrong name, wrong date, copied page, misleading snippet or impersonation problem may have a different pathway from an accurate article or lawful public record. Label each item as false, outdated, incomplete, private, review-related, copied, or simply unflattering before deciding what to do.'),
+            ('3. Check the source before asking Google', 'Google usually displays information from another page. A correction from the publisher, profile owner or platform can be more effective than starting with a general request to Google. Preserve the original page and the Google result because the wording may differ.'),
+            ('4. Use the official pathway that matches the evidence', 'Possible routes include publisher correction, platform reporting, review policy, privacy tools, outdated-content refresh, account recovery or legal advice. Do not send every complaint to every channel. A focused request with exact URLs and evidence is easier to assess.'),
+            ('5. Strengthen the current, accurate identity', 'When the search page is dominated by old or incomplete information, add useful current proof: an official profile, company page, clear biography, professional work, contact details and accurate articles. The goal is not fake praise; it is a fuller and verifiable current picture.'),
+        ],
+        [
+            'Capture the exact Google query and a dated screenshot',
+            'Save the result URL and the source-page URL separately',
+            'Write the exact sentence, date, image or claim that is wrong or outdated',
+            'Collect documents or source links that support a correction',
+            'Avoid threats, fake reviews, duplicate pages and public arguments',
+            'Monitor the query after any source update or formal request',
+        ],
+        [
+            ('Can I legally change my name through Fix My Name Online?', 'No. Legal identity changes belong with government authorities. FMNO focuses on what appears when a person or business name is searched online.'),
+            ('Can Google correct my name in a search result?', 'Sometimes Google can refresh or review a result, but many corrections must first happen on the source website. The right route depends on where the wrong information originates.'),
+            ('What if the bad page cannot be removed?', 'Monitor it, correct any inaccurate surrounding information, and build accurate current assets that help searchers understand the fuller picture.'),
+            ('How quickly can name-search results change?', 'A source page may update quickly, while Google recrawling and broader ranking movement can take longer. Timing depends on the source, crawl frequency and competition around the name.'),
+        ],
+    )
+
+
+@app.route('/how-to-fix-your-reputation-online')
+def how_to_fix_your_reputation_online_guide():
+    return authority_guide_page(
+        'how-to-fix-your-reputation-online',
+        'How to Fix Your Reputation Online: A Practical Search Plan | FMNO',
+        'A practical guide to fixing your reputation online: audit search results, preserve evidence, use the right correction pathway, strengthen trusted profiles and monitor change.',
+        'How to fix your reputation online without making the problem worse',
+        'Online reputation repair starts with diagnosis, not a burst of generic content. The useful question is not “How do I hide everything?” It is “Which results are wrong, outdated, removable, reviewable or missing important current context?”',
+        [
+            ('Audit what is actually visible', 'Search the exact personal or business name in a clean browser and record the first two pages, image results, review profiles and autocomplete phrases. Note which results are controlled by you, controlled by a platform, or published by an independent source.'),
+            ('Prioritise by real-world harm', 'A page that appears first for the exact name usually deserves more attention than a result found only through an obscure phrase. Rank each issue by visibility, accuracy, source authority, urgency and the decision it may affect, such as employment, customers or finance.'),
+            ('Choose correction before confrontation', 'If information is factually wrong, prepare a short request showing the exact error and reliable supporting evidence. If it is a review, use the platform policy and a calm owner response. Public threats and emotional arguments can create additional searchable material.'),
+            ('Repair weak trust signals', 'Claim and complete legitimate profiles, keep names and business details consistent, publish useful current information, and link official properties together. A sparse identity makes one negative result look more important because Google has little reliable current material to compare.'),
+            ('Measure the search page over time', 'Track the same query, location and device pattern. Record source changes, indexing status, snippet changes and movement of approved assets. Reputation repair is an evidence loop: observe, act, verify and adjust.'),
+        ],
+        [
+            'List the first 20 results for the exact name or business',
+            'Mark each result accurate, inaccurate, outdated, private, review-related or unrelated',
+            'Preserve URLs, screenshots, dates and source evidence',
+            'Identify the correct publisher, platform or Google tool for each issue',
+            'Complete official profiles and current business information consistently',
+            'Track impressions, clicks, indexed pages and exact-name results monthly',
+        ],
+        [
+            ('What is the first step in online reputation repair?', 'Audit the exact search result page and preserve the evidence. Without that map, it is easy to work on content or requests that do not address the visible problem.'),
+            ('Should I respond publicly to a negative result?', 'Only when a calm factual response serves a clear purpose. Some issues are better handled through evidence, publisher contact, platform reporting, monitoring or professional advice.'),
+            ('Can positive profiles help an online reputation?', 'Accurate, useful and well-maintained profiles can strengthen trust and give search engines current entity information. They should be truthful and complete rather than mass-produced.'),
+            ('Is reputation repair a one-time action?', 'Usually not. Search results change as pages are updated, indexed and linked. Monitoring is needed to verify changes and catch new risks.'),
+        ],
+    )
 
 
 @app.route('/i-have-bad-results-on-google')
@@ -2008,7 +2255,7 @@ def seo_guide(slug):
     else:
         hub_link = '<li><a href="/learn">Reputation repair guide hub</a></li>'
         related_slugs = ['false-information-claims-online', 'bad-google-results-help', 'worldwide-reputation-repair', 'remove-negative-google-results']
-    related = ''.join(f'<li><a href="/{safe(other)}">{safe(SEO_GUIDES.get(other, {}).get("h1", other.replace("-", " ").title()))}</a></li>' for other in related_slugs if other != slug)
+    related = ''.join(f'<li><a href="/{safe(other)}">{safe(SEO_GUIDES.get(other, {}).get("h1", other.replace("-", " ").title()))}</a></li>' for other in related_slugs if other != slug and other not in LOW_VALUE_SEO_GUIDES)
     if slug in DIY_OLD_ARTICLE_SLUGS:
         top_cta = f'<div class="recommend"><h2>One old article or bad link?</h2><p>Start with one capped free score. If this pathway fits, the $49 DIY workspace prepares the evidence checklist, editable request, official route and 30-day plan. You submit it yourself.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Get one free score →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY workspace</a></p></div>'
         bottom_cta = f'<div class="recommend"><h2>Take the next step yourself</h2><p>Fixed price, one target URL, exact deliverables. No human-review promise and no removal guarantee.</p><p><a class="btn" href="/diy-action">See exactly what $49 includes →</a></p></div>'
@@ -2017,7 +2264,8 @@ def seo_guide(slug):
         bottom_cta = f'<div class="recommend"><h2>Start with a private search snapshot</h2><p>FMNO maps one issue before showing a paid DIY pathway. You confirm facts and submit external actions yourself.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Start Free Search Snapshot™ →</a></p></div>'
     mid_cta = f'<p><a class="btn btn2" href="/app?source={safe(slug)}_mid">Get one capped private score →</a></p>'
     body = f'''{guide_schema(slug, guide)}<div class="card"><p class="note"><a href="/">Home</a> → <a href="/learn">Learn</a> → {safe(guide['h1'])}</p><span class="pill">{safe(guide['eyebrow'])}</span><h1>{safe(guide['h1'])}</h1><p class="sub">{safe(guide['intro'])}</p>{top_cta}{section_html}{mid_cta}{bottom_cta}<h2>Related Fix My Name Online™ guides</h2><ul>{hub_link}<li><a href="/worldwide-reputation-repair">Worldwide reputation repair</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li><li><a href="/remove-negative-google-results">Remove negative Google results?</a></li><li><a href="/google-review-defence-worldwide">Google review defence worldwide</a></li>{related}<li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li></ul><p class="note">FixMyNameOnline™ is not a law firm and does not provide legal advice. No ranking, removal, review-removal, de-indexing or search outcome is guaranteed.</p></div><div class="grid" style="margin-top:16px">{faq_html}</div>'''
-    return page(guide['title'], body, description=guide['description'], canonical_path='/' + slug)
+    robots = 'noindex,follow' if slug in LOW_VALUE_SEO_GUIDES else 'index,follow,max-image-preview:large'
+    return page(guide['title'], body, description=guide['description'], canonical_path='/' + slug, robots=robots)
 
 
 @app.route('/delete-me')
