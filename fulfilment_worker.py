@@ -640,11 +640,11 @@ def _free_snapshot_report_agent(case, task, source, customer):
         risk_level = "baseline"
 
     package_map = {
-        "alerts": {"package": "Sentinel Alert™", "url": "/checkout/sentinel", "why": "monitoring looks like the first sensible move before heavier work."},
-        "removal-review": {"package": "Removal Review™", "url": "/checkout/removal-review", "why": "one or more links/articles/snippets may need a removal, correction, de-indexing, or platform pathway review."},
-        "review-defence": {"package": "Review Defence™", "url": "/checkout/review-defence", "why": "reviews or business trust signals appear to be the main risk area."},
-        "high-risk": {"package": "Private Concierge review", "url": "/onboarding?plan=concierge", "why": "the issue looks sensitive and should be reviewed privately before fixed-package work."},
-        "repair-plan": {"package": "Starter™", "url": "/checkout/starter", "why": "a broader positive search footprint is likely needed if bad results cannot simply be removed."},
+        "alerts": {"package": "NameWatch Alert™", "url": "/checkout/sentinel", "why": "scheduled monitoring is the first sensible move before paying for any action."},
+        "removal-review": {"package": "DIY Reputation Action Workspace™", "url": "/diy-action", "why": "one old article or bad link may fit the fixed-price evidence, request and follow-up workspace."},
+        "review-defence": {"package": "No paid automated review workflow yet", "url": "/app", "why": "the current DIY release does not sell review reporting or response work that would require manual fulfilment."},
+        "high-risk": {"package": "External professional or safety pathway", "url": "https://www.legaloptionshub.com/", "why": "the issue appears outside FMNO’s automated scope and should not be sold as routine DIY work."},
+        "repair-plan": {"package": "NameWatch Alert™", "url": "/checkout/sentinel", "why": "a broader pattern should be monitored before the customer pays for any narrowly scoped action."},
     }
     rec = package_map.get(triage_key, package_map["repair-plan"])
     recommended_actions = [

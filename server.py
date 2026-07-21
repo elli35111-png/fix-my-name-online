@@ -980,6 +980,13 @@ def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_
       <p>We’ll privately review what you submitted and come back with the safest next step. No removal, ranking, or platform result is guaranteed.</p>
       {room_cta}
       <p><a href=\"{DOMAIN}{triage['url']}\" style=\"background:#d91f3d;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block\">{safe(triage['cta'])}</a></p>
+      <div style=\"border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:20px 0\">
+        <h2 style=\"margin-top:0\">Two automated next steps</h2>
+        <p><strong>NameWatch Alert™ — $29/month:</strong> a scheduled private name sweep with new-result alerts and a simple status note.</p>
+        <p><a href=\"{DOMAIN}/checkout/sentinel?source=snapshot_email\">Start NameWatch Alert™</a></p>
+        <p><strong>DIY Reputation Action Workspace™ — $49 once:</strong> organise one old article or bad link, build the evidence checklist and prepare an editable request that you submit yourself.</p>
+        <p><a href=\"{DOMAIN}/diy-action?source=snapshot_email\">Open the $49 DIY workspace</a></p>
+      </div>
       <p style=\"font-size:12px;color:#666\">Reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
     </div>
     """
@@ -1003,6 +1010,27 @@ def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_
 
 def send_onboarding_emails(data, queue_item):
     plan_label = PLANS.get(data.get('plan'), {}).get('name', data.get('plan', 'Private onboarding'))
+    if data.get('plan') == 'sentinel':
+        customer_html = f"""
+        <div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#111;line-height:1.55\">
+          <h1>NameWatch Alert™ is activated</h1>
+          <p>Hi {safe(data.get('name'))},</p>
+          <p>We received the exact names and search context for your private monitoring file.</p>
+          <h2>What happens automatically</h2>
+          <ol><li>We create the first private baseline for the names you supplied.</li><li>FMNO runs the scheduled result sweep.</li><li>If a newly observed result needs attention, we email you a private alert.</li><li>You also receive a simple clear / watch / review-recommended status note.</li></ol>
+          <p>A newly observed result is not automatically harmful or newly published. It means the monitor did not see it in the prior baseline.</p>
+          <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
+        </div>
+        """
+        internal_html = f"""
+        <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111\">
+          <h1>New paid NameWatch onboarding</h1><p><strong>Queue ID:</strong> {safe(queue_item['id'])}</p>
+          <pre style=\"background:#f5f5f5;padding:16px;border-radius:10px;white-space:pre-wrap\">{safe(json.dumps(data, indent=2, ensure_ascii=False))}</pre>
+        </div>"""
+        return {
+            'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'NameWatch Alert™ activated — FixMyNameOnline™', customer_html),
+            'internal_email_sent': send_internal_alert_email(f"FMNO NameWatch onboarding — {data.get('name', '')}", internal_html),
+        }
     customer_html = f"""
     <div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#111;line-height:1.55\">
       <h1>We’ve received your private onboarding</h1>
@@ -1226,8 +1254,8 @@ def fix_my_name_online_exact_match():
 
 @app.route('/services')
 def services():
-    body = """<div class=\"card\"><h1>Private Reputation Repair Services</h1><p class=\"sub\">Structured help for name search problems, old results, malicious reviews, associated-name issues and reputation-sensitive cases.</p><ul><li>Free Search Snapshot™ for initial risk mapping</li><li>NameWatch Alert™ for $29/month Google-name monitoring and new-result alerts</li><li>Removal Review™ for link, article, image or snippet pathway assessment</li><li>Review Defence™ for Google review audit, reporting notes and response drafts</li><li>Starter™, Pro™ and Premium™ repair plans for approved positive assets and ongoing search protection</li></ul><p class=\"note\">Search engines and third-party platforms make their own decisions. Results vary by situation.</p></div>"""
-    return page('Services — FixMyNameOnline™', body, 'Private reputation repair, search protection, removal review support, Google review defence and positive asset planning by FixMyNameOnline™.')
+    body = """<div class=\"card\"><h1>Private reputation tools with fixed, visible deliverables.</h1><p class=\"sub\">Start free, then choose only an automated paid path that fits. FMNO does not sell open-ended managed retainers through this page.</p><div class=\"grid\"><div class=\"card\"><h2>Free Search Snapshot™</h2><p class=\"sub\">One private risk score and one recommended pathway.</p><p><a class=\"btn\" href=\"/app?source=services\">Start free →</a></p></div><div class=\"card\"><h2>NameWatch Alert™</h2><p class=\"sub\">$29/month scheduled name monitoring, new-result alerts and a private status note.</p><p><a class=\"btn\" href=\"/checkout/sentinel?source=services\">Start monitoring →</a></p></div><div class=\"card\"><h2>DIY Reputation Action Workspace™</h2><p class=\"sub\">$49 once for one old article or bad link: evidence checklist, editable request, official route and follow-up plan.</p><p><a class=\"btn\" href=\"/diy-action?source=services\">Open workspace →</a></p></div><div class=\"card\"><h2>Outside automated scope?</h2><p class=\"sub\">Emergencies, active proceedings, threats, minors and complex legal disputes should use an appropriate independent professional or safety pathway.</p><p><a class=\"btn btn2\" href=\"https://www.legaloptionshub.com/\">View Legal Options Hub →</a></p></div></div></div>"""
+    return page('Services — FixMyNameOnline™', body, 'Fixed-price private reputation tools: a free risk score, NameWatch Alert monitoring and the DIY Reputation Action Workspace.', canonical_path='/services')
 
 
 
@@ -2292,7 +2320,7 @@ def name_watch_alerts_page():
         <li>Monitoring of obvious new articles, review pages, images, snippets and high-risk result changes</li>
         <li>Email alert if we identify a new concerning result or material change</li>
         <li>Simple private status note: clear / watch / review recommended</li>
-        <li>Upgrade path to Removal Review™, Review Defence™ or Starter™ only if needed</li>
+        <li>Optional $49 DIY action path only when one old article or bad link is a suitable fit</li>
       </ul>
       <p><a class="btn" href="/checkout/sentinel">Start NameWatch Alert™ — $29/month</a> <a class="btn btn2" href="/app?source=name_watch_alerts">Start free snapshot first</a></p>
       <p class="note" style="opacity:.46;font-size:12px">NameWatch Alert™ is a private monitoring service. If something needs action, we’ll explain the practical next-step options.</p>
@@ -2301,7 +2329,7 @@ def name_watch_alerts_page():
       <div class="card"><h2>Best for</h2><p class="sub">Professionals, founders, job seekers, business owners, public-facing workers, creators, and anyone who wants to know early if something bad starts surfacing.</p></div>
       <div class="card"><h2>Not for</h2><p class="sub">Immediate crisis removal, legal advice, guaranteed deletion, guaranteed Google suppression, or full data-broker removal across every site. Those need a separate review.</p></div>
       <div class="card"><h2>What happens after payment?</h2><p class="sub">You complete private onboarding with the exact names, old names, locations, business names and search phrases to monitor. We set up the monitoring file and begin the first sweep.</p></div>
-      <div class="card"><h2>If something appears</h2><p class="sub">We send a private alert and recommend the next practical path: ignore/watch, Removal Review™, Review Defence™, or a broader search repair plan.</p></div>
+      <div class="card"><h2>If something appears</h2><p class="sub">We send a private alert and classify the result as clear, watch or review recommended. If one old article or bad link fits the DIY workspace, we show that fixed-price option.</p></div>
     </div>
     """
     return page('NameWatch Alert™ — $29/month Google-name monitoring | FixMyNameOnline™', body, 'NameWatch Alert™ is a $29/month private Google-name monitoring and new-result alert subscription by FixMyNameOnline™. Early warning for old links, reviews, articles, snippets, images and reputation risks.', canonical_path='/name-watch-alerts')
@@ -2367,14 +2395,12 @@ def name_watch_short_redirect():
 
 def paid_next_steps_html(source='post_snapshot'):
     return f'''
-    <div class="recommend"><span class="pill">Choose a paid next step</span><h2>Turn the free snapshot into protection.</h2><p>Most people do not need a big package first. After the free snapshot, the easiest paid step is NameWatch Alert™ at $29/month. If there is already a clear link, article, review or broader search issue, choose the review or repair path.</p>
+    <div class="recommend"><span class="pill">Choose a paid next step</span><h2>Use only the tool that fits.</h2><p>FMNO currently sells two low-cost automated paths. Choose monitoring when you want early warning, or the fixed-price DIY workspace when there is one old article or bad link to address.</p>
       <div class="grid" style="margin-top:14px">
         <div class="card"><h2>NameWatch Alert™</h2><p class="sub">$29/month Google-name monitoring and new-result alerts.</p><p><a class="btn" href="/checkout/sentinel?source={safe(source)}">Start $29/month →</a></p></div>
-        <div class="card"><h2>Removal Review™</h2><p class="sub">$297 one-time review for specific links, articles, images or snippets.</p><p><a class="btn btn2" href="/checkout/removal-review?source={safe(source)}">Review links →</a></p></div>
-        <div class="card"><h2>Review Defence™</h2><p class="sub">$497 one-time review defence for fake, unfair or malicious Google reviews.</p><p><a class="btn btn2" href="/checkout/review-defence?source={safe(source)}">Defend reviews →</a></p></div>
-        <div class="card"><h2>Starter™</h2><p class="sub">$499/month for an approved positive search-footprint plan.</p><p><a class="btn btn2" href="/checkout/starter?source={safe(source)}">Start repair →</a></p></div>
+        <div class="card"><h2>DIY Reputation Action Workspace™</h2><p class="sub">$49 once for one old article or bad link: evidence checklist, editable request, official route and follow-up plan.</p><p><a class="btn btn2" href="/diy-action?source={safe(source)}">Open $49 workspace →</a></p></div>
       </div>
-      <p class="note" style="opacity:.42;font-size:12px">Paid plans are private next steps based on the search pattern. Search/platform outcomes vary.</p>
+      <p class="note" style="opacity:.42;font-size:12px">You stay in control. Publishers, platforms and search engines decide outcomes.</p>
     </div>'''
 
 
@@ -2634,6 +2660,25 @@ def submit_snapshot():
 def onboarding_form():
     plan = request.args.get('plan', 'starter')
     plan_label = PLANS.get(plan, {}).get('name', plan.replace('-', ' ').title())
+    session_id = (request.args.get('session_id') or '').strip()
+    if plan == 'sentinel':
+        paid_session = verify_paid_checkout(session_id, expected_tier='sentinel')
+        if not paid_session:
+            return page('Payment verification required — FixMyNameOnline™', '<div class="card"><h1>Paid NameWatch checkout required.</h1><p class="sub">Private monitoring onboarding opens only after a verified NameWatch Alert™ payment.</p><p><a class="btn" href="/name-watch-alerts">View NameWatch Alert™</a></p></div>'), 402
+        details = checkout_value(paid_session, 'customer_details', {}) or {}
+        paid_email = checkout_value(details, 'email', '') or checkout_value(paid_session, 'customer_email', '') or ''
+        body = f"""
+        <div class="card"><span class="pill ok">Payment verified · private activation</span><h1>Activate NameWatch monitoring</h1><p class="sub">Add the exact names and search context to monitor. FMNO uses this to create the first baseline and scheduled result sweep.</p>
+        <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="sentinel"><input type="hidden" name="session_id" value="{safe(session_id)}">
+          <div><label>Your name</label><input name="name" required autocomplete="name"></div><div><label>Alert email</label><input type="email" name="email" required autocomplete="email" value="{safe(paid_email)}"></div>
+          <div><label>Country / location context</label><input name="business" placeholder="Example: Australia, Sydney, New York"></div><div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
+          <div class="full"><label>Exact names and associated names to monitor</label><textarea name="names" required placeholder="One per line: full name, old name, business name, nickname or distinctive search phrase"></textarea><div class="microcopy">Use the spelling people are most likely to search. Add only names you are authorised to monitor.</div></div>
+          <div class="full"><label>Known links or search clues optional</label><textarea name="links" placeholder="Existing articles, profiles, reviews or URLs that belong in the first baseline"></textarea></div>
+          <div class="full"><label>Private context optional</label><textarea name="context" placeholder="Anything that helps distinguish you from people with a similar name"></textarea></div>
+          <input type="hidden" name="avoid" value="">
+          <div class="full"><button class="btn" type="submit">Activate NameWatch monitoring →</button><p class="note">Scheduled private monitoring and change alerts. A newly observed result is not automatically harmful or newly published.</p></div>
+        </form></div>"""
+        return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
     body = f"""
     <div class="card"><span class="pill">Private onboarding</span><h1>{safe(plan_label)}</h1><p class="sub">Use this after payment or if we ask for more detail. Give us the links, names, reviews and context we need to start safely.</p>
     <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="{safe(plan)}">
@@ -2650,10 +2695,20 @@ def onboarding_form():
 
 @app.route('/submit-onboarding', methods=['POST'])
 def submit_onboarding():
-    fields = ['plan', 'name', 'email', 'phone', 'business', 'names', 'links', 'context', 'avoid']
+    fields = ['plan', 'session_id', 'name', 'email', 'phone', 'business', 'names', 'links', 'context', 'avoid']
     data = {k: request.form.get(k, '').strip() for k in fields}
     if not data['name'] or not data['email']:
         return jsonify({'ok': False, 'error': 'Missing name/email'}), 400
+    if data.get('plan') == 'sentinel':
+        paid_session = verify_paid_checkout(data.get('session_id'), expected_tier='sentinel')
+        if not paid_session:
+            return page('Payment verification required — FixMyNameOnline™', '<div class="card"><h1>Paid NameWatch checkout required.</h1><p class="sub">No monitoring file was activated because the Stripe payment could not be verified.</p></div>'), 402
+        details = checkout_value(paid_session, 'customer_details', {}) or {}
+        paid_email = (checkout_value(details, 'email', '') or checkout_value(paid_session, 'customer_email', '') or '').strip().lower()
+        if paid_email and paid_email != data.get('email', '').strip().lower():
+            return page('Checkout email mismatch — FixMyNameOnline™', '<div class="card"><h1>Use the email from the paid checkout.</h1><p class="sub">The monitoring email must match the verified Stripe checkout. Contact admin@fixmynameonline.com if it needs to be changed.</p></div>'), 400
+        if not data.get('names'):
+            return jsonify({'ok': False, 'error': 'Add at least one exact name or search phrase to monitor.'}), 400
 
     plan_label = PLANS.get(data.get('plan'), {}).get('name', data.get('plan', 'Private onboarding'))
     triage = {'key': 'onboarding', 'label': plan_label, 'priority': 'high'}
@@ -2675,8 +2730,41 @@ def submit_onboarding():
     record_email_alert_status('onboarding', f"FMNO onboarding: {plan_label} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'plan': data.get('plan'), 'email': data.get('email')})
     app.logger.info('Onboarding %s email status: %s', queue_item['id'], email_status)
 
-    body = f"""<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}</p><a class="btn" href="/">Back to site</a></div>"""
+    if data.get('plan') == 'sentinel':
+        body = f"""<div class="card"><span class="pill ok">NameWatch activated</span><h1>Your private monitoring file is queued.</h1><p class="sub">The first scheduled sweep establishes the baseline. We email you when a newly observed result needs attention and send a simple private status note.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Monitoring case: ' + safe(case.get('id')) if case else ''}<br>A newly observed result is not automatically harmful or newly published.</p><a class="btn" href="/">Back to FixMyNameOnline™</a></div>"""
+    else:
+        body = f"""<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}</p><a class="btn" href="/">Back to site</a></div>"""
     return page('Onboarding received — FixMyNameOnline™', body)
+
+
+def checkout_value(obj, key, default=None):
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    try:
+        return obj.get(key, default)
+    except Exception:
+        return getattr(obj, key, default)
+
+
+def verify_paid_checkout(session_id, expected_tier=None):
+    """Return only a completed, paid Stripe Checkout Session for the expected FMNO tier."""
+    session_id = (session_id or '').strip()
+    if not session_id or not stripe.api_key:
+        return None
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except Exception as exc:
+        app.logger.warning('Paid checkout verification failed: %s', exc)
+        return None
+    payment_status = checkout_value(session, 'payment_status', '')
+    status = checkout_value(session, 'status', '')
+    metadata = checkout_value(session, 'metadata', {}) or {}
+    tier = checkout_value(metadata, 'tier', '')
+    if status != 'complete' or payment_status not in {'paid', 'no_payment_required'}:
+        return None
+    if expected_tier and tier != expected_tier:
+        return None
+    return session
 
 
 def verify_diy_checkout(session_id, checkout_token=''):
@@ -2767,6 +2855,7 @@ def diy_action_generate():
 
 @app.route('/checkout/<tier>')
 def checkout(tier):
+    tier = {'name-watch': 'sentinel', 'namewatch': 'sentinel', 'name-watch-alerts': 'sentinel'}.get(tier, tier)
     if tier == 'free':
         return redirect('/app')
     if tier == 'concierge':
@@ -2815,6 +2904,11 @@ def checkout(tier):
 def success():
     tier = request.args.get('tier', 'unknown')
     plan_name = PLANS.get(tier, {}).get('name', tier.replace('-', ' ').title())
+    session_id = (request.args.get('session_id') or '').strip()
+    if tier == 'sentinel':
+        onboarding_url = f'/onboarding?plan=sentinel&amp;session_id={safe(session_id)}'
+        body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>One step left to activate NameWatch Alert™</h1><p class="sub">Add the exact names, associated names and location context to monitor. This securely connects the paid checkout to your private monitoring file.</p><ol><li>Open the private activation form.</li><li>Add each exact name or search phrase.</li><li>FMNO creates the first baseline and scheduled sweep.</li><li>We email you when a newly observed result needs attention.</li></ol><p><a class="btn" href="{onboarding_url}">Activate NameWatch monitoring →</a></p><p class="note">A newly observed result is not automatically harmful or newly published. Search engines decide what appears.</p></div>"""
+        return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
     body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>Welcome to {safe(plan_name)}</h1><p class="sub">Your payment has been processed. The important next step is private onboarding so we have the names, links, reviews, and context needed to handle this safely.</p><ol><li>Complete the private onboarding form.</li><li>Paste the links/reviews/search terms you want reviewed.</li><li>Tell us what is true, outdated, unfair, or sensitive.</li></ol><p><a class="btn" href="/onboarding?plan={safe(tier)}">Complete private onboarding →</a></p><p class="note">No removal, ranking, or platform outcome is guaranteed. We use careful, documented reputation repair pathways.</p></div>"""
     return page('Welcome — FixMyNameOnline™', body)
 
@@ -3472,7 +3566,7 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('ANTHROPIC_API_KEY') if provider == 'anthropic' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v50-anthropic-concierge-qa', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256 or (stripe.api_key and os.environ.get('STRIPE_PRICE_DIY_ACTION'))), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v51-automated-revenue-paths', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'stripe_webhook_configured': bool(STRIPE_WEBHOOK_SECRET), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256 or (stripe.api_key and os.environ.get('STRIPE_PRICE_DIY_ACTION'))), 'namewatch_checkout_configured': bool(stripe.api_key and os.environ.get('STRIPE_PRICE_SENTINEL')), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
 
 
 if __name__ == '__main__':

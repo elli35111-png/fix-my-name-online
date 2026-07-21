@@ -219,6 +219,103 @@ def test_diy_checkout_redirects_paid_customer_to_workspace(monkeypatch):
     assert captured['metadata']['tier'] == 'diy-action'
 
 
+def test_namewatch_checkout_alias_uses_the_live_sentinel_subscription(monkeypatch):
+    captured = {}
+
+    class FakeSession:
+        @staticmethod
+        def create(**kwargs):
+            captured.update(kwargs)
+            return type('CheckoutSession', (), {'url': 'https://checkout.stripe.test/namewatch'})()
+
+    monkeypatch.setattr(server.stripe.checkout, 'Session', FakeSession)
+    monkeypatch.setattr(server.stripe, 'api_key', 'sk_test_fmno')
+    monkeypatch.setenv('STRIPE_PRICE_SENTINEL', 'price_fmno_namewatch')
+    response = client().get('/checkout/name-watch?source=qa_alias')
+    assert response.status_code == 302
+    assert response.headers['Location'] == 'https://checkout.stripe.test/namewatch'
+    assert captured['mode'] == 'subscription'
+    assert captured['line_items'] == [{'price': 'price_fmno_namewatch', 'quantity': 1}]
+    assert captured['metadata']['tier'] == 'sentinel'
+    assert 'tier=sentinel' in captured['success_url']
+
+
+def test_post_snapshot_paid_paths_only_sell_automated_products():
+    body = server.paid_next_steps_html('qa_snapshot')
+    assert 'NameWatch Alert™' in body
+    assert '/checkout/sentinel?source=qa_snapshot' in body
+    assert 'DIY Reputation Action Workspace™' in body
+    assert '/diy-action?source=qa_snapshot' in body
+    for retired in ('Removal Review™', 'Review Defence™', 'Starter™', '/checkout/removal-review', '/checkout/starter'):
+        assert retired not in body
+
+
+def test_snapshot_email_contains_both_active_self_service_next_steps(monkeypatch):
+    sent = []
+    monkeypatch.setattr(server, 'send_brevo_email', lambda *args: sent.append(args) or True)
+    monkeypatch.setattr(server, 'send_internal_alert_email', lambda *args: {'admin@example.com': True})
+    result = server.send_snapshot_emails(
+        {'name': 'Test Person', 'email': 'person@example.com'},
+        server.TRIAGE_NEXT_STEPS['alerts'],
+        {'id': 'FMNO-TEST', 'priority': 'standard'},
+        case=None,
+        report=None,
+        case_room=None,
+    )
+    assert result['customer_email_sent'] is True
+    customer_html = sent[0][3]
+    assert server.DOMAIN + '/checkout/sentinel' in customer_html
+    assert server.DOMAIN + '/diy-action' in customer_html
+    assert '$29/month' in customer_html
+    assert '$49 once' in customer_html
+    assert 'Removal Review™' not in customer_html
+    assert 'Review Defence™' not in customer_html
+
+
+def test_namewatch_success_keeps_checkout_session_in_secure_onboarding_link():
+    body = client().get('/success.html?tier=sentinel&session_id=cs_live_example').get_data(as_text=True)
+    assert '/onboarding?plan=sentinel&amp;session_id=cs_live_example' in body
+    assert 'Activate NameWatch monitoring' in body
+
+
+def test_namewatch_onboarding_requires_verified_paid_session(monkeypatch):
+    monkeypatch.setattr(server, 'verify_paid_checkout', lambda session_id, expected_tier=None: None)
+    denied = client().get('/onboarding?plan=sentinel&session_id=cs_live_unpaid')
+    assert denied.status_code == 402
+    monkeypatch.setattr(server, 'verify_paid_checkout', lambda session_id, expected_tier=None: {
+        'id': session_id,
+        'payment_status': 'paid',
+        'status': 'complete',
+        'metadata': {'tier': 'sentinel'},
+        'customer_details': {'email': 'paid@example.com'},
+    })
+    allowed = client().get('/onboarding?plan=sentinel&session_id=cs_live_paid')
+    text = allowed.get_data(as_text=True)
+    assert allowed.status_code == 200
+    assert 'Activate NameWatch monitoring' in text
+    assert 'name="session_id" value="cs_live_paid"' in text
+    assert 'value="paid@example.com"' in text
+
+
+def test_health_reports_namewatch_and_webhook_readiness(monkeypatch):
+    monkeypatch.setattr(server.stripe, 'api_key', 'sk_test_fmno')
+    monkeypatch.setenv('STRIPE_PRICE_SENTINEL', 'price_fmno_namewatch')
+    monkeypatch.setattr(server, 'STRIPE_WEBHOOK_SECRET', 'whsec_test')
+    health = client().get('/health').get_json()
+    assert health['namewatch_checkout_configured'] is True
+    assert health['stripe_webhook_configured'] is True
+
+
+def test_public_services_page_only_sells_automated_products():
+    body = client().get('/services').get_data(as_text=True)
+    assert 'NameWatch Alert™' in body
+    assert 'DIY Reputation Action Workspace™' in body
+    assert '/checkout/sentinel?source=services' in body
+    assert '/diy-action?source=services' in body
+    for retired in ('Removal Review™', 'Review Defence™', 'Starter™', 'Pro™', 'Premium™'):
+        assert retired not in body
+
+
 
 def test_paid_diy_workspace_generates_action_pack(tmp_path):
     c = client()
