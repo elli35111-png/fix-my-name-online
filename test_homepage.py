@@ -160,6 +160,25 @@ def test_core_routes_preserved():
         assert c.get(path).status_code in (200, 301, 302), f"{path} broke"
 
 
+def test_private_data_files_are_never_publicly_served():
+    c = client()
+    for path in (
+        "/data/snapshot_leads.jsonl",
+        "/data/private_case_rooms.jsonl",
+        "/data/fulfilment_queue.jsonl",
+        "/data/onboarding_submissions.jsonl",
+    ):
+        response = c.get(path)
+        assert response.status_code == 404, f"private path was public: {path}"
+        assert response.get_data() == b""
+
+
+def test_allowlisted_public_assets_still_serve():
+    c = client()
+    assert c.get("/assets/ava_concierge_poster.jpg").status_code == 200
+    assert c.get("/static/personal/ilija-cakar-approved-profile-photo-square.jpg").status_code == 200
+
+
 def test_snapshot_form_conversion_polish():
     body = client().get("/app?source=qa_test").get_data(as_text=True)
     assert "Get your Private Reputation Risk Score™" in body

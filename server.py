@@ -39,15 +39,24 @@ try:
 except Exception:
     run_task_agent = run_next_ready = None
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+BASE_DIR = Path(__file__).resolve().parent
+# Never expose the repository root through Flask's implicit static handler.
+# Customer records, access tokens, source, deployment files and local state all
+# live beside the application and must only be reachable through authenticated
+# routes. Public files are served from the two explicit allowlists below.
+app = Flask(__name__, static_folder=None)
 
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
 SEO_DESCRIPTION = 'Private reputation repair and search protection. Run a free Search Snapshot to see what comes up when people Google your name.'
 SEO_IMAGE = DOMAIN + '/assets/fmno-past-present-facebook-square.png'
-DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', 'data'))
-DATA_DIR.mkdir(exist_ok=True)
+DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', str(BASE_DIR / 'data'))).expanduser().resolve()
+DATA_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+try:
+    DATA_DIR.chmod(0o700)
+except OSError:
+    pass
 LEADS_FILE = DATA_DIR / 'snapshot_leads.jsonl'
 ONBOARDING_FILE = DATA_DIR / 'onboarding_submissions.jsonl'
 FULFILMENT_QUEUE_FILE = DATA_DIR / 'fulfilment_queue.jsonl'
@@ -1077,9 +1086,26 @@ def send_onboarding_emails(data, queue_item):
     }
 
 
+@app.route('/data', defaults={'filename': ''}, methods=['GET', 'HEAD'])
+@app.route('/data/<path:filename>', methods=['GET', 'HEAD'])
+def deny_private_data(filename):
+    """Fail closed if an old or future private-data URL is requested."""
+    return Response(status=404)
+
+
+@app.route('/assets/<path:filename>')
+def public_asset(filename):
+    return send_from_directory(str(BASE_DIR / 'assets'), filename)
+
+
+@app.route('/static/<path:filename>')
+def public_static(filename):
+    return send_from_directory(str(BASE_DIR / 'static'), filename)
+
+
 @app.route('/')
 def landing():
-    html_text = Path('landing_page_v2.html').read_text(encoding='utf-8')
+    html_text = (BASE_DIR / 'landing_page_v2.html').read_text(encoding='utf-8')
     tracking = tracking_head()
     if tracking and '</head>' in html_text:
         html_text = html_text.replace('</head>', tracking + '</head>', 1)
@@ -1106,7 +1132,14 @@ def personal_search_redirect():
 
 @app.route('/personal-search/')
 def personal_search_hub():
-    return send_from_directory('personal-search', 'index.html')
+    return send_from_directory(str(BASE_DIR / 'personal-search'), 'index.html')
+
+
+@app.route('/personal-search/<path:filename>')
+def personal_search_file(filename):
+    if Path(filename).suffix.lower() != '.html':
+        return Response(status=404)
+    return send_from_directory(str(BASE_DIR / 'personal-search'), filename)
 
 
 CORE_SITEMAP_URLS = [
