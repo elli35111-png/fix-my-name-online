@@ -2722,7 +2722,7 @@ def verify_paid_checkout(session_id, expected_tier=None):
     if not session_id or not stripe.api_key:
         return None
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
+        session = paid_actions.stripe_data(stripe.checkout.Session.retrieve(session_id))
     except Exception as exc:
         app.logger.warning('Paid checkout verification failed: %s', exc)
         return None
@@ -3032,7 +3032,7 @@ def webhook():
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        event = paid_actions.stripe_data(stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET))
     except ValueError:
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError:

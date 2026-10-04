@@ -12,6 +12,7 @@ from pathlib import Path
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from urllib.parse import urlparse
+from typing import Any
 
 from flask import request, redirect, Response, jsonify
 
@@ -63,6 +64,18 @@ def secret(s):
     return value
 
 
+def stripe_data(value: Any) -> Any:
+    """Normalize SDK resources at the boundary (Stripe 16 is not dict-like)."""
+    if isinstance(value, dict):
+        return {key: stripe_data(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [stripe_data(item) for item in value]
+    converter = getattr(value, 'to_dict', None)
+    if callable(converter):
+        return stripe_data(converter())
+    return value
+
+
 def price_id(plan):
     return os.environ.get(plan['env']) or PUBLIC_BILLING.get(plan['env'], '')
 
@@ -86,7 +99,7 @@ def paid(s, sid):
     if not re.fullmatch(r'cs_(live|test)_[A-Za-z0-9_]{5,240}', sid or '') or not s.stripe.api_key:
         return None
     try:
-        row = s.stripe.checkout.Session.retrieve(sid, expand=['line_items'])
+        row = stripe_data(s.stripe.checkout.Session.retrieve(sid, expand=['line_items']))
         tier = (row.get('metadata') or {}).get('tier')
         plan = CATALOG.get(tier)
         items = (row.get('line_items') or {}).get('data', [])
@@ -100,7 +113,7 @@ def paid(s, sid):
         pi = row.get('payment_intent')
         if not pi:
             return None
-        refunds = s.stripe.Refund.list(payment_intent=pi, limit=100)
+        refunds = stripe_data(s.stripe.Refund.list(payment_intent=pi, limit=100))
         if refunds.get('has_more') or any(x.get('status') in {'succeeded', 'pending', 'requires_action'} for x in refunds.get('data', [])):
             return None
         return row
@@ -181,7 +194,7 @@ def checkout(s, tier):
     try:
         secret(s)
         pid = price_id(plan)
-        p = s.stripe.Price.retrieve(pid)
+        p = stripe_data(s.stripe.Price.retrieve(pid))
         if not (p.get('active') and p.get('currency') == 'usd' and p.get('unit_amount') == plan['amount'] and p.get('type') == 'one_time'):
             raise ValueError('Price mismatch')
         row = s.stripe.checkout.Session.create(mode='payment', line_items=[{'price': pid, 'quantity': 1}],
@@ -190,7 +203,7 @@ def checkout(s, tier):
             customer_creation='always', metadata={'tier': tier, 'plan_name': plan['name'], 'product_version': 'selfserve-v1'},
             payment_intent_data={'metadata': {'tier': tier, 'brand': 'FixMyNameOnline'}},
             custom_text={'submit': {'message': 'One-time self-service documentation tool. You verify facts and submit requests yourself. No human review or external submissions included.'}})
-        return redirect(row['url'], code=302)
+        return redirect(stripe_data(row)['url'], code=302)
     except Exception:
         s.app.logger.warning('Paid action checkout unavailable; no payment created or confirmed')
         return error(s, 'Checkout is temporarily unavailable. No payment has been confirmed. The free self-service desk is still available.', 503)
@@ -379,8 +392,8 @@ def refund(s):
     if not row:
         # Recover a prior Stripe refund accepted before an interrupted readback.
         try:
-            row = s.stripe.checkout.Session.retrieve(workspace['session_id'])
-            refunds = s.stripe.Refund.list(payment_intent=row.get('payment_intent'), limit=100)
+            row = stripe_data(s.stripe.checkout.Session.retrieve(workspace['session_id']))
+            refunds = stripe_data(s.stripe.Refund.list(payment_intent=row.get('payment_intent'), limit=100))
             confirmed = next((r for r in refunds.get('data', []) if r.get('status') in {'pending', 'succeeded'} and (r.get('metadata') or {}).get('workspace') == workspace['id']), None)
             if confirmed:
                 with db(s) as con:
@@ -399,7 +412,7 @@ def refund(s):
     try:
         result = s.stripe.Refund.create(payment_intent=row['payment_intent'], reason='requested_by_customer',
             metadata={'policy': 'unused_7_days', 'brand': 'FixMyNameOnline', 'workspace': workspace['id']}, idempotency_key='fmno-unused-' + workspace['id'])
-        verified = s.stripe.Refund.retrieve(result['id'])
+        verified = stripe_data(s.stripe.Refund.retrieve(stripe_data(result)['id']))
         if verified.get('status') not in {'succeeded', 'pending'}:
             return error(s, 'Stripe has not confirmed the refund. No success is assumed.', 503)
     except Exception:
