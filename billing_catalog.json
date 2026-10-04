@@ -1,0 +1,8 @@
+{
+  "stripe_account": "acct_1TsYh19eHjBZ9fNn",
+  "currency": "usd",
+  "STRIPE_PRICE_DIY_SINGLE": "price_1UMckV9eHjBZ9fNnGlAxt9PY",
+  "STRIPE_PRICE_DIY_PACK": "price_1UMckV9eHjBZ9fNnQlnDedvp",
+  "portal_configuration": "bpc_1UMckW9eHjBZ9fNnw4y90p5Y",
+  "portal_login_url": "https://billing.stripe.com/p/login/3cIdR3dc480V5BRghQ5Vu00"
+}

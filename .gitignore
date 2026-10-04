@@ -48,8 +48,11 @@ Thumbs.db
 # FMNOL data files
 data/
 *.json
+!billing_catalog.json
 *.db
 logs/
+qa_proof/
+*.sqlite3
 
 # Local uploads
 uploads/
@@ -62,6 +65,7 @@ STRIPE_PRICE_IDS=
 # Test files
 test_*.py
 *_test.py
+!tests/test_*.py
 
 # Generated Stripe payment link export
 fmno_payment_links_live.json

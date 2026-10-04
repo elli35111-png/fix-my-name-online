@@ -5,10 +5,14 @@ services:
     repo: https://github.com/elli35111-png/fix-my-name-online
     branch: main
     region: oregon
-    plan: free
+    # Match the existing paid service; /var/data is its already provisioned disk.
+    # Do not recreate or replace that disk during a blueprint sync.
+    plan: starter
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --access-logfile -
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --access-logfile /dev/null --error-logfile -
     healthCheckPath: /health
     envVars:
       - key: DOMAIN
         value: https://fixmynameonline.com
+      - key: FMNO_DATA_DIR
+        value: /var/data/fmno

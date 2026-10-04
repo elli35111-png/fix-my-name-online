@@ -20,7 +20,7 @@ os.environ.setdefault("FMNO_DATA_DIR", "data")
 
 import server  # noqa: E402
 
-HTML = open("landing_page_v2.html", encoding="utf-8").read()
+HTML = open("homepage.html", encoding="utf-8").read()
 
 
 def client():
@@ -55,13 +55,8 @@ def test_single_primary_hero_cta():
 
 
 def test_avatar_not_autoplay_or_loop():
-    # The Ava video tag must not autoplay or loop a fixed line.
-    video_tag = re.search(r"<video[^>]*id=\"ava-video\"[^>]*>", HTML)
-    assert video_tag, "ava-video tag not found"
-    tag = video_tag.group(0)
-    assert "autoplay" not in tag, "avatar must not autoplay"
-    assert "loop" not in tag, "avatar must not loop a fixed line"
-    # The old 'HEAR FROM AVA' unmute-loop button must be removed.
+    # Redesigned homepage intentionally has no media/voice concierge.
+    assert '<video' not in HTML and '<audio' not in HTML
     assert "HEAR FROM AVA" not in HTML
     assert "ava-play-btn" not in HTML
 
@@ -115,36 +110,31 @@ def test_concierge_chat_exposes_voice_flag():
     assert isinstance(data["voice_available"], bool)
 
 
-def test_concierge_section_moved_below_fold():
-    # Reputation TV / concierge now lives in its own section, not the hero.
-    assert 'id="reputation-tv"' in HTML
-    hero = HTML.split('id="reputation-tv"')[0]
-    assert 'id="private-search-concierge"' not in hero
+def test_homepage_routes_to_complete_intake_not_mini_form():
+    assert '/free-search-snapshot?source=homepage_hero_snapshot' in HTML
+    assert 'action="/submit-snapshot"' not in HTML
+    assert '/self-service' in HTML
 
 
-def test_concierge_no_autocall_on_load_and_initial_field_ready():
-    # First page load should not immediately burn a model/voice call or show a
-    # temporary thinking state. The first typed answer should map to names_to_check.
-    assert "setConciergeTopic('privacy', false)" not in HTML
-    assert "Do not auto-call the model" in HTML
-    assert "current_field:'names_to_check'" in HTML
-    assert "Private Concierge is thinking..." in HTML  # allowed only after explicit action
+def test_homepage_never_calls_concierge_model_or_voice():
+    script = open('assets/homepage.js', encoding='utf-8').read()
+    assert '/api/concierge/' not in HTML + script
+    assert 'speechSynthesis' not in script
 
 
-def test_sticky_boost_bar_not_visible_until_scroll():
-    assert "transform:translate(-50%,140%)" in HTML
-    assert "boost-visible" in HTML
-    assert "window.scrollY > 420" in HTML
+def test_accessible_navigation_and_legacy_anchors():
+    assert 'aria-controls="main-nav"' in HTML
+    assert 'aria-expanded="false"' in HTML
+    for anchor in ('how-it-works', 'pricing', 'faq'):
+        assert 'id="' + anchor + '"' in HTML
 
 
 def test_claude48_polish_guards():
     assert "Operated by MadisonJade Pty Ltd" in HTML
     assert "ABN 56 661 580 936" in HTML
-    assert "function applyVoiceMode()" in HTML
-    assert "TEXT CONCIERGE" in HTML
-    assert "hasAttribute('data-topic')" in HTML
-    assert "ava-no-video" in HTML
-    assert "prefers-reduced-motion" in HTML
+    assert 'cdn.tailwindcss.com' not in HTML
+    assert 'fonts.googleapis.com' not in HTML
+    assert "prefers-reduced-motion" in open('assets/homepage.css', encoding='utf-8').read()
 
 
 def test_core_routes_preserved():
@@ -181,16 +171,18 @@ def test_allowlisted_public_assets_still_serve():
 
 def test_snapshot_form_conversion_polish():
     body = client().get("/app?source=qa_test").get_data(as_text=True)
-    assert "Get your Private Reputation Risk Score™" in body
+    assert "Your next step starts here." in body
     assert "Name / business / search phrase" in body
-    assert "Email for private result" in body
-    assert "Optional: add links, review details or extra names" in body
+    assert "Email for your request" in body
+    assert "Country and state / region" in body
+    assert "Who is this for?" in body
+    assert 'name="source_page" value="qa_test"' in body
     assert "Operated by MadisonJade Pty Ltd" in body
     assert "ABN 56 661 580 936" in body
     assert "snapshot-shell" in body
     assert "What you get" in body
-    assert "id=\"snapshot-progress\"" in body
-    assert "Opening private case room" in body
+    assert "not a live Google search" in body
+    assert '/assets/snapshot-intake.js' in body
     assert "Private intake · no public case disclosure" in body
 
 
@@ -207,8 +199,8 @@ def test_diy_product_and_legacy_offer_gates():
     sales = c.get('/diy-action')
     assert sales.status_code == 200
     body = sales.get_data(as_text=True)
-    assert 'US$49 once' in body
-    assert 'You confirm the facts and submit every request yourself' in body
+    assert 'US$19' in body and 'US$49' not in body
+    assert 'submit requests yourself' in body
     checkout = c.get('/checkout/diy-action')
     assert checkout.status_code == 503
     assert 'Checkout is temporarily unavailable' in checkout.get_data(as_text=True)
@@ -225,20 +217,22 @@ def test_diy_checkout_redirects_paid_customer_to_workspace(monkeypatch):
         @staticmethod
         def create(**kwargs):
             captured.update(kwargs)
-            return type('CheckoutSession', (), {'url': 'https://checkout.stripe.test/fmno'})()
+            return {'url': 'https://checkout.stripe.test/fmno'}
 
     monkeypatch.setattr(server.stripe.checkout, 'Session', FakeSession)
     monkeypatch.setattr(server.stripe, 'api_key', 'sk_test_fmno')
-    monkeypatch.setenv('STRIPE_PRICE_DIY_ACTION', 'price_fmno_diy')
+    monkeypatch.setenv('FMNO_APPROVAL_SECRET', 'synthetic-approval-secret-at-least-32-characters')
+    monkeypatch.setenv('STRIPE_PRICE_DIY_SINGLE', 'price_fmno_diy')
+    monkeypatch.setattr(server.stripe.Price, 'retrieve', lambda pid: {'active': True, 'currency': 'usd', 'unit_amount': 1900, 'type': 'one_time'})
     response = client().get('/checkout/diy-action')
     assert response.status_code == 302
     assert response.headers['Location'] == 'https://checkout.stripe.test/fmno'
     assert captured['success_url'] == server.DOMAIN + '/diy-action/start?session_id={CHECKOUT_SESSION_ID}'
     assert captured['line_items'] == [{'price': 'price_fmno_diy', 'quantity': 1}]
-    assert captured['metadata']['tier'] == 'diy-action'
+    assert captured['metadata']['tier'] == 'diy-single'
 
 
-def test_namewatch_checkout_alias_uses_the_live_sentinel_subscription(monkeypatch):
+def test_namewatch_checkout_alias_pauses_new_sales(monkeypatch):
     captured = {}
 
     class FakeSession:
@@ -252,24 +246,21 @@ def test_namewatch_checkout_alias_uses_the_live_sentinel_subscription(monkeypatc
     monkeypatch.setenv('STRIPE_PRICE_SENTINEL', 'price_fmno_namewatch')
     response = client().get('/checkout/name-watch?source=qa_alias')
     assert response.status_code == 302
-    assert response.headers['Location'] == 'https://checkout.stripe.test/namewatch'
-    assert captured['mode'] == 'subscription'
-    assert captured['line_items'] == [{'price': 'price_fmno_namewatch', 'quantity': 1}]
-    assert captured['metadata']['tier'] == 'sentinel'
-    assert 'tier=sentinel' in captured['success_url']
+    assert response.headers['Location'] == '/name-watch-alerts'
+    assert captured == {}
 
 
 def test_post_snapshot_paid_paths_only_sell_automated_products():
     body = server.paid_next_steps_html('qa_snapshot')
-    assert 'NameWatch Alert™' in body
-    assert '/checkout/sentinel?source=qa_snapshot' in body
-    assert 'DIY Reputation Action Workspace™' in body
+    assert 'US$19' in body and 'US$49' not in body
+    assert '/checkout/sentinel' not in body
+    assert '/self-service' in body
     assert '/diy-action?source=qa_snapshot' in body
     for retired in ('Removal Review™', 'Review Defence™', 'Starter™', '/checkout/removal-review', '/checkout/starter'):
         assert retired not in body
 
 
-def test_snapshot_email_contains_both_active_self_service_next_steps(monkeypatch):
+def test_snapshot_email_contains_one_matching_route_and_free_self_service(monkeypatch):
     sent = []
     monkeypatch.setattr(server, 'send_brevo_email', lambda *args: sent.append(args) or True)
     monkeypatch.setattr(server, 'send_internal_alert_email', lambda *args: {'admin@example.com': True})
@@ -283,15 +274,18 @@ def test_snapshot_email_contains_both_active_self_service_next_steps(monkeypatch
     )
     assert result['customer_email_sent'] is True
     customer_html = sent[0][3]
-    assert server.DOMAIN + '/checkout/sentinel' in customer_html
-    assert server.DOMAIN + '/diy-action' in customer_html
-    assert '$29/month' in customer_html
-    assert '$49 once' in customer_html
+    assert server.DOMAIN + '/name-watch-alerts' in customer_html
+    assert server.DOMAIN + '/self-service' in customer_html
+    assert server.DOMAIN + '/diy-action' not in customer_html
+    assert 'not a live Google search' in customer_html
+    assert 'privately review' not in customer_html
+    assert result['internal_email_sent'] == {}
     assert 'Removal Review™' not in customer_html
     assert 'Review Defence™' not in customer_html
 
 
-def test_namewatch_success_keeps_checkout_session_in_secure_onboarding_link():
+def test_namewatch_success_keeps_checkout_session_in_secure_onboarding_link(monkeypatch):
+    monkeypatch.setattr(server, 'verify_paid_checkout', lambda *a, **kw: {'payment_status': 'paid'})
     body = client().get('/success.html?tier=sentinel&session_id=cs_live_example').get_data(as_text=True)
     assert '/onboarding?plan=sentinel&amp;session_id=cs_live_example' in body
     assert 'Activate NameWatch monitoring' in body
@@ -321,22 +315,23 @@ def test_health_reports_namewatch_and_webhook_readiness(monkeypatch):
     monkeypatch.setenv('STRIPE_PRICE_SENTINEL', 'price_fmno_namewatch')
     monkeypatch.setattr(server, 'STRIPE_WEBHOOK_SECRET', 'whsec_test')
     health = client().get('/health').get_json()
-    assert health['namewatch_checkout_configured'] is True
+    assert health['namewatch_checkout_configured'] is False
+    assert health['namewatch_new_sales'] == 'paused'
     assert health['stripe_webhook_configured'] is True
 
 
 def test_public_services_page_only_sells_automated_products():
     body = client().get('/services').get_data(as_text=True)
-    assert 'NameWatch Alert™' in body
-    assert 'DIY Reputation Action Workspace™' in body
-    assert '/checkout/sentinel?source=services' in body
+    assert 'Single Action' in body and 'Action Pack' not in body
+    assert 'US$19' in body and 'US$49' not in body
+    assert '/checkout/sentinel' not in body
     assert '/diy-action?source=services' in body
     for retired in ('Removal Review™', 'Review Defence™', 'Starter™', 'Pro™', 'Premium™'):
         assert retired not in body
 
 
 
-def test_paid_diy_workspace_generates_action_pack(tmp_path):
+def test_legacy_synthetic_session_id_is_not_a_payment_bypass(tmp_path):
     c = client()
     original_actions, original_clicks = server.DIY_ACTIONS_FILE, server.CLICK_EVENTS_FILE
     server.DIY_ACTIONS_FILE = tmp_path / 'diy.jsonl'
@@ -344,7 +339,7 @@ def test_paid_diy_workspace_generates_action_pack(tmp_path):
     try:
         session_id = 'cs_test_fmno_diy_paid'
         start = c.get('/diy-action/start?session_id=' + session_id)
-        assert start.status_code == 200
+        assert start.status_code == 402
         token = server.diy_access_token(session_id)
         result = c.post('/diy-action/generate', data={
             'session_id': session_id, 'access_token': token, 'name': 'Test Person',
@@ -356,19 +351,17 @@ def test_paid_diy_workspace_generates_action_pack(tmp_path):
             'truth_confirmed': 'yes',
         })
         text = result.get_data(as_text=True)
-        assert result.status_code == 200
-        assert 'DIY action pack generated' in text
-        assert 'FMNO-DIY-' in text
-        assert 'Official Google outdated-content tool' in text
-        assert server.DIY_ACTIONS_FILE.exists()
+        assert result.status_code == 403
+        assert 'DIY action pack generated' not in text
+        assert not server.DIY_ACTIONS_FILE.exists()
     finally:
         server.DIY_ACTIONS_FILE, server.CLICK_EVENTS_FILE = original_actions, original_clicks
 
 
 def test_homepage_retires_human_review_sales_language():
     body = client().get('/').get_data(as_text=True)
-    assert 'DIY ACTION WORKSPACE' in body
-    assert '$49' in body
+    assert 'DIY Action' in body and 'Workspace™' in body
+    assert '$19' in body and '$49' not in body
     assert 'HUMAN REVIEW' not in body
     assert 'REMOVAL REVIEW™</h3><div class="text-4xl font-bold">$297' not in body
 

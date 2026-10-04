@@ -11,6 +11,8 @@ import json
 import re
 import hmac
 import hashlib
+import sys
+import paid_actions
 from urllib.parse import urlparse
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +20,7 @@ from pathlib import Path
 import stripe
 import requests
 from flask import Flask, request, jsonify, send_from_directory, redirect, Response
+from snapshot_intake import snapshot_form_body, validate_snapshot, LIMITS as SNAPSHOT_LIMITS
 
 try:
     from fulfilment_engine import (
@@ -46,10 +49,21 @@ BASE_DIR = Path(__file__).resolve().parent
 # routes. Public files are served from the two explicit allowlists below.
 app = Flask(__name__, static_folder=None)
 
+
+@app.after_request
+def private_workflow_headers(response):
+    response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    response.headers.setdefault('Referrer-Policy', 'no-referrer')
+    if (request.path.startswith(('/private-case-room/', '/diy-action/start', '/diy-action/generate', '/admin/', '/onboarding', '/submit-onboarding', '/success'))
+            or request.path in {'/app', '/free-search-snapshot', '/submit-snapshot', '/snapshot-received', '/api/concierge/submit'}):
+        response.headers['Cache-Control'] = 'no-store, private'
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
+
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY', '')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 DOMAIN = os.environ.get('DOMAIN', 'https://fixmynameonline.com').rstrip('/')
-SEO_DESCRIPTION = 'Private reputation repair and search protection. Run a free Search Snapshot to see what comes up when people Google your name.'
+SEO_DESCRIPTION = 'Private reputation tools and clear next steps. Start with a Free Search Snapshot intake or organise your own action at the self-service desk.'
 SEO_IMAGE = DOMAIN + '/assets/fmno-past-present-facebook-square.png'
 DATA_DIR = Path(os.environ.get('FMNO_DATA_DIR', str(BASE_DIR / 'data'))).expanduser().resolve()
 DATA_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -72,7 +86,9 @@ FROM_NAME = os.environ.get('FMNO_FROM_NAME', 'FixMyNameOnline')
 INTERNAL_EMAIL = os.environ.get('FMNO_INTERNAL_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'Elli35111@gmail.com'
 
 PLANS = {
-    'diy-action': {'name': 'DIY Reputation Action Workspace™', 'price': 49, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_ACTION', 'payment_link': os.environ.get('FMNO_DIY_PAYMENT_LINK', '')},
+    'diy-action': {'name': 'Legacy DIY Reputation Action Workspace™', 'price': 49, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_ACTION'},
+    'diy-single': {'name': 'Single Action', 'price': 19, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_SINGLE'},
+    'diy-pack': {'name': 'Action Pack', 'price': 49, 'mode': 'payment', 'env': 'STRIPE_PRICE_DIY_PACK'},
     'sentinel': {'name': 'NameWatch Alert™', 'price': 29, 'mode': 'subscription', 'env': 'STRIPE_PRICE_SENTINEL', 'payment_link': os.environ.get('FMNO_SENTINEL_PAYMENT_LINK', '')},
     'removal-review': {'name': 'Removal Review™', 'price': 297, 'mode': 'payment', 'env': 'STRIPE_PRICE_REMOVAL_REVIEW', 'payment_link': 'https://buy.stripe.com/bJe14mfBA3CN8ca6X3cZa04'},
     'review-defence': {'name': 'Review Defence™', 'price': 497, 'mode': 'payment', 'env': 'STRIPE_PRICE_REVIEW_DEFENCE', 'payment_link': 'https://buy.stripe.com/7sY9AS610b5f6426X3cZa05'},
@@ -84,37 +100,37 @@ PLANS = {
 TRIAGE_NEXT_STEPS = {
     'alerts': {
         'label': 'NameWatch Alert™ monitoring',
-        'summary': 'This looks like a monitoring-first case: we should track Google results, name variants and new risk signals so the client is alerted before a problem grows.',
+        'summary': 'New monitoring subscriptions are paused. Use the free desk to keep your own search notes; existing customer billing remains available.',
         'cta': 'View NameWatch Alert™',
-        'url': '/checkout/sentinel',
+        'url': '/name-watch-alerts',
         'priority': 'standard',
     },
     'removal-review': {
         'label': 'DIY Reputation Action Workspace™',
-        'summary': 'This looks suitable for a guided DIY action: organise one old article or bad link, build the evidence checklist, prepare the request, then submit it yourself through the official route.',
-        'cta': 'See the $49 DIY workspace',
+        'summary': 'If this is one old article or bad link and no safety or legal exception applies, compare the fixed-scope DIY tool. You verify the facts, review the wording and submit any request yourself.',
+        'cta': 'See DIY actions from US$19',
         'url': '/diy-action',
         'priority': 'high',
     },
     'review-defence': {
-        'label': 'DIY pathway preview',
-        'summary': 'This appears to involve reviews. The first FMNO DIY release currently covers old articles and bad links; review-specific automation is not sold yet.',
-        'cta': 'See the current DIY workspace',
-        'url': '/diy-action',
+        'label': 'Free review-platform guidance',
+        'summary': 'Use the free self-service desk to record the review and find the official platform pathway. The paid one-article pack is not a review-removal product.',
+        'cta': 'Open free self-service',
+        'url': '/self-service',
         'priority': 'high',
     },
     'repair-plan': {
-        'label': 'DIY pathway preview',
-        'summary': 'This appears broader than one old article or bad link. Start with the free score; FMNO will only sell a workflow when the deliverables match the problem.',
-        'cta': 'See the current DIY workspace',
-        'url': '/diy-action',
+        'label': 'Start with the free self-service desk',
+        'summary': 'This needs a clearer target before a paid tool makes sense. Organise one concern and its evidence yourself, then choose an official route.',
+        'cta': 'Open free self-service',
+        'url': '/self-service',
         'priority': 'standard',
     },
     'high-risk': {
         'label': 'External professional or safety pathway',
         'summary': 'This is outside FMNO’s automated DIY scope. Do not purchase an action workspace for emergencies, threats, minors, active proceedings or complex legal disputes.',
-        'cta': 'View Legal Options Hub',
-        'url': 'https://www.legaloptionshub.com/',
+        'cta': 'Read scope and safety guidance',
+        'url': '/self-service#safety',
         'priority': 'urgent',
     },
 }
@@ -177,7 +193,7 @@ try {{
 </script>'''
 
 
-def page(title, body, description=None, canonical_path=None, schema_items=None, robots='index,follow,max-image-preview:large'):
+def page(title, body, description=None, canonical_path=None, schema_items=None, robots='index,follow,max-image-preview:large', analytics=True):
     desc = description or SEO_DESCRIPTION
     path = canonical_path or request.path or '/'
     canonical = DOMAIN + (path if path.startswith('/') else '/' + path)
@@ -212,7 +228,10 @@ def page(title, body, description=None, canonical_path=None, schema_items=None, 
     if schema_items:
         graph.extend(schema_items)
     schema_json = json.dumps({'@context': 'https://schema.org', '@graph': graph}, ensure_ascii=False).replace('</', '<\\/')
-    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><meta name=\"robots\" content=\"{safe(robots)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta property=\"og:image\" content=\"{safe(SEO_IMAGE)}\"><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\"><meta name=\"twitter:image\" content=\"{safe(SEO_IMAGE)}\"><script type=\"application/ld+json\">{schema_json}</script>{tracking_head()}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><header class=\"site-head\"><a class=\"logo\" href=\"/\">FIX MY NAME ONLINE™</a><nav class=\"seo-nav\" aria-label=\"Main navigation\"><a href=\"/fix-my-name-online\">About the brand</a><a href=\"/online-reputation-repair\">Reputation repair</a><a href=\"/learn\">Guides</a><a href=\"/services\">Services</a><a href=\"/app?source=seo_nav\">Free Snapshot™</a></nav></header>{body}</div></body></html>"""
+    if request.path.startswith(('/private-case-room/', '/diy-action/start', '/diy-action/generate', '/onboarding', '/success')) or request.method == 'POST':
+        analytics = False
+        robots = 'noindex,nofollow'
+    return f"""<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>{safe(title)}</title><meta name=\"description\" content=\"{safe(desc)}\"><meta name=\"robots\" content=\"{safe(robots)}\"><link rel=\"canonical\" href=\"{safe(canonical)}\"><meta property=\"og:type\" content=\"website\"><meta property=\"og:site_name\" content=\"FixMyNameOnline™\"><meta property=\"og:title\" content=\"{safe(title)}\"><meta property=\"og:description\" content=\"{safe(desc)}\"><meta property=\"og:url\" content=\"{safe(canonical)}\"><meta property=\"og:image\" content=\"{safe(SEO_IMAGE)}\"><meta name=\"twitter:card\" content=\"summary_large_image\"><meta name=\"twitter:title\" content=\"{safe(title)}\"><meta name=\"twitter:description\" content=\"{safe(desc)}\"><meta name=\"twitter:image\" content=\"{safe(SEO_IMAGE)}\"><script type=\"application/ld+json\">{schema_json}</script>{tracking_head() if analytics else ''}<style>{BASE_STYLE}</style></head><body><div class=\"wrap\"><header class=\"site-head\"><a class=\"logo\" href=\"/\">FIX MY NAME ONLINE™</a><nav class=\"seo-nav\" aria-label=\"Main navigation\"><a href=\"/fix-my-name-online\">About the brand</a><a href=\"/self-service\">Self-service</a><a href=\"/learn\">Guides</a><a href=\"/services\">Services</a><a href=\"/free-search-snapshot?source=seo_nav\">Free Snapshot™</a></nav></header>{body}</div></body></html>"""
 
 
 def append_jsonl(path, payload):
@@ -502,12 +521,14 @@ def send_paid_customer_alert(tier, plan_name, customer_email, session, case=None
 
 
 CONCIERGE_FIELDS = [
-    ('names_to_check', 'What name, business name, old name, nickname, or associated name should we privately search first?'),
+    ('names_to_check', 'What name, business or search phrase is your concern about? This is intake guidance, not a live search.'),
     ('country_state', 'What country, state, or city context should we consider for that search?'),
+    ('authority', 'Who is this for? Reply self for your own name, business for a business you represent, or authorised if you have the other person’s permission.'),
     ('problem_links', 'If you already have a link, article title, review page, or search phrase, paste it here. If not, write “search first”.'),
     ('goal', 'What are you hoping to understand or fix from the Free Search Snapshot™?'),
     ('contact_name', 'What name should we use when we send the private snapshot?'),
-    ('email', 'What email should we send the private snapshot to?'),
+    ('email', 'What email should be associated with this intake? Your first guidance appears on screen; email delivery is not confirmed here.'),
+    ('consent', 'Do you agree to the Privacy Policy and Terms linked below, confirm your authority, and understand this is automated intake guidance with no external action? Reply yes to agree.'),
 ]
 
 CONCIERGE_TOPIC_LABELS = {
@@ -550,7 +571,8 @@ def clean_concierge_text(text):
 
 def concierge_next_field(collected):
     for key, question in CONCIERGE_FIELDS:
-        if not str(collected.get(key, '')).strip():
+        value = str(collected.get(key, '')).strip().lower()
+        if not value or (key == 'authority' and value not in {'self', 'business', 'authorised'}) or (key == 'consent' and value != 'yes'):
             return key, question
     return None, None
 
@@ -570,6 +592,7 @@ def build_concierge_messages(topic, collected, user_message, next_question, read
     system = '''You are Private Search Concierge™ for FixMyNameOnline™, operated by MadisonJade Pty Ltd.
 Tone: premium, calm, private, human, concise.
 Role: AI-assisted intake only. Keep replies short and move toward Free Search Snapshot™.
+Never claim to have searched Google, verified a result, or promise human review. Guidance is based only on the visitor's answers. The free self-service desk is available at /self-service.
 Do not provide legal advice. Do not promise removals, rankings, de-indexing, platform decisions, suppression, or search outcomes.
 Do not use alarmist words like doxxing, swatting, crisis, emergency, or permanent damage.
 Do not expose internal agent names or backend machinery.
@@ -814,16 +837,20 @@ def triage_snapshot(data):
     text = ' '.join([data.get('case_type', ''), data.get('names_to_check', ''), data.get('problem_links', ''), data.get('goal', '')]).lower()
     case_type = data.get('case_type', '').lower()
 
-    high_risk_words = ['urgent', 'criminal', 'police', 'media', 'journalist', 'press', 'lawsuit', 'defamation', 'dox', 'stalking', 'threat', 'high-risk', 'high risk', 'private case', 'sensitive']
+    high_risk_words = ['emergency', 'criminal', 'police', 'lawsuit', 'defamation', 'doxxing', 'doxing', 'stalking', 'threat', 'threats', 'minor', 'minors', 'child', 'children', 'active legal', 'proceedings', 'high-risk', 'high risk']
     review_words = ['review', 'reviews', 'google review', '1 star', 'one star', 'fake review', 'malicious review']
-    removal_words = ['remove', 'removed', 'de-index', 'deindex', 'delete', 'article', 'old news', 'news article', 'image', 'snippet', 'bad link', 'bad links', 'outdated']
+    removal_words = ['article', 'old news', 'news article', 'bad link', 'bad links']
     alert_words = ['alert', 'monitor', 'tracking', 'mentions', 'watch']
 
-    if 'high-risk' in case_type or any(w in text for w in high_risk_words):
+    if 'high-risk' in case_type or any(re.search(r'\b' + re.escape(w) + r'\b', text) for w in high_risk_words):
         key = 'high-risk'
-    elif 'review' in case_type or any(w in text for w in review_words):
+    elif 'private information' in case_type or 'wrong person' in case_type:
+        key = 'repair-plan'
+    elif 'monitoring' in case_type:
+        key = 'alerts'
+    elif 'review' in case_type or any(re.search(r'\b' + re.escape(w) + r'\b', text) for w in review_words):
         key = 'review-defence'
-    elif 'news article' in case_type or any(w in text for w in removal_words):
+    elif 'article' in case_type or any(re.search(r'\b' + re.escape(w) + r'\b', text) for w in removal_words):
         key = 'removal-review'
     elif any(w in text for w in alert_words):
         key = 'alerts'
@@ -954,6 +981,8 @@ def save_case_room(queue_item, data, triage, case=None, report=None, transcript=
         },
         'intake_preview': {
             'names_to_check': data.get('names_to_check', ''),
+            'country_state': data.get('country_state', ''),
+            'authority': data.get('authority', ''),
             'problem_links': data.get('problem_links', ''),
             'goal': data.get('goal', ''),
         },
@@ -986,35 +1015,25 @@ def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_
       <p>We received your private FixMyNameOnline™ snapshot request.</p>
       <h2>Suggested next step: {safe(triage['label'])}</h2>
       <p>{safe(triage['summary'])}</p>
-      <p>We’ll privately review what you submitted and come back with the safest next step. No removal, ranking, or platform result is guaranteed.</p>
+      <p>This is automated guidance from your answers, not a live Google search or verified findings about you. No one is contacted on your behalf. You decide whether to act.</p>
       {room_cta}
       <p><a href=\"{DOMAIN}{triage['url']}\" style=\"background:#d91f3d;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block\">{safe(triage['cta'])}</a></p>
       <div style=\"border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:20px 0\">
-        <h2 style=\"margin-top:0\">Two automated next steps</h2>
-        <p><strong>NameWatch Alert™ — $29/month:</strong> a scheduled private name sweep with new-result alerts and a simple status note.</p>
-        <p><a href=\"{DOMAIN}/checkout/sentinel?source=snapshot_email\">Start NameWatch Alert™</a></p>
-        <p><strong>DIY Reputation Action Workspace™ — $49 once:</strong> organise one old article or bad link, build the evidence checklist and prepare an editable request that you submit yourself.</p>
-        <p><a href=\"{DOMAIN}/diy-action?source=snapshot_email\">Open the $49 DIY workspace</a></p>
+        <h2 style=\"margin-top:0\">A free way to stay in control</h2>
+        <p>Organise your evidence, record progress and export your own notes at the free self-service desk. No payment or new intake is needed.</p>
+        <p><a href=\"{DOMAIN}/self-service\">Open free self-service</a></p>
+        <p>If the situation involves threats, minors, active proceedings or a complex legal dispute, use appropriate safety or independent professional channels instead of a DIY pack.</p>
       </div>
       <p style=\"font-size:12px;color:#666\">Reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
     </div>
     """
-    internal_html = f"""
-    <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111\">
-      <h1>New FMNO Free Snapshot report ready</h1>
-      <p><strong>Queue ID:</strong> {safe(queue_item['id'])}</p>
-      <p><strong>Case ID:</strong> {safe(case.get('id') if case else '')}</p>
-      <p><strong>Priority:</strong> {safe(queue_item['priority'])}</p>
-      <p><strong>Recommendation:</strong> {safe((report or {}).get('recommended_package') or triage['label'])}</p>
-      <p><strong>Negative items:</strong> {safe((report or {}).get('negative_item_count'))}</p>
-      <p><strong>Admin report:</strong> {safe(DOMAIN + '/admin/fulfilment/report/' + case.get('id') if case else '')}</p>
-      <pre style=\"background:#f5f5f5;padding:16px;border-radius:10px;white-space:pre-wrap\">{safe(json.dumps({'intake': data, 'report': report}, indent=2, ensure_ascii=False))}</pre>
-    </div>
-    """
-    return {
-        'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'Your Free Search Snapshot™ request is in', customer_html),
-        'internal_email_sent': send_internal_alert_email(f"FMNO lead: {triage['label']} — {data.get('name', '')}", internal_html),
-    }
+
+    try:
+        sent = send_brevo_email(data.get('email'), data.get('name'), 'Your Free Search Snapshot™ request is in', customer_html)
+    except Exception:
+        app.logger.warning('Snapshot confirmation unavailable; saved on-screen guidance remains accessible.')
+        sent = False
+    return {'customer_email_sent': sent, 'internal_email_sent': {}}
 
 
 def send_onboarding_emails(data, queue_item):
@@ -1105,7 +1124,7 @@ def public_static(filename):
 
 @app.route('/')
 def landing():
-    html_text = (BASE_DIR / 'landing_page_v2.html').read_text(encoding='utf-8')
+    html_text = (BASE_DIR / 'homepage.html').read_text(encoding='utf-8')
     tracking = tracking_head()
     if tracking and '</head>' in html_text:
         html_text = html_text.replace('</head>', tracking + '</head>', 1)
@@ -1148,7 +1167,7 @@ CORE_SITEMAP_URLS = [
     '/questions', '/contact', '/about', '/services', '/online-reputation-repair', '/worldwide-reputation-repair',
     '/reputation-repair-australia', '/private-reputation-repair', '/google-review-defence',
     '/google-review-defence-worldwide', '/google-review-defence-australia', '/remove-bad-google-results',
-    '/remove-negative-google-results', '/name-watch-alerts', '/diy-action', '/privacy', '/terms',
+    '/remove-negative-google-results', '/name-watch-alerts', '/diy-action', '/self-service', '/privacy', '/terms',
 ]
 
 
@@ -1241,7 +1260,7 @@ def fix_my_name_online_exact_match():
       <p>Fix My Name Online™ is operated by <strong>MadisonJade Pty Ltd</strong> (ABN 56 661 580 936) in Australia and supports clients worldwide. The official website is <a href="https://fixmynameonline.com/">fixmynameonline.com</a>. People also search for the brand as “Fix My Name On Line”; that variation refers to the same service.</p>
 
       <h2>Start with the right pathway</h2>
-      <p><a class="btn" href="/app?source=exact_brand_page">Start the Free Search Snapshot™ →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY Action Workspace™</a></p>
+      <p><a class="btn" href="/self-service">Open free self-service →</a> <a class="btn btn2" href="/diy-action">See the US$19 Single Action</a></p>
       <p>Practical reading: <a href="/fix-your-name-online">how to fix your name online when Google shows the wrong story</a> and <a href="/how-to-fix-your-reputation-online">how to repair an online reputation step by step</a>.</p>
       <p class="note">Outcomes depend on the source, evidence, publisher, platform, search engine and facts of the case. FMNO provides structured review, preparation, monitoring and approved search-protection work; third parties control their own decisions.</p>
     </article>
@@ -1287,8 +1306,8 @@ def fix_my_name_online_exact_match():
 
 @app.route('/services')
 def services():
-    body = """<div class=\"card\"><h1>Private reputation tools with fixed, visible deliverables.</h1><p class=\"sub\">Start free, then choose only an automated paid path that fits. FMNO does not sell open-ended managed retainers through this page.</p><div class=\"grid\"><div class=\"card\"><h2>Free Search Snapshot™</h2><p class=\"sub\">One private risk score and one recommended pathway.</p><p><a class=\"btn\" href=\"/app?source=services\">Start free →</a></p></div><div class=\"card\"><h2>NameWatch Alert™</h2><p class=\"sub\">$29/month scheduled name monitoring, new-result alerts and a private status note.</p><p><a class=\"btn\" href=\"/checkout/sentinel?source=services\">Start monitoring →</a></p></div><div class=\"card\"><h2>DIY Reputation Action Workspace™</h2><p class=\"sub\">$49 once for one old article or bad link: evidence checklist, editable request, official route and follow-up plan.</p><p><a class=\"btn\" href=\"/diy-action?source=services\">Open workspace →</a></p></div><div class=\"card\"><h2>Outside automated scope?</h2><p class=\"sub\">Emergencies, active proceedings, threats, minors and complex legal disputes should use an appropriate independent professional or safety pathway.</p><p><a class=\"btn btn2\" href=\"https://www.legaloptionshub.com/\">View Legal Options Hub →</a></p></div></div></div>"""
-    return page('Services — FixMyNameOnline™', body, 'Fixed-price private reputation tools: a free risk score, NameWatch Alert monitoring and the DIY Reputation Action Workspace.', canonical_path='/services')
+    body = '<div class="card"><h1>Start free. Stay in control.</h1><p class="sub">The free desk helps you organise one concern, evidence, official links and your next step. The optional Free Search Snapshot offers automated guidance from your answers—not a search scan or human review.</p><a class="btn" href="/self-service">Open free self-service</a> <a href="/free-search-snapshot">Help me choose a route</a></div>' + paid_next_steps_html('services')
+    return page('Self-service pricing — FixMyNameOnline™', body, 'Free tools or one US$19 Single Action. No subscription or managed retainer.', canonical_path='/services')
 
 
 
@@ -2208,7 +2227,7 @@ def authority_guide_page(slug, title, description, h1, intro, sections, checklis
       {section_html}
       <h2>Search-repair checklist</h2>
       <ul>{checklist_html}</ul>
-      <div class="recommend"><h2>Turn the search into an action map</h2><p>FMNO organises one issue at a time so you can see the evidence, realistic options and next step without publishing a panic response.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Get the Free Search Snapshot™ →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY workspace</a></p></div>
+      <div class="recommend"><h2>Turn the search into an action map</h2><p>Use the free desk to organise one issue and its evidence yourself.</p><p><a class="btn" href="/self-service">Open the free desk →</a> <a class="btn btn2" href="/diy-action">See the US$19 Single Action</a></p></div>
       <h2>Related guides</h2><ul><li><a href="/fix-my-name-online">What is Fix My Name Online™?</a></li><li><a href="/online-reputation-repair">Online reputation repair</a></li><li><a href="/bad-google-results-help">Bad Google results help</a></li><li><a href="/remove-negative-google-results">Options for negative Google results</a></li></ul>
       <p class="note">Publishers, platforms and search engines make their own decisions. The available outcome depends on the source, policy, evidence and facts.</p>
     </article><section class="grid" style="margin-top:16px">{faq_html}</section>
@@ -2318,8 +2337,8 @@ def seo_guide(slug):
         related_slugs = ['false-information-claims-online', 'bad-google-results-help', 'worldwide-reputation-repair', 'remove-negative-google-results']
     related = ''.join(f'<li><a href="/{safe(other)}">{safe(SEO_GUIDES.get(other, {}).get("h1", other.replace("-", " ").title()))}</a></li>' for other in related_slugs if other != slug and other not in LOW_VALUE_SEO_GUIDES)
     if slug in DIY_OLD_ARTICLE_SLUGS:
-        top_cta = f'<div class="recommend"><h2>One old article or bad link?</h2><p>Start with one capped free score. If this pathway fits, the $49 DIY workspace prepares the evidence checklist, editable request, official route and 30-day plan. You submit it yourself.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Get one free score →</a> <a class="btn btn2" href="/diy-action">See the $49 DIY workspace</a></p></div>'
-        bottom_cta = f'<div class="recommend"><h2>Take the next step yourself</h2><p>Fixed price, one target URL, exact deliverables. No human-review promise and no removal guarantee.</p><p><a class="btn" href="/diy-action">See exactly what $49 includes →</a></p></div>'
+        top_cta = '<div class="recommend"><h2>One old article or bad link?</h2><p>Start with the free desk. If this pathway fits, the US$19 action assembles an editable request from your facts, with an evidence checklist and follow-up draft. You submit it yourself.</p><p><a class="btn" href="/self-service">Open the free desk →</a> <a class="btn btn2" href="/diy-action">See the US$19 Single Action</a></p></div>'
+        bottom_cta = '<div class="recommend"><h2>Take the next step yourself</h2><p>One payment, one target URL. No human review or managed service.</p><p><a class="btn" href="/diy-action">See exactly what US$19 includes →</a></p></div>'
     else:
         top_cta = f'<div class="recommend"><h2>Start with one private score</h2><p>Send one exact name, Google result, link, review or search phrase. The free tier is capped at one initial classification per email.</p><p><a class="btn" href="/app?source={safe(slug)}_top">Start Free Search Snapshot™ →</a></p></div>'
         bottom_cta = f'<div class="recommend"><h2>Start with a private search snapshot</h2><p>FMNO maps one issue before showing a paid DIY pathway. You confirm facts and submit external actions yourself.</p><p><a class="btn" href="/app?source={safe(slug)}_bottom">Start Free Search Snapshot™ →</a></p></div>'
@@ -2341,31 +2360,8 @@ def google_alerts_for_my_name_redirect():
 
 @app.route('/name-watch-alerts')
 def name_watch_alerts_page():
-    body = """
-    <div class="card">
-      <span class="pill">$29/month search monitoring</span>
-      <h1>NameWatch Alert™: know when something new appears around your name.</h1>
-      <p class="sub">A simple, low-cost monitoring layer for people who want early warning if a new Google result, article, review, image, snippet, associated-name result, or data-broker style listing starts showing around their name.</p>
-      <div class="recommend"><h2>Think “DeleteMe-style peace of mind” for Google-name risk.</h2><p>We do not promise every result can be deleted. Instead, NameWatch Alert™ watches the search pattern and alerts you when something needs attention, so you are not surprised by an employer, client, date, investor, journalist, or family member finding it first.</p></div>
-      <h2>What the $29/month plan includes</h2>
-      <ul>
-        <li>Monthly private Google-name sweep for supplied names, business names and associated names</li>
-        <li>Monitoring of obvious new articles, review pages, images, snippets and high-risk result changes</li>
-        <li>Email alert if we identify a new concerning result or material change</li>
-        <li>Simple private status note: clear / watch / review recommended</li>
-        <li>Optional $49 DIY action path only when one old article or bad link is a suitable fit</li>
-      </ul>
-      <p><a class="btn" href="/checkout/sentinel">Start NameWatch Alert™ — $29/month</a> <a class="btn btn2" href="/app?source=name_watch_alerts">Start free snapshot first</a></p>
-      <p class="note" style="opacity:.46;font-size:12px">NameWatch Alert™ is a private monitoring service. If something needs action, we’ll explain the practical next-step options.</p>
-    </div>
-    <div class="grid" style="margin-top:16px">
-      <div class="card"><h2>Best for</h2><p class="sub">Professionals, founders, job seekers, business owners, public-facing workers, creators, and anyone who wants to know early if something bad starts surfacing.</p></div>
-      <div class="card"><h2>Not for</h2><p class="sub">Immediate crisis removal, legal advice, guaranteed deletion, guaranteed Google suppression, or full data-broker removal across every site. Those need a separate review.</p></div>
-      <div class="card"><h2>What happens after payment?</h2><p class="sub">You complete private onboarding with the exact names, old names, locations, business names and search phrases to monitor. We set up the monitoring file and begin the first sweep.</p></div>
-      <div class="card"><h2>If something appears</h2><p class="sub">We send a private alert and classify the result as clear, watch or review recommended. If one old article or bad link fits the DIY workspace, we show that fixed-price option.</p></div>
-    </div>
-    """
-    return page('NameWatch Alert™ — $29/month Google-name monitoring | FixMyNameOnline™', body, 'NameWatch Alert™ is a $29/month private Google-name monitoring and new-result alert subscription by FixMyNameOnline™. Early warning for old links, reviews, articles, snippets, images and reputation risks.', canonical_path='/name-watch-alerts')
+    body = '<div class="card"><span class="pill">NameWatch Alert™</span><h1>New subscriptions are paused.</h1><p>We are improving monitoring reliability and customer controls before taking new subscriptions. Start with free self-service tools instead.</p><p><a class="btn" href="/self-service">Open the free desk</a> <a class="btn btn2" href="/billing">Existing customer billing</a></p><p class="note">Existing purchase access is retained. The previous monitoring implementation checks selected search and news sources, not every Google result, image, review or data broker. An unavailable source is not evidence that your name is clear.</p></div>'
+    return page('NameWatch Alert™ — Existing customers', body, 'New monitoring subscriptions are paused. Free self-service tools and existing customer billing remain available.', canonical_path='/name-watch-alerts')
 
 
 @app.route('/google-your-name')
@@ -2393,22 +2389,17 @@ def google_your_name_landing():
 
 @app.route('/free-search-snapshot')
 def ad_free_snapshot_form():
-    source_page = safe(request.args.get('source') or 'free_search_snapshot_page')
-    prefill_name = safe(request.args.get('name') or request.args.get('names_to_check') or '')
-    body = f"""
-    <div class="card"><span class="pill">Start here</span><h1>Free Search Snapshot™</h1><p class="sub">Tell us what people may search and what worries you. We’ll privately map the pattern and point you toward the safest next step.</p>
-    <form method="post" action="/submit-snapshot" class="grid">
-      <input type="hidden" name="source_page" value="{source_page}">
-      <div><label>Your name</label><input name="name" required autocomplete="name"></div>
-      <div><label>Email</label><input name="email" type="email" required autocomplete="email"></div>
-      <div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
-      <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
-      <div class="full"><label>Names/businesses to check</label><textarea name="names_to_check" placeholder="Your full name, old names, nicknames, business names, associated names, locations...">{prefill_name}</textarea></div>
-      <div class="full"><label>Bad links, review links, article titles, or search terms if you have them</label><textarea name="problem_links" placeholder="Paste URLs or write things like: John Smith court, Jane Smith review, business name complaint..."></textarea></div>
-      <div class="full"><label>What outcome are you hoping for?</label><textarea name="goal" placeholder="Example: I want to know if this can be removed, or I need better results showing before people find the bad link."></textarea></div>
-      <div class="full"><button class="btn" type="submit">Submit Free Snapshot →</button> <a class="btn btn2" href="/questions">Ask a question first</a><p class="note">Private intake. No public case disclosure. No rankings/removals guaranteed.</p></div>
-    </form></div>"""
-    return page('Free Search Snapshot™ — FixMyNameOnline™', body, 'Start a private Free Search Snapshot™ for reputation-sensitive name, business, review, article and search-result problems.', canonical_path='/free-search-snapshot')
+    return render_snapshot_form()
+
+
+def render_snapshot_form(values=None, errors=None):
+    if values is None:
+        values = {key: request.args.get(key, '')[:500] for key in ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']}
+        values['source_page'] = (request.args.get('source') or 'snapshot_form')[:160]
+        values['name'] = (request.args.get('name') or request.args.get('names_to_check') or '')[:160]
+    return page('Free Search Snapshot™ — FixMyNameOnline™', snapshot_form_body(values, errors),
+                'Explain one reputation concern. Get automated next-step guidance from your answers, then choose your own action.',
+                canonical_path='/free-search-snapshot', analytics=False)
 
 
 @app.route('/free-snapshot')
@@ -2428,13 +2419,7 @@ def name_watch_short_redirect():
 
 def paid_next_steps_html(source='post_snapshot'):
     return f'''
-    <div class="recommend"><span class="pill">Choose a paid next step</span><h2>Use only the tool that fits.</h2><p>FMNO currently sells two low-cost automated paths. Choose monitoring when you want early warning, or the fixed-price DIY workspace when there is one old article or bad link to address.</p>
-      <div class="grid" style="margin-top:14px">
-        <div class="card"><h2>NameWatch Alert™</h2><p class="sub">$29/month Google-name monitoring and new-result alerts.</p><p><a class="btn" href="/checkout/sentinel?source={safe(source)}">Start $29/month →</a></p></div>
-        <div class="card"><h2>DIY Reputation Action Workspace™</h2><p class="sub">$49 once for one old article or bad link: evidence checklist, editable request, official route and follow-up plan.</p><p><a class="btn btn2" href="/diy-action?source={safe(source)}">Open $49 workspace →</a></p></div>
-      </div>
-      <p class="note" style="opacity:.42;font-size:12px">You stay in control. Publishers, platforms and search engines decide outcomes.</p>
-    </div>'''
+    <div class="recommend"><h2>Keep the next step yours.</h2><p>Use the <a href="/self-service">free self-service desk</a> first. If an old article or bad link fits the stated scope, Single Action is US$19 once for one URL.</p><p><a class="btn" href="/diy-action?source={safe(source)}">See the US$19 DIY action →</a></p><p class="note">No subscription or human review. You verify facts and submit requests yourself.</p></div>'''
 
 
 @app.route('/pricing')
@@ -2485,15 +2470,23 @@ def api_concierge_voice():
 @app.route('/api/concierge/submit', methods=['POST'])
 def api_concierge_submit():
     payload = request.get_json(silent=True) or {}
-    collected = payload.get('collected') if isinstance(payload.get('collected'), dict) else {}
+    if not isinstance(payload, dict):
+        return jsonify({'ok': False, 'error': 'Invalid intake format.'}), 400
+    collected = payload.get('collected') or {}
+    if not isinstance(collected, dict):
+        return jsonify({'ok': False, 'error': 'Invalid intake format.'}), 400
     transcript = payload.get('transcript') if isinstance(payload.get('transcript'), list) else []
-    collected = {k: str(v or '').strip()[:2000] for k, v in collected.items()}
+    collected = {k: str(v or '').strip()[:10000] for k, v in collected.items()}
     name = collected.get('contact_name') or collected.get('names_to_check') or ''
-    email = collected.get('email') or ''
-    if not name or not email or '@' not in email:
-        return jsonify({'ok': False, 'error': 'Please add a contact name and valid email before submitting.'}), 400
+    email = (collected.get('email') or '').lower()
+    validation_data = {**collected, 'name': name, 'email': email,
+                       'authority': collected.get('authority', '').lower(),
+                       'consent': collected.get('consent', '').lower()}
+    errors = validate_snapshot(validation_data)
+    if errors:
+        return jsonify({'ok': False, 'error': next(iter(errors.values())), 'fields': list(errors)}), 400
     if free_snapshot_used(email):
-        return jsonify({'ok': False, 'error': 'The free score is limited to one per email.', 'upgrade_url': '/diy-action'}), 429
+        return jsonify({'ok': False, 'error': 'One free intake is available per email. The free self-service desk remains available.', 'upgrade_url': '/self-service'}), 429
     issue_label = collected.get('issue_label') or CONCIERGE_TOPIC_LABELS.get(collected.get('issue_type'), collected.get('issue_type', 'Private search issue'))
     data = {
         'name': name,
@@ -2501,42 +2494,29 @@ def api_concierge_submit():
         'phone': collected.get('phone', ''),
         'case_type': issue_label,
         'names_to_check': collected.get('names_to_check', ''),
-        'problem_links': '\n'.join(x for x in [collected.get('country_state', ''), collected.get('problem_links', '')] if x),
+        'problem_links': collected.get('problem_links', ''),
+        'country_state': collected.get('country_state', ''),
+        'authority': validation_data['authority'],
+        'consent': validation_data['consent'],
         'goal': collected.get('goal', ''),
         'source_page': 'private_search_concierge_agent_v1',
     }
     triage = triage_snapshot(data)
     queue_item = make_queue_item('free_snapshot', data, triage)
     source = {**data, 'triage': triage, 'queue_id': queue_item['id'], 'concierge_collected': collected, 'concierge_transcript': transcript[-20:]}
+    queue_item['status'] = 'automated_guidance_available'
     append_jsonl(LEADS_FILE, {**source, 'searched_name': data.get('names_to_check') or data.get('name'), 'submitted_at': utc_now()})
-    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': 'homepage_private_concierge', 'href': '/api/concierge/submit', 'location': request.path, 'source': data.get('source_category'), 'email': data.get('email'), 'searched_name': data.get('names_to_check') or data.get('name'), 'queue_id': queue_item['id'], 'referrer': data.get('referrer')})
+    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': 'homepage_private_concierge', 'href': '/api/concierge/submit', 'location': request.path, 'source': data.get('source_category'), 'queue_id': queue_item['id']})
     append_jsonl(CONCIERGE_TRANSCRIPTS_FILE, {'queue_id': queue_item['id'], 'collected': collected, 'transcript': transcript[-40:]})
     append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
-    case = safe_create_fulfilment_case('free-snapshot', data, source, 'concierge_agent_v1')
-    run_free_snapshot_pipeline(case)
-    case = get_case(case.get('id')) if case and get_case else case
-    report = latest_free_snapshot_report(case)
-    case_room = save_case_room(queue_item, data, triage, case=case, report=report, transcript=transcript)
-    send_telegram_alert('FMNO Concierge Free Snapshot created', {
-        'queue_id': queue_item['id'],
-        'case_id': case.get('id') if case else '',
-        'name': data.get('name'),
-        'email': data.get('email'),
-        'case_type': data.get('case_type'),
-        'recommendation': (report or {}).get('recommended_package') or triage.get('label'),
-        'risk_score': case_room.get('risk_score', {}).get('score'),
-        'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
-        'private_case_room': case_room.get('case_room_url'),
-    })
-    email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
-    record_email_alert_status('concierge_snapshot', f"FMNO concierge lead: {triage['label']} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'case_id': case.get('id') if case else '', 'email': data.get('email')})
+    case_room = save_case_room(queue_item, data, triage, transcript=transcript)
+    send_snapshot_emails(data, triage, queue_item, case_room=case_room)
     return jsonify({
         'ok': True,
         'queue_id': queue_item['id'],
-        'case_id': case.get('id') if case else '',
-        'risk_score': case_room.get('risk_score'),
+        'case_id': '',
         'case_room_url': case_room.get('case_room_url'),
-        'message': 'Your Free Search Snapshot™ request is in. Your Private Case Room™ is ready with the first Reputation Risk Score™.',
+        'message': 'Your Free Search Snapshot™ intake is saved. Open your on-screen guidance; this is based on your answers, not a live Google search.',
         'redirect': f"/private-case-room/{queue_item['id']}?access_token={case_room.get('access_token')}",
     })
 
@@ -2544,7 +2524,7 @@ def api_concierge_submit():
 @app.route('/snapshot-received')
 def snapshot_received_light():
     ref = request.args.get('ref', '')
-    body = f'''<div class="card"><span class="pill ok">Received</span><h1>Your Private Reputation Risk Score™ is ready.</h1><p class="sub">Thank you. We saved the private concierge intake and will prepare the search snapshot pathway from here.</p><p class="note">Private reference: {safe(ref)}<br>No public action happens from this intake alone.</p><p><a class="btn" href="/">Back to site</a></p></div>'''
+    body = f'''<div class="card"><span class="pill">Free Search Snapshot™</span><h1>Keep control of your next step.</h1><p class="sub">Use the private link shown after a successful intake to revisit your guidance. This page alone does not confirm a submission.</p><p class="note">Reference supplied: {safe(ref)}<br>Guidance is based on submitted information, not a live Google search.</p><p><a class="btn" href="/self-service">Open free self-service →</a></p></div>'''
     return page('Snapshot received — FixMyNameOnline™', body)
 
 
@@ -2556,133 +2536,82 @@ def private_case_room(queue_id):
         body = '''<div class="card"><span class="pill err">Private access</span><h1>Private Case Room™ link required.</h1><p class="sub">For privacy, this room only opens from the secure link created after a Free Search Snapshot™ intake.</p><p><a class="btn" href="/">Back to FixMyNameOnline™</a></p></div>'''
         return page('Private Case Room™ — secure link required', body), 403
 
-    score = record.get('risk_score') or {}
-    triage = record.get('triage') or {}
+    previous_triage = record.get('triage') or {}
+    triage = TRIAGE_NEXT_STEPS.get(previous_triage.get('key') or '', TRIAGE_NEXT_STEPS['repair-plan'])
     preview = record.get('intake_preview') or {}
-    factors = ''.join(f'<li>{safe(item)}</li>' for item in score.get('factors', [])) or '<li>Private intake received.</li>'
     timeline = [
-        ('1', 'Private intake received', 'Your issue has been captured into a confidential case room.'),
-        ('2', 'Reputation Risk Score™ created', 'The first score helps prioritise the private snapshot and next-step pathway.'),
-        ('3', 'Snapshot review / QC', 'FMNO reviews the search context before recommending paid work or sending next instructions.'),
-        ('4', 'Choose next path', 'You decide whether to continue with a DIY action, monitoring, or private guidance.'),
+        ('1', 'Intake saved', 'Your submitted information is recorded here.'),
+        ('2', 'Guidance available', 'An automated route is suggested from your answers, not verified search findings.'),
+        ('3', 'Your decision', 'Confirm the facts, review the official requirements, and decide whether to act.'),
+        ('4', 'Your action record', 'Use the free self-service desk to organise notes and track any submission you make.'),
     ]
     timeline_html = ''.join(f'<div class="card"><span class="pill">Step {n}</span><h2>{safe(title)}</h2><p class="sub">{safe(text)}</p></div>' for n, title, text in timeline)
     body = f'''
     <div class="card"><span class="pill ok">Private Case Room™</span><h1>Your private reputation snapshot room is open.</h1>
-      <p class="sub">This is the secure first view for {safe(record.get('name'))}. No public action happens from this intake. This room is for private triage and next-step guidance only.</p>
-      <div class="recommend"><h2>Reputation Risk Score™: {safe(score.get('score'))}/100 · {safe(score.get('label'))}</h2><p>{safe(score.get('summary'))}</p><ul>{factors}</ul></div>
-      <div class="grid"><div class="card"><h2>Recommended pathway</h2><p class="sub">{safe(score.get('recommendation') or triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/app'))}">{safe(triage.get('cta', 'View next step'))} →</a></p><p class="note">One recommended path first. Bigger repair plans stay available after review.</p></div>
+      <p class="sub">Your intake, {safe(record.get('name'))}. This is automated guidance based on your answers, not a live Google search or verified reputation score. No public action has been taken.</p>
+      <div class="grid"><div class="card"><h2>A route to consider</h2><p class="sub">{safe(triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/self-service'))}">{safe(triage.get('cta', 'View next step'))} →</a></p><p class="note">Only buy a tool if its exact scope fits your concern.</p></div>
       <div class="card"><h2>Private reference</h2><p class="note">Reference: {safe(record.get('queue_id'))}<br>Case: {safe(record.get('case_id'))}<br>Status: {safe(record.get('status'))}</p></div></div>
       <h2 style="margin-top:22px">What you gave us</h2>
       <div class="card"><p><strong>Names/search:</strong><br>{safe(preview.get('names_to_check'))}</p><p><strong>Links/search clues:</strong><br>{safe(preview.get('problem_links'))}</p><p><strong>Goal:</strong><br>{safe(preview.get('goal'))}</p></div>
-      <h2 style="margin-top:22px">Private timeline</h2><div class="grid">{timeline_html}</div>
-      <p class="note">FixMyNameOnline™ is operated by MadisonJade Pty Ltd. This score is an intake signal, not a guarantee of removal, ranking, de-indexing, platform action, or search result outcome.</p>
+      <h2 style="margin-top:22px">Your next-step checklist</h2><div class="grid">{timeline_html}</div>
+      <p><a class="btn btn2" href="/self-service">Open free self-service →</a></p>
+      <p class="note">Keep this link private: anyone with it can access this room. The separate self-service desk does not automatically copy these details. FixMyNameOnline™ is operated by MadisonJade Pty Ltd. Publishers, platforms and search engines decide outcomes.</p>
     </div>'''
     return page('Private Case Room™ — FixMyNameOnline™', body, 'Secure private reputation snapshot room for FixMyNameOnline™ Free Search Snapshot™ intake.', canonical_path='/private-case-room')
 
 
 @app.route('/app')
 def free_snapshot_form():
-    source_page = safe(request.args.get('source') or 'app_form')
-    prefill_name = safe(request.args.get('name') or '')
-    body = f"""
-    <div class="snapshot-shell">
-      <div class="card"><span class="pill">Free private first step</span><h1>Get your Private Reputation Risk Score™</h1><p class="sub">Enter the name, business or search phrase you are worried about. We open a private case room with an initial risk score and the safest next step — without making anything public.</p>
-      <div class="trust-strip"><span>Operated by MadisonJade Pty Ltd</span><span>ABN 56 661 580 936</span><span>Private intake · no public case disclosure</span></div>
-      <div class="progress" aria-hidden="true"><span id="snapshot-progress"></span></div>
-      <form method="post" action="/submit-snapshot" class="grid" id="snapshot-form">
-        <input type="hidden" name="source_page" value="{source_page}">
-        <input type="hidden" name="referrer" id="fmno-referrer" value="">
-        <input type="hidden" name="landing_url" id="fmno-landing-url" value="">
-        <input type="hidden" name="utm_source" id="utm_source" value=""><input type="hidden" name="utm_medium" id="utm_medium" value=""><input type="hidden" name="utm_campaign" id="utm_campaign" value=""><input type="hidden" name="utm_term" id="utm_term" value=""><input type="hidden" name="utm_content" id="utm_content" value=""><input type="hidden" name="gclid" id="gclid" value=""><input type="hidden" name="fbclid" id="fbclid" value="">
-        <div><label>Name / business / search phrase</label><input name="name" required autocomplete="name" value="{prefill_name}" placeholder="Example: Jane Smith, ACME Plumbing, old business name"><div class="microcopy">This is the only search phrase required to start.</div></div>
-        <div><label>Email for private result</label><input name="email" type="email" required autocomplete="email" placeholder="Where should we send the private update?"><div class="microcopy">No public action happens from this form.</div></div>
-        <div class="full submit-row"><button class="btn" type="submit" id="snapshot-submit">Get Private Risk Score™ →</button><a class="btn btn2" href="/">Back</a><p class="note">Free first step. No public case disclosure. No rankings/removals guaranteed.</p></div>
-        <details class="full" id="optional-details"><summary style="cursor:pointer;color:#ffb0bd;font-weight:800;margin:10px 0">Optional: add links, review details or extra names if you already have them</summary>
-          <div class="grid" style="margin-top:10px">
-            <div><label>Phone optional</label><input name="phone" autocomplete="tel" placeholder="Optional, for urgent/sensitive cases"></div>
-            <div><label>Best describes this</label><select name="case_type"><option>Personal name / old Google results</option><option>Business name / bad search results</option><option>Fake or malicious Google reviews</option><option>Old news article or court mention</option><option>Associated name / old name / nickname</option><option>High-risk private case</option></select></div>
-            <div class="full"><label>Extra names, old names or search phrases</label><textarea name="names_to_check" placeholder="Optional: old names, nicknames, business names, associated names, locations...">{prefill_name}</textarea><div class="microcopy">Leave blank if the first field is enough.</div></div>
-            <div class="full"><label>Bad links, reviews, article titles, screenshots or clues if you have them</label><textarea name="problem_links" placeholder="Optional: paste URLs or write article/review/search clues..."></textarea></div>
-            <div class="full"><label>What are you hoping to understand or fix?</label><textarea name="goal" placeholder="Optional: removal, review response, monitoring, better positive results, private advice..."></textarea></div>
-          </div>
-        </details>
-      </form></div>
-      <div class="card side-card"><span class="pill">What you get</span><div class="steps"><div class="step"><b>1 · Private Risk Score™</b><br><span class="sub">A first signal for how serious the search/review/name problem looks.</span></div><div class="step"><b>2 · One recommended path</b><br><span class="sub">A capped first classification, then a fixed-price DIY option only when it fits.</span></div><div class="step"><b>3 · You stay in control</b><br><span class="sub">You confirm facts and submit every external request yourself.</span></div></div><div class="recommend"><b>One free score per intake.</b><p class="note">No unlimited scans or free document generation. If there is risk, we explain the practical next step.</p></div></div>
-    </div>
-    <script>
-    (function(){{
-      const qs=new URLSearchParams(window.location.search);
-      const fields=['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid'];
-      const ref=document.getElementById('fmno-referrer'); if(ref) ref.value=document.referrer||'';
-      const landing=document.getElementById('fmno-landing-url'); if(landing) landing.value=window.location.href;
-      fields.forEach(k=>{{const el=document.getElementById(k); if(el) el.value=qs.get(k)||'';}});
-      let started=false, step1=false;
-      function fire(event,label){{try{{if(typeof gtag==='function') gtag('event',event,{{event_label:label||'',page_path:window.location.pathname}}); const body=JSON.stringify({{event,label:label||'',href:'/submit-snapshot',location:window.location.pathname+window.location.search,source:'snapshot_form'}}); if(navigator.sendBeacon) navigator.sendBeacon('/api/track-click', new Blob([body],{{type:'application/json'}})); else fetch('/api/track-click',{{method:'POST',headers:{{'Content-Type':'application/json'}},body,keepalive:true}}).catch(()=>{{}});}}catch(e){{}}}}
-      const form=document.getElementById('snapshot-form');
-      const progress=document.getElementById('snapshot-progress');
-      function updateProgress(){{
-        if(!form||!progress) return;
-        const core=['name','email'];
-        const coreDone=core.filter(k=>{{const el=form.elements[k]; return el && String(el.value||'').trim();}}).length;
-        if(coreDone===2 && !step1){{step1=true; fire('form_step1_complete','name_email_complete');}}
-        progress.style.width=Math.max(18, Math.round((coreDone/core.length)*100))+'%';
-      }}
-      if(form){{form.addEventListener('input',()=>{{if(!started){{started=true;fire('form_start','risk_score_form');}} updateProgress();}},{{once:false}}); form.addEventListener('submit',()=>{{const btn=document.getElementById('snapshot-submit'); if(btn){{btn.disabled=true; btn.textContent='Opening private case room...';}} fire('snapshot_submit','risk_score_form');}}); updateProgress();}}
-    }})();
-    </script>"""
-    return page('Private Reputation Risk Score™ — FixMyNameOnline™', body)
+    return render_snapshot_form()
 
 
-@app.route('/submit-snapshot', methods=['POST'])
+@app.route('/self-service')
+def self_service():
+    return page('Free self-service desk — FixMyNameOnline™',
+                (BASE_DIR / 'self_service.html').read_text(encoding='utf-8'),
+                'Organise one reputation concern, keep an evidence checklist, record progress and export your notes. A free customer-controlled desk.',
+                canonical_path='/self-service', analytics=False)
+
+
+@app.route('/self-serve')
+def self_serve_alias():
+    return redirect('/self-service', code=301)
+
+
+@app.route('/submit-snapshot', methods=['GET', 'POST'])
 def submit_snapshot():
-    base_fields = ['name', 'email', 'phone', 'case_type', 'names_to_check', 'problem_links', 'goal', 'source_page', 'referrer', 'landing_url', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']
-    data = {k: request.form.get(k, '').strip() for k in base_fields}
+    if request.method == 'GET':
+        return redirect('/free-search-snapshot', code=303)
+    base_fields = list(SNAPSHOT_LIMITS) + ['source_page', 'referrer', 'landing_url', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']
+    data = {k: request.form.get(k, '').strip()[:10000] for k in base_fields}
+    data['email'] = data['email'].lower()
+    errors = validate_snapshot(data)
+    if errors:
+        return render_snapshot_form(data, errors), 400
+    data.pop('website', None)
     attribution = attribution_from_request(request.form)
     data.update(attribution)
-    if not data['name'] or not data['email']:
-        return page('Missing details', '<div class="card"><h1 class="err">Missing details</h1><p>Please enter your name and email.</p><a class="btn" href="/app">Go back</a></div>'), 400
     if free_snapshot_used(data['email']):
-        body = '<div class="card"><span class="pill">Free score already used</span><h1>Your one free snapshot has already been created.</h1><p class="sub">The free tier is capped at one score per email. If you have one old article or bad link, the $49 DIY workspace generates the evidence checklist, editable request and follow-up plan.</p><p><a class="btn" href="/diy-action">See the $49 DIY workspace →</a></p></div>'
+        body = '<div class="card"><span class="pill">Free intake already used</span><h1>You can still work through your next step.</h1><p class="sub">One free intake is available per email. If you saved your private room link, use it to revisit your guidance. Our free self-service desk is also available without submitting another intake.</p><p><a class="btn" href="/self-service">Open free self-service →</a></p></div>'
         return page('Free snapshot already used — FixMyNameOnline™', body), 429
 
     triage = triage_snapshot(data)
     queue_item = make_queue_item('free_snapshot', data, triage)
+    queue_item['status'] = 'automated_guidance_available'
     append_jsonl(LEADS_FILE, {**data, 'searched_name': data.get('names_to_check') or data.get('name'), 'submitted_at': utc_now(), 'triage': triage, 'queue_id': queue_item['id']})
-    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': data.get('source_page'), 'href': '/submit-snapshot', 'location': request.path, 'source': data.get('source_category'), 'email': data.get('email'), 'searched_name': data.get('names_to_check') or data.get('name'), 'queue_id': queue_item['id'], 'referrer': data.get('referrer')})
+    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': data.get('source_page'), 'href': '/submit-snapshot', 'location': request.path, 'source': data.get('source_category'), 'queue_id': queue_item['id']})
     append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
-    case_source = {**data, 'triage': triage, 'queue_id': queue_item['id']}
-    case = safe_create_fulfilment_case('free-snapshot', data, case_source, 'free_snapshot')
-    run_free_snapshot_pipeline(case)
-    case = get_case(case.get('id')) if case and get_case else case
-    report = latest_free_snapshot_report(case)
-    case_room = save_case_room(queue_item, data, triage, case=case, report=report)
-
-    send_telegram_alert('FMNO Free Search Snapshot report ready', {
-        'queue_id': queue_item['id'],
-        'case_id': case.get('id') if case else '',
-        'name': data.get('name'),
-        'email': data.get('email'),
-        'phone': data.get('phone'),
-        'case_type': data.get('case_type'),
-        'recommendation': (report or {}).get('recommended_package') or triage.get('label'),
-        'negative_items': (report or {}).get('negative_item_count'),
-        'priority': queue_item.get('priority'),
-        'risk_score': case_room.get('risk_score', {}).get('score'),
-        'admin_report': f"{DOMAIN}/admin/fulfilment/report/{case.get('id')}" if case else '',
-        'private_case_room': case_room.get('case_room_url'),
-    })
-    email_status = send_snapshot_emails(data, triage, queue_item, case=case, report=report, case_room=case_room)
-    record_email_alert_status('snapshot', f"FMNO lead: {triage['label']} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'case_id': case.get('id') if case else '', 'email': data.get('email')})
-    app.logger.info('Snapshot %s email status: %s', queue_item['id'], email_status)
+    case_room = save_case_room(queue_item, data, triage)
+    send_snapshot_emails(data, triage, queue_item, case_room=case_room)
 
     body = f"""
-    <div class="card"><span class="pill ok">Received</span><h1>Your Private Reputation Risk Score™ is ready.</h1>
-      <p class="sub">Thanks {safe(data['name'])}. We saved your details and opened your Private Case Room™. Start with the recommended next step only if the risk looks real.</p>
-      <div class="recommend"><h2>Reputation Risk Score™: {safe(case_room['risk_score']['score'])}/100 · {safe(case_room['risk_score']['label'])}</h2><p>{safe(case_room['risk_score']['summary'])}</p><p><a class="btn" href="{safe('/private-case-room/' + queue_item['id'] + '?access_token=' + case_room['access_token'])}">Open Private Case Room™ →</a></p></div>
-      <div class="recommend"><h2>Recommended next step: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p><p class="note">Early-case queue is open while intake volume is low. Start only if the recommendation fits.</p></div>
-      <h2>What happens next</h2><ol><li>We look at what people may see when they search.</li><li>We identify if this looks like alerts, removal review, review defence, repair, or a private high-risk review.</li><li>If there is a paid next step, you choose it — no pressure.</li></ol>
-      <p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}<br>Your private report is prepared for internal review before anything is sent externally.</p><p><a class="btn btn2" href="/">Back to site</a></p>
+    <div class="card"><span class="pill ok">Intake saved</span><h1>Your next step. Your decision.</h1>
+      <p class="sub">Thanks {safe(data['name'])}. Your Free Search Snapshot™ intake is saved. This is automated guidance based on your answers, not a live Google search or verified findings about you.</p>
+      <div class="recommend"><h2>A route to consider: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
+      <h2>Keep control of the next step</h2><ol><li>Confirm the result actually relates to you before acting.</li><li>Keep the public URL, dates and evidence for any correction.</li><li>Review the relevant official requirements and submit requests yourself.</li></ol>
+      <p><a class="btn btn2" href="/self-service">Use the free self-service desk →</a></p>
+      <p><a href="{safe('/private-case-room/' + queue_item['id'] + '?access_token=' + case_room['access_token'])}">Open your private intake room</a></p>
+      <p class="note">Private reference: {safe(queue_item['id'])}<br>Save this reference and your private link. Do not share the link: anyone with it can access the intake room. Email delivery is not confirmed by this screen. No public action has been taken and no payment is required.</p>
     </div>"""
     body += conversion_tracking_event('snapshot_submit', {'content_name': 'Free Search Snapshot', 'source_category': data.get('source_category')})
     body += conversion_tracking_event('Lead', {'content_name': 'Free Search Snapshot'})
@@ -2694,6 +2623,10 @@ def onboarding_form():
     plan = request.args.get('plan', 'starter')
     plan_label = PLANS.get(plan, {}).get('name', plan.replace('-', ' ').title())
     session_id = (request.args.get('session_id') or '').strip()
+    if plan in paid_actions.CATALOG:
+        return redirect('/diy-action/start?session_id=' + session_id, code=303)
+    if plan != 'sentinel' and not verify_paid_checkout(session_id, expected_tier=plan):
+        return redirect('/self-service', code=302)
     if plan == 'sentinel':
         paid_session = verify_paid_checkout(session_id, expected_tier='sentinel')
         if not paid_session:
@@ -2714,7 +2647,7 @@ def onboarding_form():
         return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
     body = f"""
     <div class="card"><span class="pill">Private onboarding</span><h1>{safe(plan_label)}</h1><p class="sub">Use this after payment or if we ask for more detail. Give us the links, names, reviews and context we need to start safely.</p>
-    <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="{safe(plan)}">
+    <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="{safe(plan)}"><input type="hidden" name="session_id" value="{safe(session_id)}">
       <div><label>Name</label><input name="name" required></div><div><label>Email</label><input type="email" name="email" required></div>
       <div><label>Phone</label><input name="phone"></div><div><label>Business / brand if any</label><input name="business"></div>
       <div class="full"><label>Names, old names, associated names, business names</label><textarea name="names"></textarea></div>
@@ -2730,6 +2663,10 @@ def onboarding_form():
 def submit_onboarding():
     fields = ['plan', 'session_id', 'name', 'email', 'phone', 'business', 'names', 'links', 'context', 'avoid']
     data = {k: request.form.get(k, '').strip() for k in fields}
+    if data.get('plan') in paid_actions.CATALOG:
+        return redirect('/diy-action/start?session_id=' + data.get('session_id', ''), code=303)
+    if data.get('plan') != 'sentinel' and not verify_paid_checkout(data.get('session_id'), expected_tier=data.get('plan')):
+        return jsonify({'ok': False, 'error': 'A verified existing purchase is required.'}), 402
     if not data['name'] or not data['email']:
         return jsonify({'ok': False, 'error': 'Missing name/email'}), 400
     if data.get('plan') == 'sentinel':
@@ -2801,21 +2738,8 @@ def verify_paid_checkout(session_id, expected_tier=None):
 
 
 def verify_diy_checkout(session_id, checkout_token=''):
-    """Verify Stripe directly, or use the secret post-payment token held only by Stripe."""
-    session_id = (session_id or '').strip()
-    checkout_token = (checkout_token or '').strip()
-    if app.testing and session_id == 'cs_test_fmno_diy_paid':
-        return {'id': session_id, 'payment_status': 'paid', 'customer_details': {'email': 'test@example.com'}}
-    if session_id.startswith('cs_live_') and checkout_token and hmac.compare_digest(hashlib.sha256(checkout_token.encode()).hexdigest(), DIY_CHECKOUT_TOKEN_SHA256):
-        return {'id': session_id, 'payment_status': 'paid', 'customer_details': {}}
-    if not session_id or not stripe.api_key:
-        return None
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        return session if getattr(session, 'payment_status', '') == 'paid' else None
-    except Exception as exc:
-        app.logger.warning('DIY checkout verification failed: %s', exc)
-        return None
+    """No static-token or synthetic-payment bypass in application code."""
+    return paid_actions.paid(sys.modules[__name__], session_id)
 
 
 def diy_access_token(session_id):
@@ -2824,75 +2748,30 @@ def diy_access_token(session_id):
 
 @app.route('/diy-action')
 def diy_action_sales():
-    body = '''<div class="card"><span class="pill">Fixed-price DIY · one old article or bad link</span><h1>Prepare the action yourself — without guessing.</h1>
-    <p class="sub">FMNO organises one target URL, the evidence checklist, an editable publisher request, the official next route and a follow-up record. You confirm the facts and submit every request yourself.</p>
-    <div class="recommend"><h2>DIY Reputation Action Workspace™ — US$49 once</h2><ul><li>One old article or bad-link URL</li><li>Structured evidence checklist</li><li>Editable correction, removal, anonymisation or noindex request</li><li>Official Google outdated-content route where relevant</li><li>Submission reference and 30-day follow-up plan</li></ul><p><a class="btn" href="/checkout/diy-action?source=diy_action_page">Open my $49 workspace →</a></p><p class="note">No subscription. FMNO does not submit the request, act as your representative, provide legal advice, or guarantee removal.</p></div>
-    <h2>Exactly how it works</h2><ol><li>Pay the fixed one-time price.</li><li>Add one URL and confirm the facts.</li><li>Complete the evidence checklist.</li><li>FMNO prepares an editable request.</li><li>You review, copy and submit it.</li><li>Keep the reference and follow the 30-day plan.</li></ol>
-    <div class="grid"><div class="card"><h2>FMNO does</h2><p class="sub">Structure the issue, organise evidence, generate the request and show the next route.</p></div><div class="card"><h2>You do</h2><p class="sub">Confirm accuracy, provide evidence, approve wording and submit the action yourself.</p></div></div>
-    <p class="note">Not suitable for emergencies, threats, minors, active proceedings, complex defamation disputes or false evidence. Use appropriate safety or independent professional channels.</p></div>'''
-    return page('DIY Reputation Action Workspace™ — $49 | FixMyNameOnline™', body, 'A fixed-price DIY old article and bad-link action workspace with evidence checklist, prepared request, official route and follow-up plan.', canonical_path='/diy-action')
+    return paid_actions.sales(sys.modules[__name__])
 
 
 @app.route('/diy-action/start')
 def diy_action_start():
-    session_id = (request.args.get('session_id') or '').strip()
-    checkout_token = (request.args.get('checkout_token') or '').strip()
-    paid = verify_diy_checkout(session_id, checkout_token)
-    if not paid:
-        return page('Payment verification required — FixMyNameOnline™', '<div class="card"><h1>Paid workspace link required.</h1><p class="sub">The DIY workspace opens after a verified $49 Stripe payment.</p><p><a class="btn" href="/diy-action">View the DIY workspace</a></p></div>'), 402
-    token = diy_access_token(session_id)
-    details = paid.get('customer_details') if isinstance(paid, dict) else getattr(paid, 'customer_details', {})
-    email = (details or {}).get('email', '') if isinstance(details, dict) else getattr(details, 'email', '')
-    body = f'''<div class="card"><span class="pill ok">Payment verified · DIY workspace unlocked</span><h1>Build your old article or bad-link action.</h1><p class="sub">Complete the facts below. FMNO creates an editable request and checklist. You remain responsible for accuracy and submission.</p>
-    <form method="post" action="/diy-action/generate" class="grid"><input type="hidden" name="session_id" value="{safe(session_id)}"><input type="hidden" name="checkout_token" value="{safe(checkout_token)}"><input type="hidden" name="access_token" value="{safe(token)}">
-    <div><label>Your name</label><input name="name" required></div><div><label>Email</label><input name="email" type="email" required value="{safe(email)}"></div>
-    <div class="full"><label>One target URL</label><input name="target_url" type="url" required placeholder="https://publisher.example/article"></div>
-    <div><label>What is the problem?</label><select name="issue_type" required><option value="outdated">Outdated/current picture missing</option><option value="inaccurate">Inaccurate or missing context</option><option value="privacy">Contains personal information</option><option value="wrong-person">Wrong person/name confusion</option></select></div>
-    <div><label>Requested outcome</label><select name="requested_outcome" required><option value="correct">Correct or update it</option><option value="anonymise">Anonymise my details</option><option value="noindex">Remove it from search discovery</option><option value="remove">Remove the page</option></select></div>
-    <div class="full"><label>What is factually wrong, outdated or harmful?</label><textarea name="problem_summary" required></textarea></div>
-    <div class="full"><label>Evidence you have</label><textarea name="evidence_summary" required placeholder="Dates, correct facts, documents or prior correspondence. Facts only."></textarea></div>
-    <div class="full"><label>Correct/current information</label><textarea name="correct_information" required></textarea></div>
-    <div class="full"><label><input style="width:auto" type="checkbox" name="truth_confirmed" value="yes" required> I confirm this is accurate, will review the wording, and will submit any request myself.</label></div>
-    <div class="full"><button class="btn" type="submit">Generate my DIY action pack →</button><p class="note">A documentation tool, not legal advice or representation.</p></div></form></div>'''
-    return page('Build your DIY action — FixMyNameOnline™', body, canonical_path='/diy-action/start')
+    return paid_actions.start(sys.modules[__name__])
 
 
 @app.route('/diy-action/generate', methods=['POST'])
 def diy_action_generate():
-    fields = ['session_id', 'checkout_token', 'access_token', 'name', 'email', 'target_url', 'issue_type', 'requested_outcome', 'problem_summary', 'evidence_summary', 'correct_information', 'truth_confirmed']
-    data = {k: request.form.get(k, '').strip() for k in fields}
-    if not verify_diy_checkout(data.get('session_id') or '', data.get('checkout_token') or '') or not hmac.compare_digest(data.get('access_token', ''), diy_access_token(data.get('session_id', ''))):
-        return page('Workspace access denied', '<div class="card"><h1 class="err">Paid workspace verification failed.</h1></div>'), 403
-    if not all(data.get(k) for k in ['name', 'email', 'target_url', 'problem_summary', 'evidence_summary', 'correct_information']) or data.get('truth_confirmed') != 'yes':
-        return page('Missing evidence', '<div class="card"><h1 class="err">Complete every required field.</h1></div>'), 400
-    parsed = urlparse(data['target_url'])
-    if parsed.scheme not in ['http', 'https'] or not parsed.netloc:
-        return page('Invalid URL', '<div class="card"><h1 class="err">Enter a complete http/https target URL.</h1></div>'), 400
-    outcomes = {'correct': 'correct or update the page', 'anonymise': 'anonymise my name or identifying details', 'noindex': 'apply noindex or otherwise remove the page from search discovery', 'remove': 'remove the page'}
-    issues = {'outdated': 'outdated information', 'inaccurate': 'inaccurate or incomplete information', 'privacy': 'personal information', 'wrong-person': 'wrong-person or name-confusion information'}
-    action_id = 'FMNO-DIY-' + hashlib.sha256((data['session_id'] + data['target_url']).encode()).hexdigest()[:12].upper()
-    draft = f'''Subject: Request to {outcomes.get(data['requested_outcome'], 'review the page')} — {data['target_url']}\n\nHello,\n\nI am writing about this page: {data['target_url']}\n\nI am the person affected by the {issues.get(data['issue_type'], 'information')} on this page. I am asking you to {outcomes.get(data['requested_outcome'], 'review it')}.\n\nWhy I am requesting review:\n{data['problem_summary']}\n\nCorrect or current information:\n{data['correct_information']}\n\nEvidence available:\n{data['evidence_summary']}\n\nPlease confirm receipt and tell me if you require identity verification or further evidence through a secure channel. I would appreciate a written response explaining the decision.\n\nRegards,\n{data['name']}'''
-    record = {**data, 'action_id': action_id, 'status': 'request_generated', 'draft': draft, 'follow_up_after_days': 14, 'created_at': utc_now()}
-    record.pop('access_token', None)
-    record.pop('checkout_token', None)
-    append_jsonl(DIY_ACTIONS_FILE, record)
-    append_jsonl(CLICK_EVENTS_FILE, {'event': 'diy_action_generated', 'label': data.get('issue_type'), 'href': '/diy-action/generate', 'location': request.path, 'action_id': action_id})
-    body = f'''<div class="card"><span class="pill ok">DIY action pack generated</span><h1>Your request is ready.</h1><p class="sub">Review every word. Edit anything inaccurate. You—not FMNO—decide whether and where to submit it.</p>
-    <div class="recommend"><h2>Evidence checklist</h2><ul><li>Save screenshots of the target page and Google result.</li><li>Save the exact URL and visible date.</li><li>Keep documents supporting every correction.</li><li>Find the publisher’s official corrections, privacy or contact page.</li><li>Only send identity documents through a secure official route.</li></ul></div>
-    <h2>Editable request</h2><textarea style="min-height:520px">{safe(draft)}</textarea>
-    <p><a class="btn" href="{safe(data['target_url'])}" target="_blank" rel="noopener nofollow">Open target page</a> <a class="btn btn2" href="https://search.google.com/search-console/remove-outdated-content" target="_blank" rel="noopener nofollow">Official Google outdated-content tool</a></p>
-    <div class="grid"><div class="card"><h2>Submit yourself</h2><p class="sub">Use the publisher’s official channel first where appropriate. Copy the reviewed request and retain confirmation.</p></div><div class="card"><h2>Follow up in 14 days</h2><p class="sub">If there is no substantive response, send one calm follow-up quoting your date and reference.</p></div></div>
-    <div class="recommend"><h2>Submission record</h2><p>Action ID: <strong>{safe(action_id)}</strong></p><p>30-day plan: submit → retain proof → follow up once after 14 days → record the outcome.</p></div><p class="note">No outcome is guaranteed. Publishers, platforms and search engines decide.</p></div>'''
-    return page('Your DIY Reputation Action Pack — FixMyNameOnline™', body, canonical_path='/diy-action/result')
+    return paid_actions.generate(sys.modules[__name__])
 
 
 @app.route('/checkout/<tier>')
 def checkout(tier):
     tier = {'name-watch': 'sentinel', 'namewatch': 'sentinel', 'name-watch-alerts': 'sentinel'}.get(tier, tier)
+    if tier in paid_actions.CATALOG:
+        return paid_actions.checkout(sys.modules[__name__], tier)
+    if tier == 'sentinel':
+        return redirect('/name-watch-alerts', code=302)
     if tier == 'free':
         return redirect('/app')
     if tier == 'concierge':
-        return redirect('/onboarding?plan=concierge')
+        return redirect('/self-service')
     if tier in {'removal-review', 'review-defence', 'starter', 'pro', 'premium'}:
         # Legacy human/managed offers are intentionally retired: never take payment
         # for fulfilment that is not assigned to an accountable operator.
@@ -2938,6 +2817,10 @@ def success():
     tier = request.args.get('tier', 'unknown')
     plan_name = PLANS.get(tier, {}).get('name', tier.replace('-', ' ').title())
     session_id = (request.args.get('session_id') or '').strip()
+    if tier in paid_actions.CATALOG:
+        return redirect('/diy-action/start?session_id=' + session_id, code=303)
+    if not verify_paid_checkout(session_id, expected_tier=tier):
+        return paid_actions.error(sys.modules[__name__], 'Payment has not been verified. Open your original payment return link.', 402)
     if tier == 'sentinel':
         onboarding_url = f'/onboarding?plan=sentinel&amp;session_id={safe(session_id)}'
         body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>One step left to activate NameWatch Alert™</h1><p class="sub">Add the exact names, associated names and location context to monitor. This securely connects the paid checkout to your private monitoring file.</p><ol><li>Open the private activation form.</li><li>Add each exact name or search phrase.</li><li>FMNO creates the first baseline and scheduled sweep.</li><li>We email you when a newly observed result needs attention.</li></ol><p><a class="btn" href="{onboarding_url}">Activate NameWatch monitoring →</a></p><p class="note">A newly observed result is not automatically harmful or newly published. Search engines decide what appears.</p></div>"""
@@ -2953,11 +2836,21 @@ def cancel():
 
 @app.route('/contact')
 def contact():
-    return page('Contact — FixMyNameOnline™', '<div class="card"><h1>Contact FixMyNameOnline™</h1><p>Email: <a href="mailto:admin@fixmynameonline.com">admin@fixmynameonline.com</a></p><p><a class="btn" href="/questions">Ask a private case question →</a></p><p class="sub">Private reputation repair operated by MadisonJade Pty Ltd.</p></div>')
+    return page('Help — FixMyNameOnline™', '<div class="card"><h1>Help with your tools.</h1><p><a class="btn" href="/self-service">Free guidance</a> <a class="btn btn2" href="/diy-action/recover">Recover paid workspace</a> <a href="/billing">Billing and cancellation</a></p><p>For billing, a faulty product or privacy rights: <a href="mailto:admin@fixmynameonline.com">admin@fixmynameonline.com</a>. This is not a personal case-review or consultation service.</p><p class="sub">Operated by MadisonJade Pty Ltd.</p></div>')
+
+
+@app.route('/billing')
+def billing():
+    portal = paid_actions.PUBLIC_BILLING['portal_login_url']
+    return page('Billing and cancellation — FixMyNameOnline™', f'<div class="card"><h1>Your billing. Your control.</h1><p>Use Stripe’s secure email sign-in to view invoices, update a payment method or cancel an existing subscription at the end of its paid period. No new NameWatch subscriptions are being sold.</p><p><a class="btn" href="{safe(portal)}" rel="noreferrer">Open secure Stripe billing →</a></p><p>Single Action and Action Pack are one-time purchases, not subscriptions. For a seven-day unused-purchase refund, open your private action workspace. <a href="/diy-action/recover">Recover your workspace</a>.</p><p class="note">For a faulty product, statutory rights or an unresolved billing issue: admin@fixmynameonline.com.</p></div>', analytics=False, robots='noindex,nofollow')
 
 
 @app.route('/questions')
 def question_form():
+    return redirect('/self-service', code=302)
+
+
+def legacy_question_form():
     ref = request.args.get('ref', '')
     body = f"""
     <div class="card"><span class="pill">Private concierge</span><h1>Ask a private question</h1><p class="sub">Use this for process questions, missing details, approval questions, or anything you want us to review privately. This is not legal advice and no public action is taken from this form alone.</p>
@@ -3019,6 +2912,10 @@ def send_question_emails(data, queue_item, case_id=None):
 
 @app.route('/submit-question', methods=['POST'])
 def submit_question():
+    return page('Self-service guidance — FixMyNameOnline™', '<div class="card"><h1>Use the self-service desk.</h1><p>We no longer accept requests for personal case review through this form. No question or manual work item was created.</p><a class="btn" href="/self-service">Open free guidance</a></div>', analytics=False), 410
+
+
+def legacy_submit_question():
     fields = ['name', 'email', 'reference', 'question']
     data = {k: request.form.get(k, '').strip() for k in fields}
     if not data['name'] or not data['email'] or not data['question']:
@@ -3052,12 +2949,12 @@ def submit_question():
 
 @app.route('/privacy')
 def privacy():
-    return page('Privacy Policy — FixMyNameOnline™', '<div class="card"><h1>Privacy Policy</h1><p class="sub">Draft launch policy: information submitted through FixMyNameOnline™ is used to assess and deliver private reputation services, respond to enquiries, process payments, and maintain case records. We do not publicly disclose client cases without consent.</p><p>Contact: admin@fixmynameonline.com</p></div>')
+    return page('Privacy Policy — FixMyNameOnline™', '<div class="card"><h1>Privacy and your workspace</h1><p>FixMyNameOnline™ is operated by MadisonJade Pty Ltd, Australia. Free desk notes stay in your open page unless you choose browser saving or an export. Browser saving is not encrypted or synced. Free Snapshot information is sent to our server to generate guidance and retain the private record.</p><p>Paid workspaces store your checkout reference, email, supplied facts, drafts and progress on our hosted server and in protected backups. Stripe processes payments; we do not receive card numbers. Our hosting and transactional email providers process the information necessary to provide the tool and access emails, potentially outside Australia. We do not submit your requests to publishers, publicly disclose cases, or require identity documents in the workspace.</p><p>Marketing pages may use configured analytics. Private action and intake pages disable external analytics and use no-store/noindex controls. Private access links are bearer links: anyone with your link can access your workspace. Keep them secure and avoid shared devices.</p><p>Records are retained for access, billing and operational recovery. To request access, correction or deletion, contact admin@fixmynameonline.com; legally required payment records and backups may remain for their applicable retention periods. Download your pack for your own records.</p></div>')
 
 
 @app.route('/terms')
 def terms():
-    return page('Terms — FixMyNameOnline™', '<div class="card"><h1>Terms & Disclaimer</h1><p class="sub">FixMyNameOnline™ provides reputation review, monitoring, content, documentation, and platform-request support. Search engines, publishers, platforms, and courts make their own decisions. We do not guarantee removals, review removals, rankings, de-indexing, or specific outcomes. Legal advice must be obtained from a qualified lawyer.</p></div>')
+    return page('Terms — FixMyNameOnline™', '<div class="card"><h1>Clear scope. Your decisions.</h1><p>MadisonJade Pty Ltd provides self-service documentation tools under FixMyNameOnline™. Single Action is US$19 once for one public URL. No recurring charge is created. The saved URL cannot be swapped; drafts, notes and progress can be edited.</p><p>You supply accurate facts and authority, review the assembled drafts, check the official route and submit requests yourself. We do not investigate the page, provide human review or legal advice, represent you, submit requests or promise a publisher/platform/search-engine outcome. Calendar reminders require importing the file and enabling notifications in your own calendar.</p><p>Do not use paid DIY tools for threats, emergencies, minors, active proceedings, complex legal disputes or review-removal campaigns. Use appropriate safety or independent professional pathways. Existing purchases retain their original scope; new NameWatch subscriptions are paused.</p><h2>Refunds and access</h2><p>Within seven days, a purchase with no saved action is eligible for an automatic full refund from its private workspace. Once an action is saved, that convenience policy no longer applies. Nothing excludes Australian Consumer Law guarantees or other mandatory rights; for a faulty product or billing issue contact admin@fixmynameonline.com. Keep your private access link secure and download a copy. Server access depends on the continuing operation of the service; no perpetual hosting guarantee is sold.</p></div>')
 
 
 
@@ -3140,8 +3037,14 @@ def webhook():
         return 'Invalid payload', 400
     except stripe.error.SignatureVerificationError:
         return 'Invalid signature', 400
-    if event['type'] == 'checkout.session.completed':
+    if event['type'] in {'checkout.session.completed', 'checkout.session.async_payment_succeeded'}:
         session = event['data']['object']
+        if (session.get('metadata') or {}).get('tier') in paid_actions.CATALOG:
+            if session.get('payment_status') != 'paid':
+                return '', 200
+            return ('', 200) if paid_actions.webhook(sys.modules[__name__], session) else ('Payment verification unavailable', 503)
+        if session.get('payment_status') != 'paid':
+            return '', 200
         tier = infer_paid_tier_from_session(session)
         plan_name = PLANS.get(tier, {}).get('name', tier)
         customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email', '')
@@ -3451,6 +3354,10 @@ def admin_export_full_backup_json():
         'onboarding_submissions': read_jsonl_records(ONBOARDING_FILE),
         'fulfilment_queue': read_jsonl_records(FULFILMENT_QUEUE_FILE),
         'client_questions': read_jsonl_records(QUESTIONS_FILE),
+        'private_case_rooms': read_jsonl_records(CASE_ROOMS_FILE),
+        'concierge_transcripts': read_jsonl_records(CONCIERGE_TRANSCRIPTS_FILE),
+        'diy_actions': read_jsonl_records(DIY_ACTIONS_FILE),
+        'paid_action_workspaces': paid_actions.backup(sys.modules[__name__]),
         'click_events': read_jsonl_records(CLICK_EVENTS_FILE),
         'click_count': len(read_jsonl_records(CLICK_EVENTS_FILE)),
     }
@@ -3599,7 +3506,10 @@ def api_track_click():
 def health():
     provider = concierge_provider_name()
     configured = bool(os.environ.get('CONCIERGE_API_KEY') or os.environ.get('LLM_API_KEY') or (os.environ.get('OPENROUTER_API_KEY') if provider == 'openrouter' else os.environ.get('ANTHROPIC_API_KEY') if provider == 'anthropic' else os.environ.get('MINIMAX_API_KEY')))
-    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v51-automated-revenue-paths', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'stripe_webhook_configured': bool(STRIPE_WEBHOOK_SECRET), 'diy_checkout_configured': bool(DIY_CHECKOUT_TOKEN_SHA256 or (stripe.api_key and os.environ.get('STRIPE_PRICE_DIY_ACTION'))), 'namewatch_checkout_configured': bool(stripe.api_key and os.environ.get('STRIPE_PRICE_SENTINEL')), 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'alert_email_recipients_configured': alert_email_recipients(), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+    return jsonify({'status': 'ok', 'service': 'fixmynameonline', 'version': 'launch-v53-simple-self-service', 'domain': DOMAIN, 'stripe_configured': bool(stripe.api_key), 'stripe_webhook_configured': bool(STRIPE_WEBHOOK_SECRET), 'diy_checkout_configured': bool(stripe.api_key and paid_actions.price_id(paid_actions.CATALOG['diy-single'])), 'namewatch_checkout_configured': False, 'namewatch_new_sales': 'paused', 'self_service_prices_usd': {'single': 19}, 'admin_token_configured': bool(os.environ.get('FMNO_ADMIN_TOKEN')), 'tracking_configured': bool(os.environ.get('FMNO_GA_MEASUREMENT_ID') or os.environ.get('GA_MEASUREMENT_ID') or os.environ.get('FMNO_META_PIXEL_ID') or os.environ.get('META_PIXEL_ID')), 'brevo_email_configured': bool(os.environ.get('BREVO_API_KEY') or os.environ.get('SENDINBLUE_API_KEY')), 'concierge_model_configured': configured, 'concierge_provider': provider, 'concierge_model': concierge_model_name(), 'concierge_voice_configured': concierge_voice_configured(), 'ava_avatar_configured': Path('assets/ava_concierge.mp4').exists(), 'click_tracking_configured': True})
+
+
+paid_actions.register(sys.modules[__name__])
 
 
 if __name__ == '__main__':
