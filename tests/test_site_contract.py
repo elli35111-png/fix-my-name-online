@@ -340,15 +340,23 @@ def test_terms_and_privacy_cover_namewatch_for_existing_subscribers(client):
     namewatch = next(r for r in rows if r.startswith('NameWatch (existing subscribers only)'))
     for fact in ('DuckDuckGo', 'Google News', 'admin@fixmynameonline.com', 'counts only',
                  'phone', 'on our server, hosted by Render', 'backups', 'Brevo', 'Telegram',
-                 'search results, and what each check has already seen, are kept only on our own computer'):
+                 'search results, and what each check has already seen, are kept on our own computer',
+                 'hosted by Microsoft', 'names and phrases we watch', 'links found', 'sent mail'):
         assert fact in namewatch, fact
     assert 'not on Render' not in namewatch
+    # NameWatch emails (with the watched names and links) leave copies in the
+    # Microsoft-hosted admin@ mailbox, so nothing may say "only" on our computer.
+    assert 'kept only on our own computer' not in namewatch
     providers_text = soup.find(id='providers').find_next('ul').get_text(' ', strip=True)
     assert 'NameWatch sign-up records' in providers_text and 'records from our earlier tools' in providers_text
     keep = soup.find(id='keep').find_next('ul').get_text(' ', strip=True)
     assert 'NameWatch: while your subscription runs' in keep
     providers = soup.find(id='providers').find_next('ul').get_text(' ', strip=True)
     assert 'DuckDuckGo' in providers and 'Google News' in providers
+    assert 'Microsoft (United States): hosts admin@fixmynameonline.com' in providers
+    assert 'NameWatch alerts and status notes' in providers
+    # admin@ is Microsoft 365; Google only holds the internal Gmail notices.
+    assert 'and our email inbox' not in providers and 'Gmail inbox' in providers
 
 
 def test_paid_pack_is_not_sold_on_what_the_free_check_already_has(client):
