@@ -31,6 +31,37 @@ OUTCOMES = {'correct': 'correct or update the page', 'anonymise': 'anonymise ide
 ISSUES = {'outdated': 'outdated information', 'inaccurate': 'inaccurate or incomplete information',
           'privacy': 'personal information', 'wrong-person': 'name confusion'}
 STATUSES = {'preparing', 'submitted', 'waiting', 'closed'}
+STATUS_LABELS = {'preparing': 'Preparing', 'submitted': 'Sent by me', 'waiting': 'Waiting for a reply', 'closed': 'Closed'}
+# Plain-English wording used inside the letters (keys unchanged for stored data).
+ASK = {'correct': 'correct or update the page so it reflects the current facts',
+       'anonymise': 'remove my name and other identifying details from the page',
+       'noindex': 'add a “noindex” tag to the page, so search engines stop showing it',
+       'remove': 'take the page down'}
+SUBJECT = {'correct': 'Request to update a page about me', 'anonymise': 'Request to remove my name from a page',
+           'noindex': 'Request to stop a page showing in search engines', 'remove': 'Request to remove a page about me'}
+
+
+def draft_letters(data):
+    """The three letters in the pack, built only from the buyer's own answers.
+    Plain requests: no legal claims, no threats, no deadlines presented as law."""
+    outcome = data.get('requested_outcome') or 'correct'
+    url, name = data.get('target_url', ''), data.get('name', '')
+    ask = ASK.get(outcome, ASK['correct'])
+    issue = ISSUES.get(data.get('issue_type') or 'outdated', 'outdated information')
+    on_behalf = '' if data.get('authority', 'self') == 'self' else 'I’m writing on behalf of the person named on the page, with their permission.\n\n'
+    request_letter = (f"Subject: {SUBJECT.get(outcome, SUBJECT['correct'])}\n\nHello,\n\nI’m writing about this page on your site:\n{url}\n\n"
+        f"{on_behalf}The page contains {issue} about me. {data.get('problem_summary', '')}\n\n"
+        f"The current, correct position is:\n{data.get('correct_information', '')}\n\n"
+        f"I can provide evidence of this: {data.get('evidence_summary', '')}\n\n"
+        f"I’m asking you to {ask}. Could you please confirm you’ve received this request and let me know your decision? "
+        f"If you need anything else from me to check it, please tell me how to send it securely.\n\n"
+        f"I’d be grateful for a reply within 14 days.\n\nKind regards,\n{name}")
+    followup = (f"Subject: Following up on my request about {url}\n\nHello,\n\nI wrote to you on [date you sent your first letter] about this page:\n{url}\n\n"
+        f"I asked you to {ask}. I haven’t had a reply yet. Could you let me know whether you’ve received my request, and when I can expect an answer?\n\nKind regards,\n{name}")
+    second = (f"Subject: Second request about {url}\n\nHello,\n\nI first wrote to you on [date of your first letter], and followed up on [date of your follow-up], "
+        f"asking you to {ask} on this page:\n{url}\n\nI still haven’t had a reply. The page continues to show {issue} about me, and it comes up when people search my name.\n\n"
+        f"I’d appreciate a decision either way. If you’re not able to make this change, could you tell me why, and whether there’s a complaints or review process I can use?\n\nKind regards,\n{name}")
+    return request_letter, followup, second
 
 
 @contextmanager
@@ -85,14 +116,14 @@ def sign(s, purpose, value):
 
 
 def private(s, title, body, status=200):
-    response = Response(s.page(title + ' — FixMyNameOnline™', body, robots='noindex,nofollow', analytics=False), status=status, mimetype='text/html')
+    response = Response(s.page(title, body, robots='noindex,nofollow', analytics=False), status=status, mimetype='text/html')
     response.headers.update({'Cache-Control': 'no-store, private', 'X-Robots-Tag': 'noindex, nofollow',
                              'Referrer-Policy': 'no-referrer', 'X-Frame-Options': 'DENY'})
     return response
 
 
 def error(s, text, status=400):
-    return private(s, 'Your action workspace', '<div class="card"><h1>Let’s check that.</h1><p>' + s.safe(text) + '</p><p><a class="btn" href="/diy-action/workspace">Return to workspace</a> <a href="/self-service#safety">Free guidance and safety options</a></p></div>', status)
+    return private(s, 'Your letter pack', '<div class="card"><h1>Let’s check that.</h1><p>' + s.safe(text) + '</p><p><a class="btn" href="/diy-action/workspace">Back to my workspace</a> <a class="btn btn2" href="/self-service">Free check and plan</a></p></div>', status)
 
 
 def paid(s, sid):
@@ -181,9 +212,34 @@ def valid_url(target):
         return False
 
 
+SAMPLE = {'target_url': 'https://www.example-news.com.au/2019/local-man-charged', 'name': 'Sam Example', 'authority': 'self',
+          'issue_type': 'outdated', 'requested_outcome': 'correct',
+          'problem_summary': 'It reports that I was charged in 2019, but not that the charge was withdrawn in 2020.',
+          'correct_information': 'The charge was withdrawn on 3 March 2020. No conviction was recorded.',
+          'evidence_summary': 'a letter from the court registry confirming the charge was withdrawn.'}
+
+
 def sales(s):
+    request_letter, followup, second = draft_letters(SAMPLE)
     body = (Path(__file__).with_name('single_action.html')).read_text(encoding='utf-8')
-    return s.page('Single DIY Action — US$19 once', body, canonical_path='/diy-action')
+    body = (body.replace('{{SAMPLE_REQUEST}}', s.safe(request_letter)).replace('{{SAMPLE_FOLLOWUP}}', s.safe(followup))
+            .replace('{{SAMPLE_SECOND}}', s.safe(second)).replace('{{BUILDING}}', s.icon('building')))
+    faq = [(q, a) for q, a in SALES_FAQ]
+    schema = [{'@type': 'Product', 'name': 'Letter pack for one link', 'description': 'Request, follow-up and second letters for one link, saved online with reminders. You send everything yourself.',
+               'brand': {'@type': 'Brand', 'name': 'Fix My Name Online'},
+               'offers': {'@type': 'Offer', 'price': '19.00', 'priceCurrency': 'USD', 'url': s.DOMAIN + '/diy-action', 'availability': 'https://schema.org/InStock'}},
+              {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in faq]}]
+    return s.page('Letter pack for one link: US$19 once', body,
+                  'Your request letter, a follow-up and a second letter for one link, saved online with reminders. US$19 once, refund within 7 days if unused. You send everything yourself.',
+                  canonical_path='/diy-action', schema_items=schema, safety='au')
+
+
+SALES_FAQ = [
+    ('What happens after I pay?', 'You go straight to your private workspace. Enter your facts, and your request letter, follow-up and second letter are created for that link. You can edit them, then send them yourself.'),
+    ('Can I use it on another device?', 'Yes. Your letters are saved online. Use the link from your payment confirmation, or get a new access link by email from the recovery page.'),
+    ('What if they say no?', 'Record the answer in your workspace. The free plan for your problem lists what to try next in your country.'),
+    ('Can I get a refund?', 'Yes, within 7 days if you haven’t created your letters yet, straight from your workspace. Your Australian Consumer Law rights always apply.'),
+]
 
 
 def checkout(s, tier):
@@ -228,6 +284,18 @@ def records(s, workspace):
         return [{'id': row['id'], **json.loads(row['payload'])} for row in con.execute('SELECT * FROM actions WHERE workspace=? ORDER BY rowid', (workspace['id'],))]
 
 
+def _field(label, control, hint=''):
+    hint_html = f'<span class="hint">{hint}</span>' if hint else ''
+    return f'<div class="field-sm"><label class="label-sm">{label}{hint_html}{control}</label></div>'
+
+
+def _letter(s, title, text, key, row_id, note=''):
+    note_html = f'<p class="letter-hint small">{note}</p>' if note else ''
+    return (f'<div class="letter"><div class="letter-bar"><strong>{title}</strong><span class="btn-row">'
+            f'<button type="button" class="btn btn-secondary btn-sm" data-copy="#{key}-{row_id}">{s.icon("copy", "icon icon-sm")}<span>Copy</span></button></span></div>'
+            f'<pre class="letter-body letter-pre" id="{key}-{row_id}">{s.safe(text)}</pre>{note_html}</div>')
+
+
 def workspace_page(s):
     workspace = authenticated(s)
     if not workspace:
@@ -235,15 +303,68 @@ def workspace_page(s):
     rows = records(s, workspace)
     token = sign(s, 'csrf', workspace['id'])
     hidden = '<input type="hidden" name="csrf" value="' + token + '">'
-    body = f'''<div class="card"><span class="pill ok">Private DIY Action Workspace™</span><h1>Your next move is ready.</h1><p>{len(rows)} of {workspace['cap']} URL slots used. Your actions are saved on FMNO’s server, not only this browser.</p><p><a class="btn" href="/diy-action/export.txt">Download text pack</a> <a class="btn btn2" href="/diy-action/export.json">Download JSON</a></p><p class="note">Save your original payment return link securely or use <a href="/diy-action/recover">email recovery</a>. Your browser access expires after 24 hours. Download a copy for your own records. Keep identity documents off this workspace.</p></div>'''
+    used = f'{len(rows)} of {workspace["cap"]} link{"s" if workspace["cap"] != 1 else ""} used'
+    first_host = (urlparse(rows[0]['target_url']).hostname or '').removeprefix('www.') if rows else ''
+    title = 'Your letter pack is ready' if not rows else ('Your letters for ' + (s.safe(first_host) if len(rows) == 1 else f'{len(rows)} links'))
+    lede = ('Enter the facts for your link and we’ll build your request letter, a follow-up and a second letter. You check them and send them yourself.'
+            if not rows else 'Edit your request letter, send it yourself, then record what happens. Your letters are saved online, so you can come back to them.')
+    body = f'''<section class="page-head"><div class="wrap"><p class="eyebrow">Letter pack · Private workspace · {used}</p><h1 style="margin-top:8px;overflow-wrap:anywhere">{title}</h1><p class="lede">{lede}</p></div></section><div class="wrap split"><div class="stack-lg">'''
     for row in rows:
-        choices = ''.join(f'<option value="{v}"' + (' selected' if row.get('status') == v else '') + f'>{v.title()}</option>' for v in sorted(STATUSES))
-        body += f'''<section class="card" style="margin-top:20px;overflow-wrap:anywhere"><span class="pill">DIY action pack generated</span><h2>{s.safe(row['target_url'])}</h2><p>Action reference: FMNO-DIY-{row['id'].upper()}</p><form method="post" action="/diy-action/save">{hidden}<input type="hidden" name="action_id" value="{row['id']}"><label for="draft-{row['id']}">Editable request</label><textarea id="draft-{row['id']}" name="draft" maxlength="16000" style="min-height:360px">{s.safe(row.get('draft'))}</textarea><label>Progress<select name="status">{choices}</select></label><label>Submission reference<input name="reference" maxlength="300" value="{s.safe(row.get('reference'))}"></label><label>My notes<textarea name="notes" maxlength="8000">{s.safe(row.get('notes'))}</textarea></label><label>Follow-up date (your local calendar)<input type="date" name="followup" value="{s.safe(row.get('followup'))}"></label><p><button class="btn">Save my changes</button></p></form><h3>Follow-up draft</h3><pre style="white-space:pre-wrap">{s.safe(row.get('followup_draft'))}</pre><p><a href="/diy-action/reminder.ics?action_id={row['id']}">Download calendar reminder</a> — save a date first; import the file into your calendar.</p></section>'''
+        rid = row['id']
+        choices = ''.join(f'<option value="{v}"' + (' selected' if row.get('status') == v else '') + f'>{STATUS_LABELS[v]}</option>' for v in ('preparing', 'submitted', 'waiting', 'closed'))
+        _, followup_default, second_default = draft_letters(row)
+        followup = row.get('followup_draft') or followup_default
+        second = row.get('second_draft') or second_default
+        body += f'''<section class="card card-lg steps-card" style="overflow-wrap:anywhere"><p class="eyebrow">Link · Reference FMNO-DIY-{rid.upper()}</p><p class="track-url" style="white-space:normal">{s.safe(row['target_url'])}</p>
+<ol class="steps mt-3">
+<li><h3>Check and edit your request letter</h3><p class="step-meta"><span>{s.icon("clock", "icon icon-sm")}10 minutes</span><span>{s.icon("mail", "icon icon-sm")}You send it</span></p>
+<form method="post" action="/diy-action/save" class="stack mt-2">{hidden}<input type="hidden" name="action_id" value="{rid}">
+<label class="label-sm" for="draft-{rid}">Your request letter (edit it here, then save)</label><textarea class="textarea letter-edit" id="draft-{rid}" name="draft" maxlength="16000">{s.safe(row.get('draft'))}</textarea>
+<p class="btn-row"><button type="button" class="btn btn-secondary btn-sm" data-copy="#draft-{rid}">{s.icon("copy", "icon icon-sm")}<span>Copy</span></button></p>
+<p class="meta"><strong>Where to send it:</strong> look for “Corrections”, “Contact”, “Privacy” or “Complaints” on the site. Send it to one place and keep a copy.</p>
+<div class="form-grid">
+{_field('Status', f'<select class="select" name="status">{choices}</select>')}
+{_field('Reference number', f'<input class="input" name="reference" maxlength="300" value="{s.safe(row.get("reference"))}">')}
+{_field('Check back on', f'<input class="input" type="date" name="followup" value="{s.safe(row.get("followup"))}">', ' (for your calendar)')}
+</div>
+{_field('My notes', f'<textarea class="textarea" name="notes" maxlength="8000">{s.safe(row.get("notes"))}</textarea>')}
+<p><button class="btn btn-primary">Save my changes</button></p></form></li>
+<li><h3>If there’s no reply after 14 days, send the follow-up</h3><p class="step-meta"><span>{s.icon("calendar", "icon icon-sm")}Day 14</span></p><div class="mt-2">{_letter(s, 'Follow-up letter', followup, 'followup', rid, 'Fill in the dates in square brackets before you send it.')}</div>
+<p class="btn-row mt-2"><a class="btn btn-secondary btn-sm" href="/diy-action/reminder.ics?action_id={rid}">{s.icon("calendar", "icon icon-sm")}Add my check-back date to my calendar</a></p><p class="small">Save a check-back date first. The file works in Apple, Google and Outlook calendars.</p></li>
+<li><h3>Still nothing after about 30 days? Send the second letter</h3><p class="step-meta"><span>{s.icon("calendar", "icon icon-sm")}Day 30</span></p><div class="mt-2">{_letter(s, 'Second letter', second, 'second', rid, 'It asks for a decision either way, and whether there’s a complaints process. It makes no threats.')}</div></li>
+<li><h3>Once the page changes, ask Google to refresh it</h3><p class="muted mt-1">Paste the same link. Google checks the live page and updates or drops the old result.</p><p class="btn-row mt-2"><a class="btn btn-secondary btn-sm" href="https://search.google.com/search-console/remove-outdated-content" target="_blank" rel="noopener noreferrer">Google’s Refresh Outdated Content tool {s.icon("ext", "icon icon-sm")}</a></p></li>
+</ol></section>'''
     if len(rows) < workspace['cap']:
-        body += f'''<section class="card" style="margin-top:20px"><h2>Add an action</h2><form method="post" action="/diy-action/generate">{hidden}<label>Your name<input name="name" maxlength="160" required></label><label>Country / state<input name="country_state" maxlength="160" required></label><label>Your authority<select name="authority"><option value="self">I am the person affected</option><option value="authorised">I am authorised to act for the person or business</option></select></label><label>Public target URL<input type="url" name="target_url" maxlength="2000" required></label><label>Issue<select name="issue_type">{''.join(f'<option value="{k}">{v}</option>' for k,v in ISSUES.items())}</select></label><label>Requested outcome<select name="requested_outcome">{''.join(f'<option value="{k}">{v}</option>' for k,v in OUTCOMES.items())}</select></label><label>What is wrong, outdated or sensitive?<textarea name="problem_summary" maxlength="3000" required></textarea></label><label>Evidence available (descriptions, not private documents)<textarea name="evidence_summary" maxlength="5000" required></textarea></label><label>Correct/current information<textarea name="correct_information" maxlength="3000" required></textarea></label><label><input style="width:auto" type="checkbox" name="truth_confirmed" value="yes" required> My facts are accurate. I will review the wording and submit any request myself.</label><label><input style="width:auto" type="checkbox" name="scope_confirmed" value="yes" required> This does not involve threats, minors, emergencies, active proceedings or a complex legal dispute.</label><label><input style="width:auto" type="checkbox" name="related_confirmed" value="yes" required> All URLs concern the same person/business and related issue. I understand saved URL slots cannot be swapped.</label><p><button class="btn">Generate and save my action →</button></p></form></section>'''
-    body += '''<section class="recommend"><h2>Evidence checklist</h2><ul><li>Keep the exact URL, date and screenshots privately.</li><li>Check you have the right person; a shared name does not prove identity.</li><li>Keep evidence supporting each correction.</li><li>Find the publisher’s official contact, privacy or corrections channel.</li><li>Only share necessary identity evidence through a verified secure channel.</li></ul><p><a href="https://search.google.com/search-console/remove-outdated-content" rel="noreferrer noopener" target="_blank">Official Google outdated-content tool</a> — only when content has already changed or disappeared. For other issues, see <a href="/self-service">official pathways in the free desk</a>.</p><p class="note">You verify and submit everything. Publishers, platforms and search engines decide outcomes.</p></section>'''
-    body += f'<form method="post" action="/diy-action/refund">{hidden}<p class="note">Unused purchase within seven days? <button class="btn btn2" name="confirm" value="refund">Refund this unused purchase</button></p></form><form method="post" action="/diy-action/logout">{hidden}<button class="btn btn2">Lock workspace on this browser</button></form>'
-    return private(s, 'My saved action pack', body)
+        issues = ''.join(f'<option value="{k}">{v[0].upper() + v[1:]}</option>' for k, v in ISSUES.items())
+        outcomes = ''.join(f'<option value="{k}">{ASK[k][0].upper() + ASK[k][1:]}</option>' for k in OUTCOMES)
+        body += f'''<section class="card stack"><h2 class="h-sans">Create your letters{' for another link' if rows else ''}</h2><p class="meta">Use plain facts. Don’t include passwords, ID numbers or private documents. Once you create letters for a link, that link can’t be swapped.</p>
+<form method="post" action="/diy-action/generate" class="stack">{hidden}
+<div class="form-grid">
+{_field('Your name', '<input class="input" name="name" maxlength="160" required autocomplete="name">')}
+{_field('Country and state', '<input class="input" name="country_state" maxlength="160" required>')}
+</div>
+{_field('Who is it about?', '<select class="select" name="authority"><option value="self">Me</option><option value="authorised">Someone who has asked me to help</option></select>')}
+{_field('The link', '<input class="input" type="url" name="target_url" maxlength="2000" required placeholder="https://">', ' (the page, not the Google result)')}
+<div class="form-grid">
+{_field('What’s the problem?', f'<select class="select" name="issue_type">{issues}</select>')}
+{_field('What are you asking for?', f'<select class="select" name="requested_outcome">{outcomes}</select>')}
+</div>
+{_field('What’s wrong, out of date or private on the page?', '<textarea class="textarea" name="problem_summary" maxlength="3000" required></textarea>', ' One or two sentences.')}
+{_field('What’s the correct, current position?', '<textarea class="textarea" name="correct_information" maxlength="3000" required></textarea>')}
+{_field('What evidence can you provide?', '<textarea class="textarea" name="evidence_summary" maxlength="5000" required></textarea>', ' Describe it; don’t paste private documents.')}
+<label class="check-row"><input type="checkbox" name="truth_confirmed" value="yes" required><span>My facts are accurate. I’ll check the letters and send them myself.</span></label>
+<label class="check-row"><input type="checkbox" name="scope_confirmed" value="yes" required><span>This doesn’t involve threats, a child, an emergency, a case that’s still running, or a complex legal dispute.</span></label>
+<label class="check-row"><input type="checkbox" name="related_confirmed" value="yes" required><span>I understand the link can’t be swapped once my letters are created.</span></label>
+<p><button class="btn btn-primary">Create my letters</button></p></form></section>'''
+    body += '</div><aside class="aside stack">'
+    body += f'''<div class="card stack-sm"><h3 class="h-icon">{s.icon("download")} Keep a copy</h3><p class="btn-row"><a class="btn btn-secondary btn-sm" href="/diy-action/export.txt">Download as text</a><a class="btn btn-secondary btn-sm" href="/diy-action/export.json">Download data (JSON)</a></p><p class="small">Print the page to save it as a PDF.</p></div>
+<div class="card stack-sm"><h3 class="h-icon">{s.icon("lock")} Getting back in</h3><p class="meta">This browser stays unlocked for 24 hours. After that, use the link from your payment confirmation, or get a new one from <a href="/diy-action/recover">workspace recovery</a>. Anyone with your link can open this workspace.</p>
+<form method="post" action="/diy-action/logout">{hidden}<button class="btn btn-secondary btn-sm">Lock this browser now</button></form></div>
+<div class="callout callout-info">{s.icon("info", "icon icon-sm")}<p>You send everything yourself. Publishers, platforms and Google make their own decisions, and no one can promise a result.</p></div>'''
+    if not rows:
+        body += f'''<form method="post" action="/diy-action/refund" class="card stack-sm">{hidden}<h3>Changed your mind?</h3><p class="meta">You can refund this pack yourself within 7 days, as long as you haven’t created your letters yet.</p><button class="btn btn-secondary btn-sm" name="confirm" value="refund">Refund this unused purchase</button></form>'''
+    body += '</aside></div>'
+    return private(s, 'My letter pack', '<main id="main">' + body + '</main>')
 
 
 def generate(s):
@@ -261,10 +382,8 @@ def generate(s):
         return error(s, 'Confirm your authority, factual accuracy and that this is within the stated DIY scope.')
     if re.search(r'\b(minor|child|suicid\w*|blackmail|sextortion|death threat|active (court|proceeding)|ongoing (trial|proceeding)|complex defamation)\b', ' '.join(data[k] for k in required), re.I):
         return error(s, 'This appears outside the automated tool’s safety scope. Use the free safety guidance and suitable independent support, not an automated request.')
-    who = 'I am the person affected' if authority == 'self' else 'I am authorised to act for the affected person or business'
-    data['draft'] = f"Subject: Request to {OUTCOMES[outcome]}\n\nHello,\n\nI am writing about {data['target_url']}. {who}.\n\nThe concern:\n{data['problem_summary']}\n\nCorrect/current information:\n{data['correct_information']}\n\nEvidence available:\n{data['evidence_summary']}\n\nPlease {OUTCOMES[outcome]}. Please confirm receipt and explain your decision. Let me know if further evidence is required through a secure official channel.\n\nRegards,\n{data['name']}"
     data.update(issue_type=issue, requested_outcome=outcome, authority=authority, status='preparing', notes='', reference='', followup='')
-    data['followup_draft'] = f"Hello,\n\nI am following up on my request about {data['target_url']}. My submission date and reference are recorded separately. Please confirm receipt and advise the status or any further evidence needed.\n\nRegards,\n{data['name']}"
+    data['draft'], data['followup_draft'], data['second_draft'] = draft_letters(data)
     with db(s) as con:
         con.execute('BEGIN IMMEDIATE')
         if con.execute('SELECT 1 FROM refund_state WHERE workspace=?', (workspace['id'],)).fetchone():
@@ -314,10 +433,18 @@ def export(s, kind):
         body = json.dumps(payload, ensure_ascii=False, indent=2)
         mime = 'application/json'
     else:
-        body = 'FIX MY NAME ONLINE — MY ACTION PACK\nReview all facts. You submit requests yourself.\n\n'
+        parts = ['FIX MY NAME ONLINE · MY LETTER PACK', 'You check the facts and send everything yourself. Nothing has been sent for you.', '']
         for row in payload['actions']:
-            body += '\n'.join(f'{k.upper()}: {v}' for k, v in row.items()) + '\n\n'
-        body += 'EVIDENCE CHECKLIST: exact URL, screenshots, dates, correction evidence, official contact channel.\nFollow up only after a reasonable response period; 14 days is a suggestion, not a legal deadline.\n'
+            _, followup_default, second_default = draft_letters(row)
+            parts += [f"LINK: {row.get('target_url', '')}", f"Reference: FMNO-DIY-{str(row.get('id', '')).upper()}",
+                      f"Status: {STATUS_LABELS.get(row.get('status'), row.get('status', ''))}", f"Your reference number: {row.get('reference', '') or '-'}",
+                      f"Check back on: {row.get('followup', '') or '-'}", f"My notes: {row.get('notes', '') or '-'}", '',
+                      '=== 1. REQUEST LETTER ===', row.get('draft', ''), '',
+                      '=== 2. FOLLOW-UP LETTER (send if there’s no reply after 14 days) ===', row.get('followup_draft') or followup_default, '',
+                      '=== 3. SECOND LETTER (send if there’s still no reply after about 30 days) ===', row.get('second_draft') or second_default, '',
+                      'Once the page changes, ask Google to refresh it: https://search.google.com/search-console/remove-outdated-content', '', '']
+        parts.append('Before you send: check every fact, fill in anything in [square brackets], and keep a copy. 14 and 30 days are suggestions, not legal deadlines.')
+        body = '\n'.join(parts) + '\n'
         mime = 'text/plain'
     return Response(body, mimetype=mime, headers={'Content-Disposition': f'attachment; filename="FMNO-Action-Pack.{kind}"', 'Cache-Control': 'no-store, private'})
 
