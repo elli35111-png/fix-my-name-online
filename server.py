@@ -2146,7 +2146,8 @@ def seo_guide(slug):
 
 @app.route('/delete-me')
 def delete_me_style_redirect():
-    return redirect('/name-watch-alerts', code=301)
+    # "Delete me" searches are about people-search listings, not alerts.
+    return redirect('/help/people-search-sites', code=301)
 
 
 @app.route('/google-alerts-for-my-name')
