@@ -152,8 +152,10 @@ def test_new_namewatch_sales_paused(shop):
         r = client.get('/checkout/' + tier)
         assert r.status_code == 302 and urlparse(r.headers['Location']).path == '/name-watch-alerts'
     body = client.get('/name-watch-alerts').get_data(as_text=True)
-    assert 'New subscriptions are paused' in body
+    assert 'NameWatch is coming back.' in body and 'New sign-ups are paused' in body
+    assert 'action="/name-watch-alerts/waitlist"' in body
     assert '/billing' in body
+    assert '/checkout/sentinel' not in body
 
 
 def test_pricing_and_checkout_amounts(shop, monkeypatch):
@@ -192,8 +194,28 @@ def test_webhook_no_owner_queue_idempotent(shop, monkeypatch):
 
 def test_questions_no_longer_creates_manual_work(shop):
     client, _ = shop
-    assert client.get('/questions').status_code == 302
+    response = client.get('/questions')
+    assert response.status_code == 301 and response.headers['Location'] == '/contact'
     assert client.post('/submit-question', data={'name': 'x', 'email': 'x@example.com', 'question': 'x'}).status_code == 410
+
+
+def test_refund_button_hidden_once_letters_exist_and_letters_are_readable(shop):
+    client, session_for = shop
+    session_for('cs_test_refund_ui')
+    csrf = start(client, 'cs_test_refund_ui')
+    assert 'Refund this unused purchase' in client.get('/diy-action/workspace').get_data(as_text=True)
+    data = fields(csrf)
+    data['requested_outcome'] = 'anonymise'
+    assert client.post('/diy-action/generate', data=data).status_code == 303
+    html = client.get('/diy-action/workspace').get_data(as_text=True)
+    assert 'Refund this unused purchase' not in html
+    assert 'Follow-up letter' in html and 'Second letter' in html
+    assert 'remove my name and other identifying details from the page' in html
+    text = client.get('/diy-action/export.txt').get_data(as_text=True)
+    assert '=== 1. REQUEST LETTER ===' in text and '=== 3. SECOND LETTER' in text
+    assert 'ISSUE_TYPE:' not in text  # no raw key dump
+    for banned in ('lawsuit', 'legal action', 'we will sue', 'defamation'):
+        assert banned not in text.lower()
 
 
 def test_unused_refund_verified_and_existing_cookie_revoked(shop, monkeypatch):
@@ -284,7 +306,7 @@ def test_customer_browser_flow_mobile(shop, tmp_path):
                     loc.select_option(value)
                 else:
                     loc.fill(value)
-            page.get_by_role('button', name='Generate and save my action').click()
+            page.get_by_role('button', name='Create my letters').click()
             page.locator('[name=draft]').fill('Customer edited request')
             page.locator('[name=reference]').fill('REF-BROWSER')
             page.locator('[name=followup]').fill('2026-11-20')
@@ -292,7 +314,7 @@ def test_customer_browser_flow_mobile(shop, tmp_path):
             page.reload()
             assert page.locator('[name=draft]').input_value() == 'Customer edited request'
             with page.expect_download() as event:
-                page.get_by_role('link', name='Download text pack').click()
+                page.get_by_role('link', name='Download as text').click()
             event.value.save_as(tmp_path / 'pack.txt')
             assert 'REF-BROWSER' in (tmp_path / 'pack.txt').read_text()
             assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth')

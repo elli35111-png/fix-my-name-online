@@ -28,13 +28,25 @@ def test_homepage_structured_data_is_valid_json(client):
     soup = BeautifulSoup(client.get('/').get_data(as_text=True), 'html.parser')
     data = json.loads(soup.select_one('script[type="application/ld+json"]').string)
     assert data['@context'] == 'https://schema.org'
-    assert {row['@type'] for row in data['@graph']} == {'Organization', 'WebSite', 'FAQPage'}
+    assert {'Organization', 'WebSite', 'FAQPage'} <= {row['@type'] for row in data['@graph']}
+    org = next(row for row in data['@graph'] if row['@type'] == 'Organization')
+    assert org['legalName'] == 'Madison Jade Pty Ltd' and org['taxID'] == '56661580936'
 
 
 @pytest.mark.parametrize('route', ['/app', '/free-search-snapshot'])
-def test_complete_accessible_form(client, route):
+def test_old_intake_urls_now_open_the_free_check(client, route):
+    response = client.get(route)
+    assert response.status_code == 301
+    assert response.headers['Location'] == '/self-service?from=snapshot'
+
+
+def test_legacy_form_still_renders_accessibly_for_cached_posts(client):
+    # Old cached forms can still POST; a validation error re-renders the full form.
     from bs4 import BeautifulSoup
-    body = client.get(route).get_data(as_text=True)
+    data = valid(); data['goal'] = ''
+    response = client.post('/submit-snapshot', data=data)
+    assert response.status_code == 400
+    body = response.get_data(as_text=True)
     soup = BeautifulSoup(body, 'html.parser')
     for name in ('name', 'email', 'country_state', 'authority', 'goal', 'consent'):
         field = soup.select_one('[name="' + name + '"]')
@@ -98,7 +110,7 @@ def test_concierge_success_preserves_location(client):
 def test_get_submit_returns_form_not_405(client):
     response = client.get('/submit-snapshot')
     assert response.status_code == 303
-    assert response.headers['Location'] == '/free-search-snapshot'
+    assert response.headers['Location'] == '/self-service'
 
 
 def test_private_room_and_paid_workspace_not_indexable(client):

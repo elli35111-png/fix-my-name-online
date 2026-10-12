@@ -25,36 +25,35 @@ def intake_origin(monkeypatch, tmp_path):
     http.shutdown(); thread.join()
 
 
+VALID = {'name': 'Synthetic QA Person', 'email': 'synthetic-browser-qa@example.com', 'country_state': 'Australia, NSW',
+         'authority': 'self', 'consent': 'yes', 'goal': 'An old article omits a later correction.',
+         'case_type': 'Old article or outdated result', 'problem_links': '', 'source_page': 'browser_qa'}
+
+
 @pytest.mark.parametrize('width', [360, 768, 1440])
-def test_real_form_and_room(intake_origin, width, tmp_path):
+def test_legacy_intake_and_room_render_in_the_new_shell(intake_origin, width, tmp_path):
+    """The old Snapshot form is retired, but cached forms and the 10 existing
+    private rooms must keep working, inside the shared shell."""
+    import re
+    client = server.app.test_client()
+    result = client.post('/submit-snapshot', data=VALID)
+    assert result.status_code == 200
+    assert len(server.LEADS_FILE.read_text().splitlines()) == 1
+    room = re.search(r'href="(/private-case-room/[^"]+)"', result.get_data(as_text=True)).group(1).replace('&amp;', '&')
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': width, 'height': 1000})
         errors = []
         page.on('pageerror', lambda error: errors.append(str(error)))
         page.goto(intake_origin + '/free-search-snapshot?source=browser_qa')
-        assert page.locator('h1').inner_text() == 'Your next step starts here.'
+        assert page.url.endswith('/self-service?from=snapshot')
+        assert 'now this free check' in page.locator('#desk-app').inner_text()
+        page.goto(intake_origin + room)
+        assert 'not a live Google search' in page.locator('body').inner_text()
+        assert page.locator('header.site-header').count() == 1
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-        page.locator('#snapshot-submit').click()
-        assert page.url.endswith('source=browser_qa')
-        assert not server.LEADS_FILE.exists()
-        page.locator('#snapshot-name').fill('Synthetic QA Person')
-        page.locator('#snapshot-email').fill('synthetic-browser-qa@example.com')
-        page.locator('#snapshot-country_state').fill('Australia, NSW')
-        page.locator('#snapshot-authority').select_option('self')
-        page.locator('#snapshot-goal').fill('An old article omits a later correction.')
-        page.locator('#snapshot-consent').check()
         screenshot_dir = Path(__file__).resolve().parents[1] / 'qa_proof'
         screenshot_dir.mkdir(exist_ok=True)
-        page.screenshot(path=str(screenshot_dir / ('intake-%s.png' % width)), full_page=True)
-        page.locator('#snapshot-submit').click()
-        page.wait_for_url('**/submit-snapshot')
-        assert 'Your next step. Your decision.' in page.locator('h1').inner_text()
-        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-        assert len(server.LEADS_FILE.read_text().splitlines()) == 1
-        page.get_by_role('link', name='Open your private intake room').click()
-        page.wait_for_url('**/private-case-room/**')
-        assert 'not a live Google search' in page.locator('body').inner_text()
-        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.screenshot(path=str(screenshot_dir / ('case-room-%s.png' % width)), full_page=True)
         assert not errors
         browser.close()

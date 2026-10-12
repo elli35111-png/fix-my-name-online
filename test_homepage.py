@@ -1,14 +1,12 @@
-"""Smoke checks for the FixMyNameOnline homepage overhaul.
+"""Homepage and site contract for the self-serve redesign (Oct 2026).
 
-Run:  python -m pytest test_homepage.py   (or)   python test_homepage.py
+Run:  python -m pytest test_homepage.py
 
-These tests focus on the conversion-oriented homepage rules requested:
-- Homepage route still serves the landing page (SEO/routes preserved).
-- The hero has a single primary CTA to the Free Search Snapshot.
-- The Ava avatar does NOT autoplay or loop a fixed line (no autoplay/loop attrs).
-- The avatar/concierge never falls back to cheap browser speechSynthesis TTS.
-- The optional ElevenLabs voice endpoint stays silent (204) when unconfigured.
-- Core routes/forms/concierge API remain intact.
+- The homepage names the visitor's problem on the first screen: six problem
+  tiles plus "not sure", each opening the free check with that problem.
+- The who line (company + ABN), "not a law firm" and the safety strip are visible.
+- No video/voice concierge, no browser TTS, no tracking on desk links.
+- Core routes, checkout gates and the concierge API remain intact.
 """
 
 import os
@@ -20,7 +18,11 @@ os.environ.setdefault("FMNO_DATA_DIR", "data")
 
 import server  # noqa: E402
 
-HTML = open("homepage.html", encoding="utf-8").read()
+import plans  # noqa: E402
+
+
+def home_html():
+    return client().get("/").get_data(as_text=True)
 
 
 def client():
@@ -32,8 +34,9 @@ def test_homepage_route_serves_landing():
     res = client().get("/")
     assert res.status_code == 200
     body = res.get_data(as_text=True)
-    assert "FIX MY NAME ONLINE" in body
-    assert "Free Search Snapshot" in body
+    assert "Something about you shows up on Google. Here’s what you can do about it." in body
+    assert "What’s showing up for your name?" in body
+    assert "Free Search Snapshot" not in body
 
 
 def test_canonical_and_seo_preserved():
@@ -44,27 +47,27 @@ def test_canonical_and_seo_preserved():
     assert "FAQPage" in body
 
 
-def test_single_primary_hero_cta():
-    # Exactly one primary hero snapshot CTA (the decluttered single primary action).
-    hero = HTML.split('id="reputation-tv"')[0]
-    primary = re.findall(r'data-track="homepage_hero_snapshot"', hero)
-    assert len(primary) == 1, f"expected 1 primary hero CTA, found {len(primary)}"
-    # The old cluttered mini-form + triple CTA row should be gone from the hero.
-    assert "homepage_name_miniform" not in hero
-    assert "See What We Handle" not in hero
+def test_hero_names_six_problems_and_links_into_the_free_check():
+    hero = home_html().split('class="hero"')[1].split('class="safety"')[0]
+    for p in plans.PROBLEMS:
+        assert f'href="/self-service?problem={p["key"]}"' in hero, p["key"]
+        assert p["label"] in hero
+    assert 'href="/self-service?problem=not-sure"' in hero
+    assert "We don’t search Google or give you a score." in hero
 
 
 def test_avatar_not_autoplay_or_loop():
     # Redesigned homepage intentionally has no media/voice concierge.
-    assert '<video' not in HTML and '<audio' not in HTML
-    assert "HEAR FROM AVA" not in HTML
-    assert "ava-play-btn" not in HTML
+    html = home_html()
+    assert '<video' not in html and '<audio' not in html
+    assert "HEAR FROM AVA" not in html
+    assert "ava-play-btn" not in html
 
 
 def test_no_browser_tts():
-    # No cheap browser TTS anywhere.
-    assert "speechSynthesis" not in HTML
-    assert "SpeechSynthesisUtterance" not in HTML
+    html = home_html() + open('assets/site.js', encoding='utf-8').read() + open('assets/self-service.js', encoding='utf-8').read()
+    assert "speechSynthesis" not in html
+    assert "SpeechSynthesisUtterance" not in html
 
 
 def test_voice_endpoint_silent_when_unconfigured():
@@ -110,37 +113,42 @@ def test_concierge_chat_exposes_voice_flag():
     assert isinstance(data["voice_available"], bool)
 
 
-def test_homepage_routes_to_complete_intake_not_mini_form():
-    assert '/free-search-snapshot?source=homepage_hero_snapshot' in HTML
-    assert 'action="/submit-snapshot"' not in HTML
-    assert '/self-service' in HTML
-
-
-def test_homepage_never_calls_concierge_model_or_voice():
-    script = open('assets/homepage.js', encoding='utf-8').read()
-    assert '/api/concierge/' not in HTML + script
-    assert 'speechSynthesis' not in script
+def test_homepage_has_no_intake_form_and_no_model_calls():
+    html = home_html()
+    assert 'action="/submit-snapshot"' not in html
+    assert '/free-search-snapshot' not in html and 'href="/app' not in html
+    script = open('assets/site.js', encoding='utf-8').read()
+    assert '/api/concierge/' not in html + script
+    assert 'fetch(' not in script and 'sendBeacon' not in script
 
 
 def test_accessible_navigation_and_legacy_anchors():
-    assert 'aria-controls="main-nav"' in HTML
-    assert 'aria-expanded="false"' in HTML
+    html = home_html()
+    assert '<a class="skip" href="#main">' in html
+    assert '<details class="menu">' in html and 'aria-label="Main"' in html
     for anchor in ('how-it-works', 'pricing', 'faq'):
-        assert 'id="' + anchor + '"' in HTML
+        assert 'id="' + anchor + '"' in html
 
 
-def test_claude48_polish_guards():
-    assert "Operated by MadisonJade Pty Ltd" in HTML
-    assert "ABN 56 661 580 936" in HTML
-    assert 'cdn.tailwindcss.com' not in HTML
-    assert 'fonts.googleapis.com' not in HTML
-    assert "prefers-reduced-motion" in open('assets/homepage.css', encoding='utf-8').read()
+def test_trust_line_safety_strip_and_no_cdn():
+    html = home_html()
+    assert "Run by Madison Jade Pty Ltd · ABN 56 661 580 936 · Australia. Not a law firm." in html
+    assert 'class="safety"' in html and 'Call 000.' in html and 'https://www.esafety.gov.au/report' in html
+    assert "MadisonJade" not in html
+    assert 'cdn.tailwindcss.com' not in html
+    assert 'fonts.googleapis.com' not in html
+    assert "prefers-reduced-motion" in open('assets/site.css', encoding='utf-8').read()
+    assert '"legalName": "Madison Jade Pty Ltd"' in html and '"taxID": "56661580936"' in html
 
 
 def test_core_routes_preserved():
     c = client()
     for path in (
         "/free-search-snapshot",
+        "/self-service",
+        "/self-service/tracker",
+        "/how-it-works",
+        "/faq",
         "/pricing",
         "/privacy",
         "/terms",
@@ -169,28 +177,24 @@ def test_allowlisted_public_assets_still_serve():
     assert c.get("/static/personal/ilija-cakar-approved-profile-photo-square.jpg").status_code == 200
 
 
-def test_snapshot_form_conversion_polish():
-    body = client().get("/app?source=qa_test").get_data(as_text=True)
-    assert "Your next step starts here." in body
-    assert "Name / business / search phrase" in body
-    assert "Email for your request" in body
-    assert "Country and state / region" in body
-    assert "Who is this for?" in body
-    assert 'name="source_page" value="qa_test"' in body
-    assert "Operated by MadisonJade Pty Ltd" in body
-    assert "ABN 56 661 580 936" in body
-    assert "snapshot-shell" in body
-    assert "What you get" in body
-    assert "not a live Google search" in body
-    assert '/assets/snapshot-intake.js' in body
-    assert "Private intake · no public case disclosure" in body
+def test_old_snapshot_urls_redirect_to_the_free_check():
+    c = client()
+    for path in ('/app?source=qa_test', '/free-search-snapshot', '/free-snapshot', '/snapshot'):
+        res = c.get(path)
+        assert res.status_code == 301, path
+        assert res.headers['Location'] == '/self-service?from=snapshot'
+    assert c.get('/submit-snapshot').headers['Location'] == '/self-service'
 
 
-def test_inner_page_header_is_fmno_only():
-    body = client().get('/diy-action').get_data(as_text=True)
-    assert '<a class="logo" href="/">FIX MY NAME ONLINE™</a>' in body
-    assert 'aria-label="Main navigation"' in body
-    assert 'FIXMYNAMEONLINE™ · MADISONJADE PTY LTD' not in body
+def test_inner_pages_share_one_header_and_footer():
+    c = client()
+    for path in ('/diy-action', '/terms', '/learn', '/old-news-article-on-google', '/help/reviews', '/self-service'):
+        body = c.get(path).get_data(as_text=True)
+        assert '<header class="site-header">' in body, path
+        assert '<footer class="site-footer">' in body, path
+        assert 'ABN 56 661 580 936' in body, path
+        assert '/assets/site.css?v=' in body, path
+        assert 'FIX MY NAME ONLINE™' not in body and 'class="seo-nav"' not in body, path
 
 
 
@@ -200,7 +204,8 @@ def test_diy_product_and_legacy_offer_gates():
     assert sales.status_code == 200
     body = sales.get_data(as_text=True)
     assert 'US$19' in body and 'US$49' not in body
-    assert 'submit requests yourself' in body
+    assert 'You still check and send everything yourself.' in body
+    assert 'Sample with example details' in body
     checkout = c.get('/checkout/diy-action')
     assert checkout.status_code == 503
     assert 'Checkout is temporarily unavailable' in checkout.get_data(as_text=True)
@@ -322,7 +327,7 @@ def test_health_reports_namewatch_and_webhook_readiness(monkeypatch):
 
 def test_public_services_page_only_sells_automated_products():
     body = client().get('/services').get_data(as_text=True)
-    assert 'Single Action' in body and 'Action Pack' not in body
+    assert 'Letter pack (Single Action), US$19' in body and 'Action Pack' not in body
     assert 'US$19' in body and 'US$49' not in body
     assert '/checkout/sentinel' not in body
     assert '/diy-action?source=services' in body
@@ -360,8 +365,9 @@ def test_legacy_synthetic_session_id_is_not_a_payment_bypass(tmp_path):
 
 def test_homepage_retires_human_review_sales_language():
     body = client().get('/').get_data(as_text=True)
-    assert 'DIY Action' in body and 'Workspace™' in body
-    assert '$19' in body and '$49' not in body
+    assert 'Letter pack for one link' in body and 'US$19' in body
+    assert '$49' not in body and 'US$29' not in body
+    assert 'NameWatch' in body and 'Join the waitlist' in body
     assert 'HUMAN REVIEW' not in body
     assert 'REMOVAL REVIEW™</h3><div class="text-4xl font-bold">$297' not in body
 
@@ -379,6 +385,7 @@ def test_exact_brand_and_query_guides_are_index_ready():
         schema = json.loads(match.group(1))
         assert schema['@context'] == 'https://schema.org'
     assert 'does not process legal name changes' in c.get('/fix-my-name-online').get_data(as_text=True)
+    assert 'max-image-preview' in c.get('/help/old-news-articles').get_data(as_text=True)
 
 
 def test_sitemap_index_separates_core_guides_and_profiles():
@@ -391,6 +398,9 @@ def test_sitemap_index_separates_core_guides_and_profiles():
         'https://fixmynameonline.com/sitemap-personal-search.xml',
     ]
     core = c.get('/sitemap-core.xml').get_data(as_text=True)
+    for removed in ('/app<', '/free-search-snapshot<', '/questions<'):
+        assert 'https://fixmynameonline.com' + removed not in core
+    assert 'https://fixmynameonline.com/help/people-search-sites' in core
     assert 'https://fixmynameonline.com/fix-your-name-online' in core
     assert 'https://fixmynameonline.com/how-to-fix-your-reputation-online' in core
 
