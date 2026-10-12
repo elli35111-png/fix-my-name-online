@@ -582,3 +582,41 @@ button.btn-quiet { border: 0; background: none; cursor: pointer; font: inherit; 
 .amount-line { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .amount-big { font: 500 2.75rem/1 var(--serif); }
 details.letter-more.card summary { font-size: var(--t-md); color: var(--ink); }
+
+/* compact header action on phones and tablets (the full nav takes over at 900px) */
+.head-actions { display: flex; align-items: center; gap: 8px; }
+.head-cta { min-height: 44px; white-space: nowrap; }
+@media (min-width: 900px) { .head-cta { display: none; } }
+@media (max-width: 400px) {
+  .site-header .wrap { gap: 8px; }
+  .logo { font-size: .9375rem; gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; }
+  .menu-btn { padding: 0 12px; }
+  .menu-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .head-cta { padding-left: 12px; padding-right: 12px; }
+}
+@media (max-width: 340px) { .logo-text { display: none; } }
+
+/* below-desktop only helpers */
+.only-below-desk { display: none; }
+@media (max-width: 1023px) { .only-below-desk { display: block; } }
+
+/* free check: the problem you picked, folded */
+.picked-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+.picked-row p { margin: 0; }
+
+/* free check: unanswered question, explained where you're looking */
+.has-error { outline: 2px solid var(--safe-line); outline-offset: 8px; border-radius: 6px; scroll-margin-top: 96px; }
+.q-error { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; color: var(--safe-ink); font-weight: 600; font-size: var(--t-sm); }
+.q-error .icon { margin-top: 2px; flex: none; }
+#questions, #plan-steps, .steps > li { scroll-margin-top: 84px; }
+
+/* plan: the at-a-glance card carries the actions and stays in view on desktop */
+.glance-actions { margin-top: var(--s2); }
+@media (min-width: 1024px) {
+  .split .aside.aside-plan { position: static; align-self: stretch; }
+  .split .aside-plan .glance { position: sticky; top: 84px; z-index: 2; box-shadow: var(--shadow); }
+}
+.quick-actions { background: var(--brand-soft); border-color: transparent; }
+.keep-prompt .btn-row { margin-top: 4px; }
+.keep-prompt strong { display: block; }

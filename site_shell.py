@@ -84,7 +84,7 @@ def icon(name, cls='icon'):
     return f'<svg class="{cls}" aria-hidden="true" focusable="false"><use href="#i-{name}"/></svg>'
 
 
-LOGO = f'<a class="logo" href="/"><span class="logo-mark" aria-hidden="true">F<i>.</i></span>{BRAND}</a>'
+LOGO = f'<a class="logo" href="/" aria-label="{BRAND} home"><span class="logo-mark" aria-hidden="true">F<i>.</i></span><span class="logo-text">{BRAND}</span></a>'
 
 NAV_LINKS = [
     ('/how-it-works', 'How it works', 'how'),
@@ -100,17 +100,22 @@ def header(current=None, desk=False):
         for href, label, key in NAV_LINKS)
     if desk:
         cta = f'<a class="btn btn-secondary btn-sm" href="/self-service/tracker">{icon("file", "icon icon-sm")}My tracker</a>'
+        compact = '<a class="btn btn-secondary btn-sm head-cta" href="/self-service/tracker">My tracker</a>'
     else:
         cta = '<a class="btn btn-primary btn-sm" href="/self-service">Start free check</a>'
+        compact = '<a class="btn btn-primary btn-sm head-cta" href="/self-service">Free check</a>'
     sheet = ''.join(f'<a href="{href}">{label}</a>' for href, label, _key in NAV_LINKS)
     return f'''<header class="site-header">
 <div class="wrap">
 {LOGO}
 <nav class="nav" aria-label="Main">{links}{cta}</nav>
+<div class="head-actions">
+{compact}
 <details class="menu">
 <summary class="menu-btn" aria-label="Open menu">{icon("menu", "icon icon-sm")}<span>Menu</span></summary>
 <nav class="menu-sheet" aria-label="Menu">{sheet}<a href="/self-service">Free check and plan</a><a href="/self-service/tracker">My tracker</a><a class="btn btn-primary btn-block" href="/self-service">Start free check</a></nav>
 </details>
+</div>
 </div>
 </header>'''
 

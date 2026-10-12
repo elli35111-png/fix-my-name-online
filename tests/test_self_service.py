@@ -60,6 +60,10 @@ def test_home_navigation_and_faq(origin, width):
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         if width < 900:
             assert not page.locator('.nav').is_visible()
+            # The way in is visible without opening the menu.
+            cta = page.locator('.head-cta')
+            assert cta.is_visible() and cta.get_attribute('href') == '/self-service'
+            assert cta.bounding_box()['y'] < 60
             page.locator('.menu summary').click()
             assert page.locator('.menu-sheet').is_visible()
             page.keyboard.press('Escape')
@@ -67,6 +71,7 @@ def test_home_navigation_and_faq(origin, width):
         else:
             assert page.locator('.nav').is_visible()
             assert not page.locator('.menu summary').is_visible()
+            assert not page.locator('.head-cta').is_visible()
         page.locator('#faq summary').nth(1).click()
         assert page.locator('#faq details').nth(1).get_attribute('open') is not None
         PROOF.mkdir(exist_ok=True)
@@ -74,7 +79,14 @@ def test_home_navigation_and_faq(origin, width):
         page.locator('.hero a.tile[data-problem="court"]').click()
         page.wait_for_selector('#questions')
         assert '/self-service?problem=court' in page.url
+        # Step 1 is folded into what they picked, so the questions come next.
+        assert page.locator('#picked [data-picked="court"]').count() == 1
+        assert page.locator('#desk-app .tile').count() == 0
+        assert page.locator('#questions').bounding_box()['y'] < 900
+        page.click('#change-problem')
         assert page.locator('.tile.is-selected[data-problem="court"]').count() == 1
+        page.locator('#desk-app .tile[data-problem="reviews"], #desk-app .tile[data-problem="review"]').first.click()
+        page.wait_for_selector('#picked [data-picked="review"]')
         assert not page.errors
         browser.close()
 
@@ -187,6 +199,76 @@ def test_unanswered_questions_are_explained_not_ignored(origin):
         page.click('#show-plan')
         assert 'Please answer' in page.locator('#check-error').inner_text()
         assert page.locator('#add-to-tracker').count() == 0
+        # The reason is shown beside the question, which is outlined and on screen.
+        flagged = page.locator('[data-q="about"].has-error, .has-error').first
+        page.wait_for_timeout(600)  # smooth scroll
+        box = flagged.bounding_box()
+        assert 0 <= box['y'] < 900
+        assert 'Please answer' in flagged.locator('.q-error').inner_text()
+        assert flagged.locator('input').first.get_attribute('aria-invalid') == 'true'
+        # Answering it clears the message.
+        flagged.locator('input').first.check()
+        assert page.locator('.has-error').count() == 0 and page.locator('.q-error').count() == 0
+        assert page.locator('#check-error').inner_text() == ''
+        browser.close()
+
+
+@pytest.mark.parametrize('width', [375, 1280])
+def test_add_to_tracker_is_close_at_hand_and_offers_to_keep_it(origin, width):
+    with sync_playwright() as p:
+        browser, page = new_page(p, width)
+        answer_old_news(page, origin)
+        page.click('#show-plan')
+        if width < 1024:
+            page.wait_for_selector('#quick-add')
+            assert page.locator('#quick-add').bounding_box()['y'] < 900
+            assert not page.locator('#glance').is_visible()
+            button = '#quick-add'
+        else:
+            page.wait_for_selector('#glance-add')
+            assert page.locator('#glance-add').bounding_box()['y'] < 900
+            assert page.locator('#glance-print').is_visible()
+            page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
+            page.wait_for_timeout(200)
+            assert 0 <= page.locator('#glance').bounding_box()['y'] < 200  # stays on screen
+            assert page.locator('#glance-add').is_visible()
+            button = '#glance-add'
+        page.click(button)
+        page.wait_for_selector('#keep-prompt')
+        prompt = page.locator('#keep-prompt').inner_text()
+        assert 'Want to come back to this on' in prompt and 'only kept in this tab' in prompt
+        assert page.locator('#keep-prompt').bounding_box()['y'] < 900
+        with page.expect_download() as backup:
+            page.click('#keep-download')
+        assert json.loads(Path(backup.value.path()).read_text())['items'][0]['checkBack']
+        with page.expect_download() as ics:
+            page.click('#keep-ics')
+        assert 'BEGIN:VCALENDAR' in Path(ics.value.path()).read_text()
+        assert page.evaluate('localStorage.length') == 0
+        page.click('#keep-save')
+        assert 'Saved on this browser' in page.locator('#keep-prompt').inner_text()
+        assert page.locator('#desk-save').is_checked()
+        assert json.loads(page.evaluate('(k) => localStorage.getItem(k)', KEY))['items']
+        page.reload()
+        page.wait_for_selector('.track-item')
+        assert page.locator('#keep-prompt').count() == 0  # only shown right after adding
+        assert all(method == 'GET' and url.startswith(origin) for method, url in page.requests), page.requests
+        assert not page.errors
+        browser.close()
+
+
+def test_problem_guides_put_the_plan_within_reach_on_phones(origin):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        for problem in plans.PROBLEMS:
+            page.goto(origin + '/help/' + problem['hub'])
+            link = page.locator(f'main .short a[href="/self-service?problem={problem["key"]}"]')
+            assert link.count() == 1, problem['hub']
+            assert link.bounding_box()['y'] < 1100, problem['hub']
+        for path in ('/how-it-works', '/about'):
+            page.goto(origin + path)
+            first = page.locator('main a[href="/self-service"]').first
+            assert first.is_visible() and first.bounding_box()['y'] < 1400, path
         browser.close()
 
 

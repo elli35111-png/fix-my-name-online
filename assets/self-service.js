@@ -58,6 +58,8 @@
   let persistence = false; // true = localStorage (opted in); false = this tab only
   let dirty = false;
   let flash = '';
+  let pickerOpen = false; // step 1 tiles shown again after "Change"
+  let justAdded = null;   // the item just added, so the tracker can offer to keep it
 
   function cleanItem(raw) {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('bad item');
@@ -235,9 +237,17 @@
     if (!link) return null;
     return el('a', {class: primary ? 'btn btn-secondary btn-sm' : 'btn-quiet btn-sm', href: link.url, target: '_blank', rel: 'noopener noreferrer'}, link.label, ' ', svg('ext'), el('span', {class: 'sr'}, ' (opens in a new tab)'));
   }
+  function listText(items) {
+    return items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
   function checkedNote(ids) {
-    const dates = ids.map(id => DATA.links[id] && DATA.links[id].checked).filter(Boolean);
-    return dates.length ? el('p', {class: 'small'}, 'Official links last checked ' + nice(dates.sort()[0]) + '.') : null;
+    const known = ids.filter(id => DATA.links[id]);
+    const dates = known.map(id => DATA.links[id].checked).filter(Boolean).sort();
+    const unchecked = known.filter(id => !DATA.links[id].checked).map(id => DATA.links[id].label);
+    const parts = [];
+    if (dates.length) parts.push('Official links last checked ' + nice(dates[0]) + '.');
+    if (unchecked.length) parts.push(`We haven’t been able to check ${listText(unchecked)} ourselves. If ${unchecked.length === 1 ? 'it doesn’t' : 'one doesn’t'} open the right page, search that site’s help pages instead.`);
+    return parts.length ? el('p', {class: 'small'}, parts.join(' ')) : null;
   }
 
   // ---------- shared view parts ----------
@@ -258,13 +268,20 @@
       el('h3', {class: 'h-icon'}, svg('lock', 'icon'), 'Private by design'),
       el('ul', {class: 'ticks'}, el('li', {}, 'Nothing you type here is sent to us'), el('li', {}, 'No analytics on this page'), el('li', {}, 'No name or email needed'), el('li', {}, 'Close the tab and it’s gone, unless you choose to save it')));
   }
+  function saveOnBrowser() {
+    persistence = true;
+    try { localStorage.setItem(KEY, JSON.stringify(state)); sessionStorage.removeItem(KEY); say('Saved on this browser. Only use this on your own device.'); return true; }
+    catch (_) { persistence = false; say('Saving on this browser didn’t work. Download a copy instead.'); return false; }
+  }
+  function downloadBackup() {
+    download(JSON.stringify({version: 2, exported: today(), items: state.items, draft: state.draft}, null, 2), 'application/json', 'FMNO-Tracker-Backup.json');
+  }
   function storageCard() {
     const box = el('input', {type: 'checkbox', id: 'desk-save', checked: persistence ? true : null});
     box.addEventListener('change', () => {
       if (box.checked) {
-        persistence = true;
-        try { localStorage.setItem(KEY, JSON.stringify(state)); sessionStorage.removeItem(KEY); say('Saved on this browser. Only use this on your own device.'); }
-        catch (_) { persistence = false; box.checked = false; say('Saving on this browser didn’t work. Download a copy instead.'); }
+        if (!saveOnBrowser()) box.checked = false;
+        const prompt = document.getElementById('keep-prompt'); if (prompt && persistence) prompt.replaceWith(keptNote());
       } else {
         try { localStorage.removeItem(KEY); localStorage.removeItem(OLD_KEY); } catch (_) { /* ignore */ }
         persistence = false; store(); say('Removed from this browser. It stays in this tab until you close it.');
@@ -278,7 +295,7 @@
       el('label', {class: 'check-row', for: 'desk-save'}, box, el('span', {}, 'Save on this browser so I can come back')),
       el('p', {class: 'small'}, 'Anyone using this browser could see it, so don’t save it on a shared or work computer.'),
       el('div', {class: 'btn-row', style: 'margin-top:8px'},
-        el('button', {type: 'button', class: 'btn btn-secondary btn-sm', id: 'export-json', onclick: () => download(JSON.stringify({version: 2, exported: today(), items: state.items, draft: state.draft}, null, 2), 'application/json', 'FMNO-Tracker-Backup.json')}, svg('download'), 'Download a copy'),
+        el('button', {type: 'button', class: 'btn btn-secondary btn-sm', id: 'export-json', onclick: downloadBackup}, svg('download'), 'Download a copy'),
         el('button', {type: 'button', class: 'btn btn-secondary btn-sm', id: 'import-json', onclick: () => file.click()}, svg('upload'), 'Restore a copy'), file),
       el('p', {}, el('button', {type: 'button', class: 'btn-quiet btn-sm danger', id: 'clear-desk', onclick: clearAll}, 'Clear everything from this browser')));
   }
@@ -338,10 +355,29 @@
     const d = state.draft;
     const view = el('div');
     const fromSnapshot = params.get('from') === 'snapshot';
-    view.append(head(d ? 2 : 1, 'Free check', 'What’s showing up for your name?', 'Pick the closest one, then answer a few quick questions. Your plan comes straight after. It takes about two minutes.'));
+    const folded = !!d && !pickerOpen;
+    const lede = folded ? 'Answer a few quick questions and your plan comes straight after. It takes about two minutes.' : 'Pick the closest one, then answer a few quick questions. Your plan comes straight after. It takes about two minutes.';
+    view.append(head(d ? 2 : 1, 'Free check', 'What’s showing up for your name?', lede));
     const main = el('div', {class: 'stack-lg'});
     if (fromSnapshot) main.append(el('div', {class: 'callout callout-info'}, svg('info', 'icon icon-sm'), el('p', {}, el('strong', {}, 'The Free Search Snapshot is now this free check.'), 'There’s no email or sign-up any more. Your plan appears on this page.')));
-    main.append(el('section', {class: 'card'}, el('h2', {class: 'h-sans'}, '1. What did you find?'), el('div', {class: 'mt-2'}, tiles(d && d.problem, key => { state.draft = newDraft(key); changed(); renderCheckInto(); const q = document.getElementById('questions'); if (q) q.scrollIntoView({behavior: 'smooth', block: 'start'}); }))));
+    const pickTile = key => {
+      state.draft = newDraft(key); pickerOpen = false; changed(); renderCheckInto();
+      const q = document.getElementById('questions');
+      if (q) { q.scrollIntoView({behavior: 'smooth', block: 'start'}); const first = q.querySelector('input, select'); if (first) first.focus({preventScroll: true}); }
+    };
+    if (folded) {
+      const label = d.problem === 'not-sure' ? 'Something else, or I’m not sure' : PROBLEMS[d.problem].label;
+      main.append(el('section', {class: 'card picked', id: 'picked'},
+        el('h2', {class: 'h-sans'}, '1. What did you find?'),
+        el('div', {class: 'picked-row mt-1'},
+          el('p', {}, 'You picked: ', el('strong', {'data-picked': d.problem}, label)),
+          el('button', {type: 'button', class: 'btn btn-secondary btn-sm', id: 'change-problem', onclick: () => {
+            pickerOpen = true; renderCheckInto();
+            const sel = root.querySelector('.tile.is-selected') || root.querySelector('.tile'); if (sel) sel.focus();
+          }}, 'Change'))));
+    } else {
+      main.append(el('section', {class: 'card'}, el('h2', {class: 'h-sans'}, '1. What did you find?'), el('div', {class: 'mt-2'}, tiles(d && d.problem, pickTile))));
+    }
     if (d) main.append(questionsCard(d), safetyCard(d), el('p', {class: 'form-msg', id: 'check-error', role: 'alert'}),
       el('div', {class: 'btn-row stack-phone'},
         el('button', {type: 'button', class: 'btn btn-primary', id: 'show-plan', onclick: showPlan}, 'Show my plan ', svg('arrow')),
@@ -358,7 +394,7 @@
     return el('fieldset', {class: 'field', 'data-q': q.id},
       el('legend', {class: 'label'}, q.label),
       el('div', {class: 'choices' + (q.stack ? '' : ' inline')}, q.options.map(o => el('label', {class: 'choice'},
-        el('input', {type: 'radio', name, value: o.value, checked: item.answers[q.id] === o.value ? true : null, onchange: () => { item.answers[q.id] = o.value; changed(); }}),
+        el('input', {type: 'radio', name, value: o.value, checked: item.answers[q.id] === o.value ? true : null, onchange: e => { item.answers[q.id] = o.value; changed(); clearFlag(e.target.closest('[data-q]')); }}),
         el('span', {class: 'dot', 'aria-hidden': 'true'}),
         el('span', {}, o.label, o.small ? el('small', {}, o.small) : null)))));
   }
@@ -366,7 +402,7 @@
     const qs = DATA.questions[d.problem] || [];
     const country = el('select', {class: 'select', id: 'q-country', onchange: e => { d.answers.country = e.target.value; changed(); if (window.fmnoSetSafety) window.fmnoSetSafety(e.target.value); }},
       DATA.countries.map(([v, l]) => el('option', {value: v, selected: d.answers.country === v ? true : null}, l)));
-    const link = el('input', {class: 'input', id: 'q-link', type: 'url', inputmode: 'url', autocomplete: 'off', maxlength: String(LIMITS.link), placeholder: 'https://', value: d.link || null, oninput: e => { d.link = e.target.value.slice(0, LIMITS.link); changed(); }});
+    const link = el('input', {class: 'input', id: 'q-link', 'aria-describedby': 'q-link-hint', type: 'url', inputmode: 'url', autocomplete: 'off', maxlength: String(LIMITS.link), placeholder: 'https://', value: d.link || null, oninput: e => { d.link = e.target.value.slice(0, LIMITS.link); changed(); clearFlag(e.target.closest('[data-q]')); }});
     const name = d.problem === 'not-sure' ? 'what you found' : PROBLEMS[d.problem].label.replace(/^(An|A) /, '').toLowerCase();
     return el('section', {class: 'card', id: 'questions'},
       el('h2', {class: 'h-sans'}, `2. A few questions about ${name}`),
@@ -374,30 +410,52 @@
       el('div', {class: 'mt-3'},
         qs.map(q => radioGroup(q, d)),
         el('div', {class: 'field'}, el('label', {class: 'label', for: 'q-country'}, 'Where do you live?'), el('span', {class: 'hint'}, 'This decides which laws and official routes apply.'), country),
-        el('div', {class: 'field'}, el('label', {class: 'label', for: 'q-link'}, 'Paste the link ', el('span', {class: 'meta', style: 'font-weight:400'}, '(optional)')), el('span', {class: 'hint'}, 'It stays in this browser. We use it to fill in your letter.'), link)));
+        el('div', {class: 'field', 'data-q': 'link'}, el('label', {class: 'label', for: 'q-link'}, 'Paste the link ', el('span', {class: 'meta', style: 'font-weight:400'}, '(optional)')), el('span', {class: 'hint', id: 'q-link-hint'}, 'It stays in this browser. We use it to fill in your letter.'), link)));
   }
   function safetyCard(d) {
     const set = new Set(d.answers.safety || []);
     const none = el('input', {type: 'checkbox', id: 'safety-none', checked: d.answers.safety && !set.size ? true : null});
     const boxes = Object.entries(SAFETY).map(([k, label]) => {
       const box = el('input', {type: 'checkbox', id: 'safety-' + k, value: k, checked: set.has(k) ? true : null});
-      box.addEventListener('change', () => { if (box.checked) { set.add(k); none.checked = false; } else set.delete(k); d.answers.safety = [...set]; changed(); });
+      box.addEventListener('change', () => { if (box.checked) { set.add(k); none.checked = false; } else set.delete(k); d.answers.safety = [...set]; changed(); clearFlag(box.closest('[data-q]')); });
       return el('label', {class: 'choice', for: 'safety-' + k}, box, el('span', {class: 'box', 'aria-hidden': 'true'}), el('span', {}, label));
     });
-    none.addEventListener('change', () => { if (none.checked) { set.clear(); boxes.forEach(b => { b.querySelector('input').checked = false; }); } d.answers.safety = [...set]; changed(); });
+    none.addEventListener('change', () => { if (none.checked) { set.clear(); boxes.forEach(b => { b.querySelector('input').checked = false; }); } d.answers.safety = [...set]; changed(); clearFlag(none.closest('[data-q]')); });
     return el('section', {class: 'card', 'data-q': 'safety'},
       el('h2', {class: 'h-sans'}, '3. One safety check'),
       el('p', {class: 'meta mt-1'}, 'Is any of this true right now?'),
       el('div', {class: 'choices mt-2'}, boxes, el('label', {class: 'choice', for: 'safety-none'}, none, el('span', {class: 'box', 'aria-hidden': 'true'}), el('span', {}, 'None of these'))),
       el('div', {class: 'callout callout-info mt-2'}, svg('info', 'icon icon-sm'), el('p', {}, 'If any of these are true, your plan starts with the people who can act quickly, like eSafety or the police, then shows the rest of the steps.')));
   }
+  function clearFlag(box) {
+    if (!box || !box.classList.contains('has-error')) return;
+    box.classList.remove('has-error');
+    const msg = box.querySelector('.q-error'); if (msg) msg.remove();
+    box.querySelectorAll('[aria-invalid]').forEach(i => { i.removeAttribute('aria-invalid'); if (i.dataset.desc) i.setAttribute('aria-describedby', i.dataset.desc); else i.removeAttribute('aria-describedby'); });
+    const err = document.getElementById('check-error'); if (err && !root.querySelector('.has-error')) err.textContent = '';
+  }
+  function flag(qid, text, focusEl) {
+    root.querySelectorAll('.has-error').forEach(clearFlag);
+    const box = root.querySelector(`[data-q="${qid}"]`);
+    const err = document.getElementById('check-error');
+    if (err) err.textContent = text;
+    if (!box) return;
+    box.classList.add('has-error');
+    const id = 'q-error-' + qid;
+    const msg = el('p', {class: 'q-error', id}, svg('alert'), el('span', {}, text));
+    const anchor = box.querySelector('legend, h2, label');
+    if (anchor) anchor.after(msg); else box.prepend(msg);
+    box.querySelectorAll('input').forEach(i => { if (!i.hasAttribute('aria-invalid')) i.dataset.desc = i.getAttribute('aria-describedby') || ''; i.setAttribute('aria-invalid', 'true'); i.setAttribute('aria-describedby', id); });
+    box.scrollIntoView({behavior: 'smooth', block: 'center'});
+    const f = focusEl || box.querySelector('input');
+    if (f) f.focus({preventScroll: true});
+  }
   function showPlan() {
     const d = state.draft;
     const missing = (DATA.questions[d.problem] || []).find(q => !d.answers[q.id]);
-    const err = document.getElementById('check-error');
-    if (missing) { err.textContent = 'Please answer: ' + missing.label; const f = root.querySelector(`[data-q="${missing.id}"] input`); if (f) f.focus(); return; }
-    if (!Array.isArray(d.answers.safety)) { err.textContent = 'Please answer the safety check (tick “None of these” if none apply).'; const f = document.getElementById('safety-threat'); if (f) f.focus(); return; }
-    if (d.link && !/^https?:\/\/[^\s]+\.[^\s]+/i.test(d.link)) { err.textContent = 'That link doesn’t look right. It should start with https:// (or leave it empty).'; document.getElementById('q-link').focus(); return; }
+    if (missing) { flag(missing.id, 'Please answer: ' + missing.label); return; }
+    if (!Array.isArray(d.answers.safety)) { flag('safety', 'Please answer the safety check (tick “None of these” if none apply).', document.getElementById('safety-threat')); return; }
+    if (d.link && !/^https?:\/\/[^\s]+\.[^\s]+/i.test(d.link)) { flag('link', 'That link doesn’t look right. It should start with https:// (or leave it empty).', document.getElementById('q-link')); return; }
     d.asks = defaultAsks(d);
     d.checkBack = '';
     changed(); go('#plan');
@@ -472,13 +530,22 @@
       card.querySelector('.letter-body').replaceWith(letterNode(key, item));
     });
   }
+  function planActions(item, built, isDraft, idPrefix) {
+    const row = el('div', {class: 'stack-sm glance-actions no-print'});
+    if (isDraft) row.append(el('button', {type: 'button', class: 'btn btn-primary btn-block btn-sm', id: idPrefix + '-add', onclick: () => addToTracker(item, built)}, svg('plus'), 'Add this plan to my tracker'));
+    row.append(el('button', {type: 'button', class: 'btn btn-secondary btn-block btn-sm', id: idPrefix + '-print', onclick: () => window.print()}, svg('print'), 'Print or save as PDF'));
+    return row;
+  }
   function progressCard(item, built) {
     const n = built.steps.filter(s => item.done[s.id]).length;
-    return el('div', {class: 'card stack-sm hide-below-desk', id: 'glance'},
+    const isDraft = !state.items.includes(item);
+    return el('div', {class: 'card stack-sm hide-below-desk glance', id: 'glance'},
       el('p', {class: 'eyebrow'}, 'At a glance'),
       el('p', {}, el('strong', {}, `${n} of ${built.steps.length} steps done`)),
       el('div', {class: 'bar'}, el('span', {style: `width:${Math.round(100 * n / Math.max(1, built.steps.length))}%`})),
-      el('ul', {class: 'checklist mt-1'}, built.steps.map(s => el('li', {}, el('span', {class: 'box' + (item.done[s.id] ? ' on' : ''), 'aria-hidden': 'true'}), el('a', {href: '#step-' + s.id, onclick: e => { e.preventDefault(); const t = document.getElementById('step-' + s.id); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, s.title)))));
+      el('ul', {class: 'checklist mt-1'}, built.steps.map(s => el('li', {}, el('span', {class: 'box' + (item.done[s.id] ? ' on' : ''), 'aria-hidden': 'true'}), el('a', {href: '#step-' + s.id, onclick: e => { e.preventDefault(); const t = document.getElementById('step-' + s.id); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, s.title)))),
+      isDraft ? el('p', {class: 'small'}, 'Add it to your tracker to keep your ticks, set a check-back date and come back to it.') : null,
+      planActions(item, built, isDraft, 'glance'));
   }
   function refreshProgress(item, built) { const g = document.getElementById('glance'); if (g) g.replaceWith(progressCard(item, built)); }
 
@@ -514,6 +581,12 @@
     view.append(head(isDraft ? 3 : 4, eyebrow, built.title, built.lede));
     const main = el('div', {class: 'stack-lg'});
     if (!isDraft) main.append(trackingCard(item));
+    if (isDraft) main.append(el('div', {class: 'card stack-sm only-below-desk quick-actions no-print', id: 'quick-actions'},
+      el('p', {}, el('strong', {}, `${built.steps.length} steps`), ' · ', COUNTRY[item.answers.country], built.plan.check_back_days ? ` · check back in ${built.plan.check_back_days} days` : ''),
+      el('div', {class: 'btn-row'},
+        el('button', {type: 'button', class: 'btn btn-primary btn-sm', id: 'quick-add', onclick: () => addToTracker(item, built)}, svg('plus'), 'Add to my tracker'),
+        el('a', {class: 'btn btn-secondary btn-sm', href: '#plan-steps', onclick: e => { e.preventDefault(); const t = document.getElementById('plan-steps'); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, 'Go to the steps')),
+      el('p', {class: 'small'}, 'The tracker keeps your ticks and shows you when to check back. Nothing is sent to us.')));
     main.append(...helpCards(built, item));
     if (item.problem === 'not-sure') main.append(el('div', {class: 'callout callout-brand'}, svg('info', 'icon icon-sm'), el('p', {}, el('strong', {}, 'From your answers, this looks like: ' + (PROBLEMS[built.key] ? PROBLEMS[built.key].label.toLowerCase() : 'a page on someone else’s site') + '.'), 'If that’s not right, ', el('a', {href: '/self-service', onclick: e => { e.preventDefault(); go(''); }}, 'pick a different problem'), '.')));
     main.append(el('div', {class: 'grid grid-2'},
@@ -526,7 +599,7 @@
       ol.append(el('li', {class: 'if-no'}, el('h3', {}, 'If the answer is no'),
         el('ul', {class: 'ticks mt-1'}, built.ifNo.map(i => el('li', {}, i.text, i.link ? [' ', linkButton(i.link, false)] : null))), checkedNote(ids)));
     }
-    main.append(el('section', {class: 'card card-lg steps-card'}, ol));
+    main.append(el('section', {class: 'card card-lg steps-card', id: 'plan-steps'}, ol));
     if (built.pack) main.append(el('section', {class: 'card stack-sm pack-offer no-print'},
       el('div', {class: 'kicker-row', style: 'justify-content:space-between'}, el('h3', {}, 'Want more help with this one link?'), el('span', {class: 'tag'}, 'Optional · US$19 once')),
       el('p', {class: 'muted'}, 'The letter pack saves your letter, a follow-up and a second letter online for this one link, with calendar reminders and a download. You still check and send everything yourself. Refund within 7 days if you haven’t used it.'),
@@ -538,7 +611,7 @@
       el('button', {type: 'button', class: 'btn btn-secondary', id: 'export-text', onclick: () => download(planText(item, built), 'text/plain;charset=utf-8', 'FMNO-My-Plan.txt')}, svg('download'), 'Download as text'));
     if (isDraft) actions.append(el('button', {type: 'button', class: 'btn-quiet', onclick: () => go('')}, 'Change my answers'));
     main.append(actions);
-    const aside = el('aside', {class: 'aside stack'}, progressCard(item, built), privacyCard(), storageCard());
+    const aside = el('aside', {class: 'aside aside-plan stack'}, progressCard(item, built), privacyCard(), storageCard());
     view.append(el('div', {class: 'wrap split'}, main, aside));
     return view;
   }
@@ -552,14 +625,19 @@
     copy.label = copy.label || ((copy.problem === 'not-sure' ? 'Something I found' : PROBLEMS[copy.problem].label.replace(/^(An|A) /, '').replace(/^./, c => c.toUpperCase())) + (host(copy.link) ? ' · ' + host(copy.link) : ''));
     copy.created = today(); copy.updated = today();
     state.items.unshift(copy); state.draft = null;
+    justAdded = copy.id;
     flash = 'Added to your tracker.'; changed(); go('#tracker');
   }
 
+  function linkLine(id) {
+    const link = DATA.links[id];
+    return link.label + ': ' + link.url + (link.checked ? '' : ' (not checked by us)');
+  }
   function planText(item, built) {
     const lines = ['FIX MY NAME ONLINE · MY PLAN', built.title, '', 'Your plan for: ' + (item.label || (PROBLEMS[item.problem] || {label: 'something I found'}).label) + ' · ' + COUNTRY[item.answers.country]];
     if (item.link) lines.push('Link: ' + item.link);
     lines.push('', 'WHO DECIDES', built.plan.who_decides, '', 'TIME', built.plan.time);
-    built.help.forEach(t => lines.push('', 'FIRST: ' + DATA.help[t].title.toUpperCase(), DATA.help[t].text, ...(DATA.help[t][item.answers.country] || []).map(id => DATA.links[id].label + ': ' + DATA.links[id].url)));
+    built.help.forEach(t => lines.push('', 'FIRST: ' + DATA.help[t].title.toUpperCase(), DATA.help[t].text, ...(DATA.help[t][item.answers.country] || []).map(linkLine)));
     if (built.plan.order && !built.ongoing) lines.push('', built.plan.order);
     built.steps.forEach((s, i) => {
       lines.push('', `${item.done[s.id] ? '[x]' : '[ ]'} STEP ${i + 1}: ${s.title}`);
@@ -569,12 +647,12 @@
       const letter = stepLetter(s, item.answers);
       if (letter) lines.push('', '--- ' + DATA.letters[letter].name.toUpperCase() + ' ---', letterPlain(letter, item), '--- end ---');
       if (s.where) lines.push('Where to send it: ' + s.where);
-      stepLinks(s, item.answers).forEach(id => lines.push(DATA.links[id].label + ': ' + DATA.links[id].url));
+      stepLinks(s, item.answers).forEach(id => lines.push(linkLine(id)));
     });
-    if (built.ifNo.length) { lines.push('', 'IF THE ANSWER IS NO'); built.ifNo.forEach(i => lines.push('- ' + i.text + (i.link ? ' ' + DATA.links[i.link].url : ''))); }
+    if (built.ifNo.length) { lines.push('', 'IF THE ANSWER IS NO'); built.ifNo.forEach(i => lines.push('- ' + i.text + (i.link ? ' ' + DATA.links[i.link].url + (DATA.links[i.link].checked ? '' : ' (not checked by us)') : ''))); }
     if (!state.items.includes(item)) lines.push('');
     else lines.push('', 'MY RECORD', 'Status: ' + STATUS[item.status], 'Sent to: ' + (item.sentTo || '-'), 'Sent on: ' + (item.sentOn || '-'), 'Check back on: ' + (item.checkBack || '-'), 'Reference: ' + (item.reference || '-'), 'Notes: ' + (item.notes || '-'));
-    lines.push('', 'You check the facts and send everything yourself. Nothing was sent from Fix My Name Online. No one can promise a result.', 'Official links last checked ' + nice(DATA.lastChecked) + '.');
+    lines.push('', 'You check the facts and send everything yourself. Nothing was sent from Fix My Name Online. No one can promise a result.', 'Official links last checked ' + nice(DATA.lastChecked) + ', apart from any marked “not checked by us”.');
     return lines.join('\n');
   }
   function icsFor(item) {
@@ -615,10 +693,31 @@
       el('div', {class: 'track-next'}, el('span', {class: nx.due ? 'due' : 'muted'}, nx.text),
         el('a', {class: nx.due ? 'btn btn-primary btn-sm' : 'btn btn-secondary btn-sm', href: '#item-' + item.id, onclick: e => { e.preventDefault(); go('#item-' + item.id); }}, 'Open')));
   }
+  function keptNote() {
+    return el('div', {class: 'callout callout-brand keep-prompt', id: 'keep-prompt', role: 'status'}, svg('check', 'icon'),
+      el('div', {class: 'stack-sm'}, el('p', {}, el('strong', {}, 'Saved on this browser.'), 'Come back to this page on the same device and it’ll be here. Download a copy too if you might use another device.')));
+  }
+  function keepPrompt(item) {
+    if (persistence) return keptNote();
+    const when = item && item.checkBack ? nice(item.checkBack) : 'your check-back date';
+    const buttons = el('div', {class: 'btn-row'},
+      el('button', {type: 'button', class: 'btn btn-primary btn-sm', id: 'keep-save', onclick: () => {
+        if (saveOnBrowser()) { renderStorage(); const node = document.getElementById('keep-prompt'); if (node) node.replaceWith(keptNote()); }
+      }}, svg('lock'), 'Save on this browser'),
+      el('button', {type: 'button', class: 'btn btn-secondary btn-sm', id: 'keep-download', onclick: downloadBackup}, svg('download'), 'Download a copy'),
+      item && item.checkBack ? el('button', {type: 'button', class: 'btn btn-secondary btn-sm', id: 'keep-ics', onclick: () => download(icsFor(item), 'text/calendar', 'FMNO-Check-back.ics')}, svg('calendar'), 'Add ' + nice(item.checkBack) + ' to my calendar') : null);
+    return el('div', {class: 'callout callout-warn keep-prompt', id: 'keep-prompt'}, svg('info', 'icon'),
+      el('div', {class: 'stack-sm'},
+        el('p', {}, el('strong', {}, `Want to come back to this on ${when}?`), 'Right now your tracker is only kept in this tab. Close it and it’s gone. Save it on this browser (only on your own device), or download a copy you can restore later.'),
+        buttons));
+  }
   function renderTracker() {
     const view = el('div');
     view.append(head(4, 'My tracker', 'Everything you’re working on, in one place.', 'Update each one as things happen. You set every status yourself. We never see this list.'));
     const main = el('div', {class: 'stack'});
+    const added = justAdded && state.items.find(i => i.id === justAdded);
+    justAdded = null;
+    if (added) main.append(keepPrompt(added));
     const dueSoon = state.items.filter(i => i.checkBack && ['submitted', 'waiting'].includes(i.status) && daysUntil(i.checkBack) <= 7).length;
     if (state.items.length) {
       main.append(el('div', {class: 'kicker-row', style: 'justify-content:space-between'},
