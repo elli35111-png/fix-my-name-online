@@ -83,3 +83,14 @@ def test_dry_run_never_writes_state_or_sends_email(tmp_path, monkeypatch):
     result = namewatch.process_customer(customer, dry_run=True, force=True)
     assert result['status'] == 'baseline_created'
     assert not list(tmp_path.glob('*.json'))
+
+
+def test_alert_body_describes_a_daily_check_and_the_pack_as_it_is():
+    # The job runs every day, so the alert never says "this month"; the pack
+    # copy matches the site (the free tracker already gives calendar reminders).
+    result = namewatch.result_record('Test Person', 'Court result for Test Person', 'https://example.com/court', 'test')
+    body = namewatch.alert_body('Paid Person', [result], ['Test Person'])
+    assert 'The latest automated check found 1 result(s) that weren’t there last time' in body.replace("'", '’')
+    assert 'month' not in body.lower()
+    assert 'saves your letters, dates and notes online for that link' in body
+    assert 'reminders' not in body

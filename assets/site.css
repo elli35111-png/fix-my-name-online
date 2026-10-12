@@ -640,8 +640,10 @@ details.letter-more.card summary { font-size: var(--t-md); color: var(--ink); }
 .q-error .icon { margin-top: 2px; flex: none; }
 #questions, #plan-steps, .steps > li { scroll-margin-top: 84px; }
 
-/* plan: the at-a-glance card carries the actions and stays in view on desktop */
+/* plan: the at-a-glance card carries the actions and stays in view on desktop.
+   It is the only card in the aside, so nothing scrolls underneath it. */
 .glance-actions { margin-top: var(--s2); }
+.plan-keep { align-items: start; }
 @media (min-width: 1024px) {
   .split .aside.aside-plan { position: static; align-self: stretch; }
   .split .aside-plan .glance { position: sticky; top: 84px; z-index: 2; box-shadow: var(--shadow); }

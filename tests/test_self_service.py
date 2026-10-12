@@ -449,6 +449,8 @@ def test_not_sure_routes_answer_every_question_of_the_plan_they_pick():
                 values = [o['value'] for o in q['options']]
                 if plan == 'old-news' and q['id'] == 'now':
                     values.append('outdated')  # route-only value with its own title, lede and letter text
+                if plan == 'review' and q['id'] == 'why':
+                    values.append('unsure')  # route-only value: neutral title, lede and report wording
                 assert answers.get(q['id']) in values, (where, wrong, plan, q['id'], answers)
             if plan == 'general':
                 assert asks, (where, wrong)
@@ -483,6 +485,109 @@ def test_not_sure_news_answers_get_the_plan_and_letter_they_described(origin, wr
         letters = ' '.join(page.locator('.letter-body').all_inner_texts())
         assert letter in letters and absent not in letters
         assert page.locator('ol.steps > li:not(.if-no)').count() == steps
+        assert not page.errors
+        browser.close()
+
+
+def _not_sure_letters(where, wrong):
+    plan, answers, asks = plans.route_not_sure({'where': where, 'wrong': wrong, 'country': 'au', 'safety': []})
+    outline = plans.outline(plan, answers)
+    letters = {s['letter']: plans.letter_text(s['letter'], answers, asks) for s in outline['steps'] if s.get('letter')}
+    return plan, answers, asks, outline, letters
+
+
+def test_not_sure_routes_never_claim_what_the_visitor_did_not_say():
+    ns = {q['id']: [o['value'] for o in q['options']] for q in plans.QUESTIONS['not-sure']}
+    for where in ns['where']:
+        for wrong in ns['wrong']:
+            plan, answers, asks, outline, letters = _not_sure_letters(where, wrong)
+            text = ' '.join(letters.values())
+            assert 'no record of this person as a customer' not in text, (where, wrong)
+            if wrong == 'not-me' and where not in ('listing', 'review'):
+                # Someone else with my name: a tell-us-apart request, never an update or an "about me" letter.
+                assert 'I’m not that person' in text, (where, wrong, list(letters))
+                assert 'reflects what happened next' not in text and 'article about me' not in text, (where, wrong)
+            if where == 'social' and wrong != 'fake':
+                assert plan == 'general' and 'L2' not in letters, (where, wrong, plan)
+    # (a) social media or another website, about someone with my name
+    for where in ('social', 'other'):
+        plan, answers, asks, outline, letters = _not_sure_letters(where, 'not-me')
+        assert plan == 'general' and answers['who'] == 'same-name' and asks == ['tell-apart']
+        assert 'tells you apart' in outline['title'] and 'isn’t about you' in outline['lede']
+        assert list(letters) == ['L6W', 'L5'] and 'helps readers tell us apart' in letters['L6W']
+    # (b) social media showing private details: not the people-search plan
+    plan, answers, asks, outline, letters = _not_sure_letters('social', 'private')
+    assert plan == 'general' and asks == ['anonymise', 'remove']
+    assert [s['id'] for s in outline['steps']][:2] == ['evidence', 'report']
+    assert 'Opt out' not in outline['title'] and 'L7' in letters and 'remove my name' in letters['L7']
+    # (c) review site, wrong or not me: neutral wording, nothing about customers
+    for wrong in ('wrong', 'not-me'):
+        plan, answers, asks, outline, letters = _not_sure_letters('review', wrong)
+        assert plan == 'review' and answers['why'] == 'unsure'
+        assert 'real customer' not in outline['lede'] and 'Match the review' in outline['title']
+        assert '[the specific part that breaks the policy]' in letters['L3R']
+    # (d) court or legal site, about someone with my name: no court-rule steps, no letter to an editor
+    plan, answers, asks, outline, letters = _not_sure_letters('court', 'not-me')
+    assert plan == 'general' and answers['who'] == 'same-name'
+    assert 'rules' not in [s['id'] for s in outline['steps']] and 'spent-conviction' not in outline['lede']
+    assert 'Dear Editor' not in ' '.join(letters.values())
+    # Court problem picked directly, same name + news story: the "isn't me" letter, not an update request.
+    steps = plans.outline('court', {'who': 'same-name', 'where': 'news', 'status': 'finished'})['steps']
+    assert next(s for s in steps if s['id'] == 'letter')['letter'] == 'L6'
+
+
+@pytest.mark.parametrize('where, wrong, present, absent, letter', [
+    ('social', 'not-me', 'Ask the site to add a detail that tells you apart.', 'reflects what happened next', 'helps readers tell us apart'),
+    ('other', 'not-me', 'Ask the site to add a detail that tells you apart.', 'reflects what happened next', 'I’m not that person'),
+    ('social', 'private', 'On social media, check the report options', 'Opt out of each site', 'remove my name, or replace it with initials'),
+    ('review', 'wrong', 'Match the review to a specific rule', 'no record of this person', 'the specific part that breaks the policy'),
+    ('court', 'not-me', 'Ask the site to add a detail that tells you apart.', 'Dear Editor', 'I’m not that person'),
+])
+def test_not_sure_other_answers_get_the_plan_and_letter_they_described(origin, where, wrong, present, absent, letter):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        page.goto(origin + '/self-service?problem=not-sure')
+        page.locator(f'[data-q="where"] input[value="{where}"]').check()
+        page.locator(f'[data-q="wrong"] input[value="{wrong}"]').check()
+        page.check('#safety-none')
+        page.click('#show-plan')
+        page.wait_for_selector('#add-to-tracker')
+        body = page.locator('#desk-app').inner_text()
+        assert present in body, body[:600]
+        assert absent not in body
+        letters = ' '.join(page.locator('.letter-body').all_inner_texts())
+        assert letter in letters and absent not in letters
+        assert not page.errors
+        browser.close()
+
+
+@pytest.mark.parametrize('tracked', [False, True])
+def test_sticky_glance_card_never_covers_the_other_cards(origin, tracked):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 1280)
+        answer_old_news(page, origin)
+        page.click('#show-plan')
+        page.wait_for_selector('#glance-add')
+        if tracked:
+            page.click('#glance-add')
+            page.goto(origin + '/self-service/tracker')
+            page.locator('.track-item a[href^="#item-"]').first.click()
+            page.wait_for_selector('#tracking')
+        # The glance card is the only thing in the aside, so nothing can slide under it.
+        assert page.locator('.aside-plan > *').count() == 1 and page.locator('.aside-plan > #glance').count() == 1
+        for y in (0, 700, 1400, 2400, 10000):
+            page.evaluate(f'window.scrollTo(0, {y})')
+            page.wait_for_timeout(100)
+            glance = page.locator('#glance').bounding_box()
+            for sel in ('#desk-save', '#storage-card'):
+                box = page.locator(sel).bounding_box()
+                overlaps_x = box['x'] < glance['x'] + glance['width'] and glance['x'] < box['x'] + box['width']
+                overlaps_y = box['y'] < glance['y'] + glance['height'] and glance['y'] < box['y'] + box['height']
+                assert not (overlaps_x and overlaps_y), (y, sel, box, glance)
+        page.locator('#desk-save').scroll_into_view_if_needed()
+        box = page.locator('#desk-save').bounding_box()
+        hit = page.evaluate(f"document.elementFromPoint({box['x'] + box['width'] / 2}, {box['y'] + box['height'] / 2}).closest('#storage-card') !== null")
+        assert hit
         assert not page.errors
         browser.close()
 

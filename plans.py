@@ -256,7 +256,7 @@ LETTERS = {
         {'when': {'why': ['not-customer']}, 'text': 'We have no record of this person as a customer. {{detail|one factual detail, e.g. we were closed on the date they describe}}.'},
         {'when': {'why': ['conflict']}, 'text': 'The reviewer is {{relationship|their relationship to us, e.g. a former employee}}, which is a conflict of interest.'},
         {'when': {'why': ['offensive']}, 'text': 'The review {{detail|what it does, e.g. includes a staff member’s home address}}.'},
-        {'when': {'why': ['unfair']}, 'text': '{{detail|the specific part that breaks the policy}}.'},
+        {'when': {'why': ['unfair', 'unsure']}, 'text': '{{detail|the specific part that breaks the policy}}.'},
         {'text': 'I’d ask you to review it against that policy.'},
     ]},
     'L3P': {'name': 'A calm public reply', 'paras': [
@@ -288,10 +288,19 @@ LETTERS = {
         {'text': 'I’m not asking you to change your reporting. I’d be grateful if you would consider adding a detail that helps readers tell us apart, such as the person’s age, suburb or occupation, if that’s already public.'},
         {'text': 'Kind regards,\n{{name|your name}}\n{{email|your email}}'},
     ]},
+    'L6W': {'name': '“This isn’t me” request to a website', 'paras': [
+        {'text': 'Subject: Request about a page that mentions someone with my name'},
+        {'text': 'Hello,'},
+        {'text': 'I’m writing about this page:\n{{link|link to the page or post}}'},
+        {'text': 'It’s about a person named {{their|the name on the page}}, which is also my name. I’m not that person. Because we share a name, people searching for me find this page and think it’s about me.'},
+        {'text': '{{ask}}'},
+        {'text': 'I’d be grateful for a reply within 14 days.'},
+        {'text': 'Kind regards,\n{{name|your name}}\n{{email|your email}}'},
+    ]},
     'L7': {'name': 'Request to a website owner', 'paras': [
         {'text': 'Subject: Request about a page that mentions me'},
         {'text': 'Hello,'},
-        {'text': 'I’m writing about this page on your site:\n{{link|link to the page}}'},
+        {'text': 'I’m writing about this page:\n{{link|link to the page or post}}'},
         {'text': 'It says {{says|what it says about you, in one sentence}}. {{why|why that’s a problem, e.g. it’s out of date, wrong, or shows private details}}.'},
         {'text': '{{ask}}'},
         {'text': 'I’d be grateful for a reply within 14 days.'},
@@ -305,6 +314,7 @@ ASKS = {
     'anonymise': {'label': 'Remove or change my name', 'small': 'For example, use initials instead', 'phrase': 'remove my name, or replace it with initials'},
     'noindex': {'label': 'Stop the page showing in search engines', 'small': 'Called a “noindex” tag. The page stays, but search engines drop it.', 'phrase': 'add a “noindex” tag, so search engines stop showing the page while it stays on your site'},
     'remove': {'label': 'Take it down', 'phrase': 'take the page down'},
+    'tell-apart': {'label': 'Add a detail that tells us apart', 'small': 'For example, the other person’s age, suburb or job, if that’s already public', 'phrase': 'add a detail that helps readers tell us apart, such as the other person’s age, suburb or occupation, if that’s already public'},
 }
 
 EVIDENCE = ['The link, headline and date', 'A screenshot with today’s date showing', 'The words you searched when you found it']
@@ -390,7 +400,7 @@ PLANS = {
             {'id': 'decide', 'title': 'Decide what to ask for', 'time': '5 minutes',
              'asks': ['anonymise', 'noindex', 'remove', 'update'], 'default_asks': {'_': ['anonymise']}},
             {'id': 'letter', 'title': 'Send your letter to the site', 'time': '15 minutes', 'you_send': True, 'letter': 'L1C',
-             'letter_when': [{'when': {'where': ['news']}, 'letter': 'L1'}, {'when': {'who': ['same-name']}, 'letter': 'L6'}],
+             'letter_when': [{'when': {'who': ['same-name']}, 'letter': 'L6'}, {'when': {'where': ['news']}, 'letter': 'L1'}],
              'where': 'Look for a contact, privacy or “remove a record” page. Copy sites often have a removal form. Keep a copy of what you send.'},
             {'id': 'follow', 'title': 'Wait, then follow up', 'check_back': True,
              'body': 'If there’s no reply after 14 days, send a short follow-up.', 'letter': 'L5', 'letter_collapsed': True},
@@ -539,8 +549,14 @@ PLANS = {
         ],
     },
     'general': {
-        'title': [{'text': 'Ask the website owner first, then ask Google to catch up.'}],
-        'lede': [{'text': 'Whatever it is, the person who runs the site is usually the one who can change it. Here’s a simple way to ask.'}],
+        'title': [
+            {'when': {'who': ['same-name']}, 'text': 'Ask the site to add a detail that tells you apart.'},
+            {'text': 'Ask the website owner first, then ask Google to catch up.'},
+        ],
+        'lede': [
+            {'when': {'who': ['same-name']}, 'text': 'The page isn’t about you, so you’re not asking anyone to change what it says about the other person. You’re asking for a small detail that stops people confusing the two of you.'},
+            {'text': 'Whatever it is, the person who runs the site is usually the one who can change it. Here’s a simple way to ask.'},
+        ],
         'who_decides': 'The website owner decides the page. Google decides what shows in search.',
         'time': 'About 30 minutes. Allow 2 to 6 weeks for replies.',
         'order': 'Ask the site first. Google’s tools mostly work once the page has changed.',
@@ -548,8 +564,11 @@ PLANS = {
         'pack': True,
         'steps': [
             {'id': 'evidence', 'title': 'Save your evidence', 'time': '5 minutes', 'checklist': EVIDENCE},
-            {'id': 'decide', 'title': 'Decide what to ask for', 'time': '5 minutes', 'asks': ['correct', 'update', 'anonymise', 'noindex', 'remove'], 'default_asks': {'_': ['correct']}},
+            {'id': 'report', 'title': 'On social media, check the report options', 'time': '5 minutes', 'you_send': True, 'when': {'where': ['social']},
+             'body': 'If the post breaks one of the platform’s rules, for example by sharing private details, use its report option. The platform decides whether it comes down. You can also send the request below to the person who posted it.'},
+            {'id': 'decide', 'title': 'Decide what to ask for', 'time': '5 minutes', 'asks': ['correct', 'update', 'anonymise', 'noindex', 'remove', 'tell-apart'], 'default_asks': {'_': ['correct']}},
             {'id': 'letter', 'title': 'Send your request to the site owner', 'time': '15 minutes', 'you_send': True, 'letter': 'L7',
+             'letter_when': [{'when': {'who': ['same-name']}, 'letter': 'L6W'}],
              'where': 'Use the contact page, or the email in the site’s privacy policy. Keep a copy.'},
             {'id': 'follow', 'title': 'Wait, then follow up', 'check_back': True, 'body': 'If there’s no reply after 14 days, send a short follow-up.', 'letter': 'L5', 'letter_collapsed': True},
             {'id': 'refresh', 'title': 'Once the page changes, ask Google to refresh it', 'time': '5 minutes', 'links': ['google-refresh-tool', 'google-removal-overview']},
@@ -573,17 +592,22 @@ _NS_WHO = {'not-me': {'who': 'same-name'}}
 NOT_SURE_ROUTES = [
     {'when': {'wrong': ['fake']}, 'plan': 'fake-profile', 'answers': {'platform': 'other', 'doing': 'existing'}},
     {'when': {'where': ['listing']}, 'plan': 'people-search', 'answers': {'who': 'me', 'listed': 'other', 'sites': 'one'}},
-    {'when': {'where': ['review']}, 'plan': 'review', 'answers': {'about': 'me', 'platform': 'other', 'why': 'not-customer'},
+    # 'unsure' is a route-only value: the review plan's neutral title and lede,
+    # and a neutral fill-in in the report wording (nothing about customers).
+    {'when': {'where': ['review']}, 'plan': 'review', 'answers': {'about': 'me', 'platform': 'other', 'why': 'unsure'},
      'map': {'private': {'why': 'offensive'}}},
-    {'when': {'where': ['court']}, 'plan': 'court', 'answers': {'who': 'me', 'where': 'court-site', 'status': 'unsure'}, 'map': _NS_WHO},
+    {'when': {'where': ['court'], 'wrong': ['not-me']}, 'plan': 'general', 'answers': {'who': 'same-name'}},
+    {'when': {'where': ['court']}, 'plan': 'court', 'answers': {'who': 'me', 'where': 'court-site', 'status': 'unsure'}},
     {'when': {'where': ['news'], 'wrong': ['private']}, 'plan': 'general', 'answers': {}, 'asks': ['anonymise', 'noindex']},
     {'when': {'where': ['news']}, 'plan': 'old-news', 'answers': {'who': 'me', 'now': 'outdated', 'status': 'unsure'},
      'map': {'not-me': {'who': 'same-name', 'now': 'unsure'}}},
+    # Social media is never a people-search listing: general plan, with a report step.
+    {'when': {'where': ['social']}, 'plan': 'general', 'answers': {'where': 'social'}, 'map': _NS_WHO},
     {'when': {'wrong': ['private']}, 'plan': 'people-search', 'answers': {'who': 'me', 'listed': 'other', 'sites': 'one'}},
-    {'plan': 'general', 'answers': {}},
+    {'plan': 'general', 'answers': {}, 'map': _NS_WHO},
 ]
 # The general plan's ask defaults follow the visitor's main problem.
-_GENERAL_ASKS = {'wrong': ['correct', 'update'], 'private': ['anonymise', 'remove'], 'not-me': ['update']}
+_GENERAL_ASKS = {'wrong': ['correct', 'update'], 'private': ['anonymise', 'remove'], 'not-me': ['tell-apart']}
 
 
 def route_not_sure(answers):

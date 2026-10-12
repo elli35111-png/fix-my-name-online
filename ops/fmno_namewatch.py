@@ -370,7 +370,7 @@ def alert_body(customer_name: str, new_results: list[dict], queries: list[str]) 
 
 NameWatch Alert™: {status}
 
-This month's automated sweep found {len(new_results)} result(s) that weren't there last time. {watch_count} of them had a word in the title from the watch list (for example "court" or "review").
+The latest automated check found {len(new_results)} result(s) that weren't there last time. {watch_count} of them had a word in the title from the watch list (for example "court" or "review").
 
 {format_results(new_results)}
 
@@ -379,7 +379,7 @@ A result showing up for the first time isn't necessarily new, harmful, accurate 
 If one of these needs dealing with, the free check gives you a step-by-step plan, letters you can edit and the official forms:
 https://fixmynameonline.com/self-service
 
-For a single link you can also use the letter pack (US$19 once), which saves your letters and reminders online. You still check and send everything yourself:
+For a single link you can also use the letter pack (US$19 once), which saves your letters, dates and notes online for that link. You still check and send everything yourself:
 https://fixmynameonline.com/diy-action?source=namewatch_alert
 
 Monitored phrases: {', '.join(queries)}

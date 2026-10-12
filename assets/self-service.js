@@ -668,7 +668,10 @@
       el('button', {type: 'button', class: 'btn btn-secondary', id: 'export-text', onclick: () => download(planText(item, built), 'text/plain;charset=utf-8', 'FMNO-My-Plan.txt')}, svg('download'), 'Download as text'));
     if (isDraft) actions.append(el('button', {type: 'button', class: 'btn-quiet', onclick: () => go('')}, 'Change my answers'));
     main.append(actions);
-    const aside = el('aside', {class: 'aside aside-plan stack'}, progressCard(item, built), privacyCard(), storageCard());
+    // Privacy and storage sit under the plan, not in the aside: the sticky
+    // "At a glance" card would otherwise slide over them on desktop.
+    main.append(el('div', {class: 'grid grid-2 no-print plan-keep'}, privacyCard(), storageCard()));
+    const aside = el('aside', {class: 'aside aside-plan stack hide-below-desk'}, progressCard(item, built));
     view.append(el('div', {class: 'wrap split'}, main, aside));
     return view;
   }
