@@ -420,6 +420,7 @@ def pricing():
 {compare}
 </div></section>
 <section class="section"><div class="wrap prose">
+<p class="small">Prices are in US dollars, and you can buy from anywhere. For buyers in Australia, the price includes GST.</p>
 <h2 id="refunds">Refunds</h2>
 <p>If you buy the letter pack and haven’t created your letter yet, you can refund it yourself from your workspace within 7 days. It goes back to the card you paid with, and your bank may take a few days to show it.</p>
 <p>Once you’ve created your letter, that automatic refund isn’t available. Your rights under the Australian Consumer Law still apply: if the pack doesn’t work as described, email <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a> and we’ll put it right or refund you.</p>
@@ -637,7 +638,7 @@ def terms():
 <h2 id="pack">4. The letter pack (US$19)</h2>
 <p>The letter pack is a one-off purchase for one link. After payment you get a private online workspace where you enter your facts and create a request letter, a follow-up letter and a second letter for that link. You can edit them, save notes and dates, download them, and add reminders to your own calendar. Once you’ve created a letter for a link, the link can’t be swapped for a different one.</p>
 <p>Your workspace opens from your payment confirmation link, and stays unlocked on that browser for 24 hours. You can get a new access link by email at any time from the <a href="/diy-action/recover">recovery page</a>. Anyone with your access link can open your workspace, so keep it private. We’ll keep workspaces available while we run the service; please download a copy for your records.</p>
-<p>The price is shown in US dollars before you pay. The price at checkout is the price you pay.</p>
+<p>The price is shown in US dollars before you pay. For buyers in Australia, it includes GST. The price at checkout is the price you pay.</p>
 <h2 id="refunds">5. Refunds and your consumer rights</h2>
 <p>If you haven’t created a letter yet, you can refund the letter pack yourself from your workspace within 7 days of buying it. This is on top of your legal rights, not instead of them.</p>
 <p>Our services come with guarantees that cannot be excluded under the Australian Consumer Law. If the letter pack doesn’t do what we said it would, or there’s a major failure, you’re entitled to a refund or another remedy. Email <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.</p>
