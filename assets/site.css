@@ -590,7 +590,7 @@ details.letter-more.card summary { font-size: var(--t-md); color: var(--ink); }
 /* compact header action on phones and tablets (the full nav takes over at 900px) */
 .head-actions { display: flex; align-items: center; gap: 8px; }
 .head-cta { min-height: 44px; white-space: nowrap; }
-@media (min-width: 900px) { .head-cta { display: none; } }
+@media (min-width: 900px) { .head-cta, .head-actions { display: none; } }
 @media (max-width: 400px) {
   .site-header .wrap { gap: 8px; }
   .logo { font-size: .9375rem; gap: 8px; }
