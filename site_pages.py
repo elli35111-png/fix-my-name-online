@@ -10,6 +10,19 @@ PROBLEMS = plans.PROBLEMS
 HUB_BY_SLUG = {p['hub']: p for p in PROBLEMS}
 
 
+def stack_table(html):
+    """Label every cell with its column heading, so on phones each row can stack
+    as the row label plus labelled values instead of scrolling sideways (and
+    hiding the last column). The wrapper needs the `table-stack` class."""
+    import re
+    heads = [re.sub(r'<[^>]+>', '', h) for h in re.findall(r'<th>(.*?)</th>', html)]
+
+    def row(match):
+        cells = iter(range(len(heads)))
+        return re.sub(r'<td>', lambda _: f'<td data-label="{esc(heads[next(cells)])}">', match.group(0))
+    return re.sub(r'<tr>(?:(?!</tr>).)*?<td>.*?</tr>', row, html, flags=re.S)
+
+
 def tiles(selected=None, cols3=False, compact=False, track=False):
     out = []
     for p in PROBLEMS:
@@ -79,7 +92,7 @@ def price_cards(featured_cta='/diy-action'):
 </article>
 <article class="card price featured">
 <div><p class="eyebrow">Optional</p><h3 style="margin-top:6px">Letter pack for one link</h3><p class="amount" style="margin-top:12px">US$19<small>once · about A$29</small></p></div>
-<ul class="ticks"><li>Your request letter written out in full from a short form</li><li>A follow-up and a second letter, ready for when there’s no answer</li><li>Calendar reminders for your check-back dates</li><li>Saved online, with an email link to get back in</li><li>Refund within 7 days if you haven’t used it</li></ul>
+<ul class="ticks"><li>Your request letter written out in full from a short form</li><li>A follow-up and a second letter, ready for when there’s no answer</li><li>Check-back dates and notes saved with each letter</li><li>Saved online, with an email link to get back in</li><li>Refund within 7 days if you haven’t used it</li></ul>
 <p class="small">You still check and send everything yourself. No subscription.</p>
 <a class="btn btn-secondary btn-block" href="{featured_cta}">See what’s in the pack</a>
 </article>
@@ -333,6 +346,17 @@ def hub(slug, guide_titles):
 
 # ---------- how it works, pricing, FAQ ----------
 
+WHO_DECIDES_TABLE = '''<div class="table-wrap table-stack prose" style="max-width:none"><table>
+<thead><tr><th>Who</th><th>What they decide</th><th>What you can ask for</th></tr></thead>
+<tbody>
+<tr><td>The publisher or website owner</td><td>What’s on the page</td><td>An update, a correction, removing your name, a “noindex” tag, or taking it down</td></tr>
+<tr><td>The platform (Facebook, Google Maps, TikTok…)</td><td>Accounts, posts and reviews, against its own rules</td><td>Removal of things that break a specific rule</td></tr>
+<tr><td>Google</td><td>What shows in search results</td><td>Refreshing a result once the page has changed; removing contact details, intimate images and some other personal information</td></tr>
+<tr><td>A regulator or complaints body</td><td>Complaints about members or organisations it covers</td><td>A review of how the publisher or business handled your request</td></tr>
+<tr><td>A court</td><td>Its own records and any non-publication orders</td><td>Usually only through a lawyer</td></tr>
+</tbody></table></div>'''
+
+
 def how_it_works():
     return f'''<main id="main">
 <section class="page-head"><div class="wrap">
@@ -351,15 +375,7 @@ def how_it_works():
 </div></section>
 <section class="section band"><div class="wrap">
 {section_head('Who decides what', 'Knowing who decides saves weeks', 'Most wasted effort comes from asking the wrong people, or asking in the wrong order.')}
-<div class="table-wrap prose" style="max-width:none"><table>
-<thead><tr><th>Who</th><th>What they decide</th><th>What you can ask for</th></tr></thead>
-<tbody>
-<tr><td>The publisher or website owner</td><td>What’s on the page</td><td>An update, a correction, removing your name, a “noindex” tag, or taking it down</td></tr>
-<tr><td>The platform (Facebook, Google Maps, TikTok…)</td><td>Accounts, posts and reviews, against its own rules</td><td>Removal of things that break a specific rule</td></tr>
-<tr><td>Google</td><td>What shows in search results</td><td>Refreshing a result once the page has changed; removing contact details, intimate images and some other personal information</td></tr>
-<tr><td>A regulator or complaints body</td><td>Complaints about members or organisations it covers</td><td>A review of how the publisher or business handled your request</td></tr>
-<tr><td>A court</td><td>Its own records and any non-publication orders</td><td>Usually only through a lawyer</td></tr>
-</tbody></table></div>
+{stack_table(WHO_DECIDES_TABLE)}
 </div></section>
 <section class="section"><div class="wrap">
 {section_head('Where we stand', 'What we do, and what we don’t')}
@@ -389,6 +405,9 @@ def pricing():
         ('Someone contacts the publisher for you', 'No', 'No'),
     ]
     table = ''.join(f'<tr><td>{esc(a)}</td><td>{esc(b) or "—"}</td><td>{esc(c) or "—"}</td></tr>' for a, b, c in rows)
+    compare = stack_table('<div class="table-wrap table-stack prose compare" style="max-width:none"><table>\n'
+                          '<thead><tr><th>What you get</th><th>Free</th><th>Letter pack, US$19</th></tr></thead>\n'
+                          f'<tbody>{table}</tbody></table></div>')
     return f'''<main id="main">
 <section class="page-head"><div class="wrap">
 <p class="eyebrow">Pricing</p>
@@ -398,9 +417,7 @@ def pricing():
 <section class="section-tight"><div class="wrap">{price_cards()}</div></section>
 <section class="section band"><div class="wrap">
 {section_head('Side by side', 'Free compared with the letter pack')}
-<div class="table-wrap prose compare" style="max-width:none"><table>
-<thead><tr><th>What you get</th><th>Free</th><th>Letter pack, US$19</th></tr></thead>
-<tbody>{table}</tbody></table></div>
+{compare}
 </div></section>
 <section class="section"><div class="wrap prose">
 <h2 id="refunds">Refunds</h2>
@@ -608,7 +625,7 @@ def terms():
 <p>{BRAND} (“we”, “us”) is run by {COMPANY}, ABN {ABN}, South Australia. Contact: <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.</p>
 <h2 id="what">2. What the service is, and isn’t</h2>
 <p>We provide self-service tools and information: the free check and plans, letters you can edit, links to official forms, a tracker that runs in your browser, guides, and an optional paid letter pack. You decide whether to send anything, and you send it yourself.</p>
-<p>We are not a law firm. Nothing on this site is legal advice, and using it doesn’t create a lawyer–client relationship. We don’t contact publishers, platforms, search engines or anyone else for you, and we don’t search for information about you.</p>
+<p>We are not a law firm. Nothing on this site is legal advice, and using it doesn’t create a lawyer–client relationship. We don’t contact publishers, platforms, search engines or anyone else for you. Apart from NameWatch for existing subscribers (see section 6), we don’t search for information about you.</p>
 <p>Publishers, platforms, Google and regulators make their own decisions. We can’t promise that anything will be removed, changed or ranked differently, and we don’t.</p>
 <h2 id="your-part">3. Your part</h2>
 <ul>
@@ -625,7 +642,7 @@ def terms():
 <p>If you haven’t created a letter yet, you can refund the letter pack yourself from your workspace within 7 days of buying it. This is on top of your legal rights, not instead of them.</p>
 <p>Our services come with guarantees that cannot be excluded under the Australian Consumer Law. If the letter pack doesn’t do what we said it would, or there’s a major failure, you’re entitled to a refund or another remedy. Email <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.</p>
 <h2 id="namewatch">6. NameWatch</h2>
-<p>New NameWatch sign-ups are paused. If you already subscribe, your subscription continues on its original terms, and you can cancel any time through <a href="/billing">billing</a>; cancelling takes effect at the end of the period you’ve paid for. Joining the waitlist is free and doesn’t commit you to anything.</p>
+<p>New NameWatch sign-ups are paused. If you already subscribe, your subscription continues on its original terms: an automated search runs on a schedule for the names and phrases you gave us, and we email you when new results appear, or a short status note if there are none. It doesn’t contact anyone or remove anything. You can cancel any time through <a href="/billing">billing</a>; cancelling takes effect at the end of the period you’ve paid for. Joining the waitlist is free and doesn’t commit you to anything.</p>
 <h2 id="liability">7. Our responsibility</h2>
 <p>We work hard to keep plans, letters and links accurate, but the law and official processes change, and every situation is different. To the extent the law allows, we aren’t responsible for decisions made by publishers, platforms, search engines or regulators, or for loss caused by relying on general information instead of advice about your situation.</p>
 <p>Where the law lets us limit our liability for a failure to meet a consumer guarantee, we limit it to supplying the service again or refunding what you paid. Nothing in these terms excludes, restricts or changes rights you have under the Australian Consumer Law or other laws that can’t be excluded.</p>
@@ -639,8 +656,21 @@ def terms():
 </main>'''
 
 
+PRIVACY_COLLECT_TABLE = '''<div class="table-wrap table-stack" style="max-width:none"><table>
+<thead><tr><th>Where</th><th>What we receive</th><th>Where it’s kept</th></tr></thead>
+<tbody>
+<tr><td>Free check, plans and tracker</td><td>Nothing. Your answers, links, letters and notes stay in your browser.</td><td>In your browser tab, or on your browser if you switch on “Save on this browser”. You can clear it any time.</td></tr>
+<tr><td>Letter pack (paid)</td><td>Your checkout email and payment confirmation from Stripe, and what you enter in the workspace: name, country or state, the link, your facts, letters, notes, status and dates.</td><td>Our server, hosted by Render in the United States, and our backups.</td></tr>
+<tr><td>NameWatch (existing subscribers only)</td><td>Your email, your sign-up record, and the names and phrases you asked us to watch. We send those names and phrases to DuckDuckGo and Google News as searches, and keep the results each check finds.</td><td>On our own computer in Australia, not on Render, with backups there. Alerts and status notes are emailed to you from admin@fixmynameonline.com. We get an internal note with counts only, not your names or results.</td></tr>
+<tr><td>NameWatch waitlist</td><td>Your email address and the date you joined.</td><td>Our server, hosted by Render in the United States.</td></tr>
+<tr><td>Emails you send us</td><td>Whatever you include.</td><td>Our email inbox.</td></tr>
+<tr><td>Earlier tools (Free Search Snapshot and NameWatch sign-ups before October 2026)</td><td>What you entered at the time, such as your name, email, country and description.</td><td>Our server and backups, with a private link for you.</td></tr>
+</tbody></table></div>'''
+
+
 def privacy(ga_id=''):
     ga = f' (property {esc(ga_id)})' if ga_id else ''
+    collected = stack_table(PRIVACY_COLLECT_TABLE)
     return f'''<main id="main">
 <section class="page-head"><div class="wrap">
 <p class="eyebrow">Privacy policy</p>
@@ -652,20 +682,13 @@ def privacy(ga_id=''):
 <h2 id="who">1. Who we are</h2>
 <p>{BRAND} is run by {COMPANY}, ABN {ABN}, South Australia (“we”, “us”). We handle personal information under the Australian Privacy Principles in the Privacy Act 1988. Contact: <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.</p>
 <h2 id="collect">2. What we collect, tool by tool</h2>
-<div class="table-wrap" style="max-width:none"><table>
-<thead><tr><th>Where</th><th>What we receive</th><th>Where it’s kept</th></tr></thead>
-<tbody>
-<tr><td>Free check, plans and tracker</td><td>Nothing. Your answers, links, letters and notes stay in your browser.</td><td>In your browser tab, or on your browser if you switch on “Save on this browser”. You can clear it any time.</td></tr>
-<tr><td>Letter pack (paid)</td><td>Your checkout email and payment confirmation from Stripe, and what you enter in the workspace: name, country or state, the link, your facts, letters, notes, status and dates.</td><td>Our server, hosted by Render in the United States, and our backups.</td></tr>
-<tr><td>NameWatch waitlist</td><td>Your email address and the date you joined.</td><td>Our server, hosted by Render in the United States.</td></tr>
-<tr><td>Emails you send us</td><td>Whatever you include.</td><td>Our email inbox.</td></tr>
-<tr><td>Earlier tools (Free Search Snapshot and NameWatch sign-ups before October 2026)</td><td>What you entered at the time, such as your name, email, country and description.</td><td>Our server and backups, with a private link for you.</td></tr>
-</tbody></table></div>
+{collected}
 <p>We don’t ask for identity documents, and please don’t send them. Card details go straight to Stripe; we never see your card number.</p>
 <h2 id="use">3. How we use it</h2>
 <ul>
 <li>To provide the letter pack: open your workspace, save your letters, and email you access and recovery links.</li>
 <li>To send one email to the NameWatch waitlist when it’s back.</li>
+<li>For existing NameWatch subscribers: to run the scheduled searches for the names you gave us, and email you alerts and status notes.</li>
 <li>To reply to you, and to handle refunds, billing and privacy requests.</li>
 <li>When a purchase completes, we get a private notification with the checkout email so we know a sale happened.</li>
 <li>When someone clicks through to checkout, we record the click (the page, the time and the page they came from, plus a scrambled version of the IP address) so we can see which pages lead to purchases.</li>
@@ -681,6 +704,7 @@ def privacy(ga_id=''):
 <li><strong>Render</strong> (United States): hosts the website and stores letter pack and waitlist data.</li>
 <li><strong>Stripe</strong>: processes payments and refunds.</li>
 <li><strong>Brevo</strong> (European Union): sends workspace access and recovery emails.</li>
+<li><strong>DuckDuckGo</strong> and <strong>Google News</strong> (United States): receive the names and phrases existing NameWatch subscribers asked us to watch, as search queries. They don’t receive your email address.</li>
 <li><strong>Google</strong>: analytics on information pages, and our email inbox.</li>
 <li><strong>Telegram</strong>: carries our private purchase notifications.</li>
 </ul>
@@ -798,7 +822,7 @@ def guide_page(*, slug, h1, eyebrow, intro, sections, faqs, related, checklist=N
         toc_items.append('<li><a href="#questions">Questions</a></li>')
     pack = ''
     if problem in ('old-news', 'court', 'images', 'people-search', 'not-sure'):
-        pack = '<div class="card stack-sm"><div class="kicker-row" style="justify-content:space-between"><h3>Want your letters for one link saved online?</h3><span class="tag">Optional · US$19 once</span></div><p class="muted">The free plan has everything you need to act. The letter pack saves a request letter, a follow-up and a second letter for one link, with reminders. You still send everything yourself.</p><p><a href="/diy-action">See what’s in the letter pack →</a></p></div>'
+        pack = '<div class="card stack-sm"><div class="kicker-row" style="justify-content:space-between"><h3>Want your letters for one link saved online?</h3><span class="tag">Optional · US$19 once</span></div><p class="muted">The free plan has everything you need to act. The letter pack saves a request letter, a follow-up and a second letter for one link, online with your dates and notes. You still send everything yourself.</p><p><a href="/diy-action">See what’s in the letter pack →</a></p></div>'
     rel = ''.join(f'<a href="{esc(href)}">{esc(title)} {icon("arrow", "icon icon-sm")}</a>' for href, title in related)
     start_label = 'Start this plan' if p else 'Start free check'
     start_href = f'/self-service?problem={problem}'
@@ -861,7 +885,7 @@ ACQUISITION = {
             ('The same first steps everywhere', 'Save the link and a dated screenshot. Work out who runs the site. Ask them for one specific change. Follow up once if they don’t reply. Then use Google’s refresh tool once the page has changed.'),
             ('UK and EU: stronger privacy rights', 'People in the UK and EU can ask Google to stop showing some results for searches of their name, and can ask organisations to erase personal data. If they don’t answer within a month, you can complain to the data protection authority.'),
             ('Australia and New Zealand', 'Privacy law covers many businesses, including most people-search sites, but generally not news reporting. Press councils handle complaints about member publications. In Australia, eSafety can act on serious online abuse and intimate images.'),
-            ('United States and Canada', 'There’s no general right to have results removed, but many people-search sites have opt-outs, some states give deletion rights, and Google removes contact details and certain personal information on request.'),
+            ('United States and Canada', 'There’s no general right to have results removed, but many people-search sites have opt-outs, some states give deletion rights, and Google will consider removing contact details and certain personal information on request.'),
         ],
         'faqs': [
             ('Does it matter where the website is based?', 'Sometimes. Privacy laws usually depend on where you live and where the business operates. Your plan uses the country you live in and points to the routes that apply.'),
@@ -892,10 +916,10 @@ ACQUISITION = {
         'title': 'Remove Negative Google Results? What’s Possible and How to Ask',
         'eyebrow': 'Negative Google results', 'problem': 'not-sure',
         'h1': 'Remove negative Google results? What’s possible, and how to ask',
-        'description': 'Google rarely removes a result on its own. Here’s what it will remove, what only the website can change, and how to ask both in the right order. Free plan and letters.',
-        'intro': 'Google mostly shows what’s on other people’s websites. So the most effective route is usually to get the page changed first, then ask Google to catch up. Google will also remove some things directly.',
+        'description': 'Google rarely removes a result on its own. Here’s what it may remove, what only the website can change, and how to ask both in the right order. Free plan and letters.',
+        'intro': 'Google mostly shows what’s on other people’s websites. So the most effective route is usually to get the page changed first, then ask Google to catch up. Google will also consider removing some things directly, though it decides each request.',
         'sections': [
-            ('What Google will remove directly', 'Your contact details (phone, email, home address), intimate images shared without consent, some financial and identity information, content that breaks its policies, and, in the UK and EU, some results under privacy law.'),
+            ('What Google may remove directly', 'Google will consider removing your contact details (phone, email, home address), intimate images shared without consent, some financial and identity information, content that breaks its policies, and, in the UK and EU, some results under privacy law. It reviews each request and can say no.'),
             ('What only the website can change', 'Everything else on the page. If an article is out of date or wrong, the publisher is the one who can update it, remove your name, add a “noindex” tag or take it down.'),
             ('Ask in the right order', 'Ask the website first. Once the page changes, use Google’s Refresh Outdated Content tool so the search result updates. Asking Google first, while the page is unchanged, is usually turned down.'),
             ('If it can’t be removed', 'Write down the answer. Then consider the complaint routes for your country, and make sure accurate, current information about you is easy to find.'),

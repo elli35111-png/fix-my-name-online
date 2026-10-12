@@ -119,40 +119,43 @@ PLANS = {
     'premium': {'name': 'Premium™', 'price': 2497, 'mode': 'subscription', 'env': 'STRIPE_PRICE_PREMIUM', 'payment_link': 'https://buy.stripe.com/6oUeVc2OOgpzfEC817cZa08'},
 }
 
+# Shown on old Free Search Snapshot private links (/private-case-room/<id>),
+# picked by key from what people entered back then. Keys and priorities stay
+# the same; the copy matches today's products (free check + US$19 letter pack).
 TRIAGE_NEXT_STEPS = {
     'alerts': {
-        'label': 'NameWatch Alert™ monitoring',
-        'summary': 'New monitoring subscriptions are paused. Use the free desk to keep your own search notes; existing customer billing remains available.',
-        'cta': 'View NameWatch Alert™',
+        'label': 'NameWatch alerts (paused)',
+        'summary': 'New NameWatch sign-ups are paused. If you already subscribe, it carries on and you can manage it from billing. For anything you’ve already found, the free check gives you a plan.',
+        'cta': 'About NameWatch',
         'url': '/name-watch-alerts',
         'priority': 'standard',
     },
     'removal-review': {
-        'label': 'DIY Reputation Action Workspace™',
-        'summary': 'If this is one old article or bad link and no safety or legal exception applies, compare the fixed-scope DIY tool. You verify the facts, review the wording and submit any request yourself.',
-        'cta': 'See DIY actions from US$19',
+        'label': 'One old article or link',
+        'summary': 'Start with the free check. It gives you a plan and a letter you can edit, for free. If you’d like your letters for that one link saved online, with a follow-up and a second letter, there’s an optional US$19 letter pack. Either way, you check the facts and send everything yourself.',
+        'cta': 'See the US$19 letter pack',
         'url': '/diy-action',
         'priority': 'high',
     },
     'review-defence': {
-        'label': 'Free review-platform guidance',
-        'summary': 'Use the free self-service desk to record the review and find the official platform pathway. The paid one-article pack is not a review-removal product.',
-        'cta': 'Open free self-service',
-        'url': '/self-service',
+        'label': 'A review',
+        'summary': 'The platform decides reviews under its own rules. The free check shows you which rule might apply, the platform’s official report form and wording you can adapt. The letter pack isn’t for reviews.',
+        'cta': 'Start the free check for a review',
+        'url': '/self-service?problem=review',
         'priority': 'high',
     },
     'repair-plan': {
-        'label': 'Start with the free self-service desk',
-        'summary': 'This needs a clearer target before a paid tool makes sense. Organise one concern and its evidence yourself, then choose an official route.',
-        'cta': 'Open free self-service',
+        'label': 'Start with the free check',
+        'summary': 'Pick what you found and answer a few questions. You get a plan with the official forms and a letter you can edit. It’s free and runs in your browser.',
+        'cta': 'Start the free check',
         'url': '/self-service',
         'priority': 'standard',
     },
     'high-risk': {
-        'label': 'External professional or safety pathway',
-        'summary': 'This is outside FMNO’s automated DIY scope. Do not purchase an action workspace for emergencies, threats, minors, active proceedings or complex legal disputes.',
-        'cta': 'Read scope and safety guidance',
-        'url': '/self-service#safety',
+        'label': 'Get help from the right people first',
+        'summary': 'If there are threats, a child is involved, or a court case is still running, start with emergency services, the police, eSafety or a lawyer, not a paid tool. The free check’s safety question puts those contacts at the top of your plan.',
+        'cta': 'Start the free check',
+        'url': '/self-service',
         'priority': 'urgent',
     },
 }
@@ -2241,7 +2244,7 @@ def private_case_room(queue_id):
     body = f'''
     <div class="card"><span class="pill ok">Earlier tool · Free Search Snapshot</span><h1>Your Snapshot answers</h1>
       <p class="sub">Hi {safe(record.get('name'))}. This is what you entered in the Free Search Snapshot, which has since been replaced by the free check. The suggestion below came from your answers, not a live Google search. Nothing has been sent to anyone.</p>
-      <div class="grid"><div class="card"><h2>A route to consider</h2><p class="sub">{safe(triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/self-service'))}">{safe(triage.get('cta', 'View next step'))} →</a></p><p class="note">Only buy a tool if its exact scope fits your concern.</p></div>
+      <div class="grid"><div class="card"><h2>A route to consider</h2><p class="sub">{safe(triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/self-service'))}">{safe(triage.get('cta', 'View next step'))} →</a></p><p class="note">The free check is enough for most people. Only buy the letter pack if it fits what you need.</p></div>
       <div class="card"><h2>Private reference</h2><p class="note">Reference: {safe(record.get('queue_id'))}<br>Case: {safe(record.get('case_id'))}<br>Status: {safe(record.get('status'))}</p></div></div>
       <h2 style="margin-top:22px">What you gave us</h2>
       <div class="card"><p><strong>Names/search:</strong><br>{safe(preview.get('names_to_check'))}</p><p><strong>Links/search clues:</strong><br>{safe(preview.get('problem_links'))}</p><p><strong>Goal:</strong><br>{safe(preview.get('goal'))}</p></div>

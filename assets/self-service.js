@@ -658,7 +658,7 @@
     main.append(el('section', {class: 'card card-lg steps-card', id: 'plan-steps'}, ol));
     if (built.pack) main.append(el('section', {class: 'card stack-sm pack-offer no-print'},
       el('div', {class: 'kicker-row', style: 'justify-content:space-between'}, el('h3', {}, 'Want more help with this one link?'), el('span', {class: 'tag'}, 'Optional · US$19 once')),
-      el('p', {class: 'muted'}, 'The letter pack saves your letter, a follow-up and a second letter online for this one link, with calendar reminders and a download. You still check and send everything yourself. Refund within 7 days if you haven’t used it.'),
+      el('p', {class: 'muted'}, 'The letter pack saves your letter, a follow-up and a second letter online for this one link, with your dates and notes, and a download. You still check and send everything yourself. Refund within 7 days if you haven’t used it.'),
       el('p', {}, el('a', {href: '/diy-action'}, 'See what’s in the letter pack →'))));
     const actions = el('div', {class: 'btn-row stack-phone no-print'});
     if (isDraft) actions.append(el('button', {type: 'button', class: 'btn btn-primary', id: 'add-to-tracker', onclick: () => addToTracker(item, built)}, svg('plus'), 'Add this plan to my tracker'));

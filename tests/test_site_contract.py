@@ -270,3 +270,91 @@ def test_older_managed_packages_promise_no_work(monkeypatch):
         for managed in ('we use careful', 'handle this safely', 'private onboarding', 'reputation repair pathways'):
             assert managed not in text
     assert server.send_onboarding_emails({'plan': 'starter', 'name': 'x', 'email': 'x@example.com'}, {'id': 'q'}) == {}
+
+
+# ---- 12 Oct 2026 final review ----
+
+def test_comparison_tables_show_every_column_on_phones(origin):
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={'width': 375, 'height': 812})
+        for path, label in (('/pricing', 'Letter pack, US$19'), ('/how-it-works', 'What you can ask for'),
+                            ('/privacy', 'Where it’s kept')):
+            page.goto(origin + path)
+            cells = page.locator('.table-stack td')
+            assert cells.count() >= 9, path
+            # Every cell, including the last column, sits fully inside the screen.
+            right = page.evaluate("Math.max(...[...document.querySelectorAll('.table-stack td')].map(td => td.getBoundingClientRect().right))")
+            assert right <= 375 - 16 + 1, (path, right)
+            # The column name is shown next to each value.
+            assert label in page.locator('.table-stack').inner_text(), path
+            assert page.evaluate("document.querySelector('.table-stack').scrollWidth <= document.querySelector('.table-stack').clientWidth")
+        # Desktop keeps the normal table.
+        page.set_viewport_size({'width': 1280, 'height': 900})
+        page.goto(origin + '/pricing')
+        assert page.locator('.table-stack thead').is_visible()
+        browser.close()
+
+
+def test_buttons_that_wrap_keep_space_above_and_below(origin):
+    from playwright.sync_api import sync_playwright
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={'width': 375, 'height': 812})
+        page.goto(origin + '/self-service?problem=old-news')
+        for q, v in (('who', 'me'), ('now', 'left-out'), ('status', 'finished')):
+            page.locator(f'[data-q="{q}"] input[value="{v}"]').check()
+        page.check('#safety-none')
+        page.click('#show-plan')
+        page.wait_for_selector('#add-to-tracker')
+        sizes = page.evaluate("""[...document.querySelectorAll('.btn')].filter(b => b.offsetParent).map(b => {
+            const cs = getComputedStyle(b), pt = parseFloat(cs.paddingTop), pb = parseFloat(cs.paddingBottom);
+            return [b.textContent.trim().slice(0, 40), pt, pb, (b.clientHeight - pt - pb) / parseFloat(cs.lineHeight)];
+        })""")
+        assert sizes
+        for label, top, bottom, height in sizes:
+            assert top >= 8 and bottom >= 8, (label, top, bottom)
+        wrapped = [s for s in sizes if s[3] >= 1.8]  # label runs to two lines
+        assert wrapped, 'expected at least one two-line button at 375 (the refresh-tool link)'
+        browser.close()
+
+
+def test_google_removal_is_never_stated_as_certain(client):
+    for path in ('/remove-negative-google-results', '/worldwide-reputation-repair', '/learn'):
+        text = visible_text(client.get(path).get_data(as_text=True))
+        for certain in ('google will also remove', 'what google will remove', 'what it will remove',
+                        'google removes contact details'):
+            assert certain not in text, (path, certain)
+    text = visible_text(client.get('/remove-negative-google-results').get_data(as_text=True))
+    assert 'what google may remove directly' in text and 'can say no' in text
+
+
+def test_terms_and_privacy_cover_namewatch_for_existing_subscribers(client):
+    terms = visible_text(client.get('/terms').get_data(as_text=True))
+    assert 'apart from namewatch for existing subscribers' in terms
+    assert 'we don’t search for information about you.' not in terms.replace('apart from namewatch for existing subscribers (see section 6), we don’t search for information about you.', '')
+    privacy = client.get('/privacy').get_data(as_text=True)
+    soup = BeautifulSoup(privacy, 'html.parser')
+    rows = [tr.get_text(' ', strip=True) for tr in soup.select('#collect ~ .table-wrap tr, .table-wrap tr')]
+    namewatch = next(r for r in rows if r.startswith('NameWatch (existing subscribers only)'))
+    for fact in ('DuckDuckGo', 'Google News', 'not on Render', 'admin@fixmynameonline.com', 'counts only'):
+        assert fact in namewatch, fact
+    providers = soup.find(id='providers').find_next('ul').get_text(' ', strip=True)
+    assert 'DuckDuckGo' in providers and 'Google News' in providers
+
+
+def test_paid_pack_is_not_sold_on_what_the_free_check_already_has(client):
+    # The free tracker gives the same calendar file, so reminders are no reason to pay (ACL s18).
+    for path in ('/', '/pricing'):
+        soup = BeautifulSoup(client.get(path).data, 'html.parser')
+        pack = soup.select_one('.price.featured').get_text(' ', strip=True).lower()
+        assert 'calendar' not in pack and 'reminder' not in pack, path
+    soup = BeautifulSoup(client.get('/diy-action').data, 'html.parser')
+    sales = ' '.join(el.get_text(' ', strip=True) for el in soup.select('.lede, .ticks')).lower()
+    assert 'calendar' not in sales and 'reminder' not in sales
+    js = (Path(server.BASE_DIR) / 'assets' / 'self-service.js').read_text()
+    offer = re.search(r"The letter pack saves[^']*'", js).group(0)
+    assert 'reminder' not in offer
+    # The free side still says it has them.
+    assert 'Calendar reminder files' in client.get('/pricing').get_data(as_text=True)

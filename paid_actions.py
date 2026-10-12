@@ -265,12 +265,12 @@ def sales(s):
     body = (body.replace('{{SAMPLE_REQUEST}}', s.safe(request_letter)).replace('{{SAMPLE_FOLLOWUP}}', s.safe(followup))
             .replace('{{SAMPLE_SECOND}}', s.safe(second)).replace('{{BUILDING}}', s.icon('building')))
     faq = [(q, a) for q, a in SALES_FAQ]
-    schema = [{'@type': 'Product', 'name': 'Letter pack for one link', 'description': 'Request, follow-up and second letters for one link, saved online with reminders. You send everything yourself.',
+    schema = [{'@type': 'Product', 'name': 'Letter pack for one link', 'description': 'Request, follow-up and second letters for one link, saved online with your dates and notes. You send everything yourself.',
                'brand': {'@type': 'Brand', 'name': 'Fix My Name Online'},
                'offers': {'@type': 'Offer', 'price': '19.00', 'priceCurrency': 'USD', 'url': s.DOMAIN + '/diy-action', 'availability': 'https://schema.org/InStock'}},
               {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': q, 'acceptedAnswer': {'@type': 'Answer', 'text': a}} for q, a in faq]}]
     return s.page('Letter pack for one link: US$19 once', body,
-                  'Your request letter, a follow-up and a second letter for one link, saved online with reminders. US$19 once, refund within 7 days if unused. You send everything yourself.',
+                  'Your request letter, a follow-up and a second letter for one link, saved online with your dates and notes. US$19 once, refund within 7 days if unused. You send everything yourself.',
                   canonical_path='/diy-action', schema_items=schema, safety='au')
 
 

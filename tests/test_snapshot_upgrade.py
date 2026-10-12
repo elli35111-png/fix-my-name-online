@@ -140,3 +140,34 @@ def test_backup_includes_private_workflow_records(client, monkeypatch, tmp_path)
     data = client.get('/admin/fulfilment/export/backup.json', headers={'X-FMNO-Admin-Token': 'test-only-admin-token'}).get_json()
     for key in ('private_case_rooms', 'concierge_transcripts', 'diy_actions'):
         assert key in data
+
+
+@pytest.mark.parametrize('goal, key', [('Monitoring new mentions please', 'alerts'), ('My old article is outdated', 'removal-review'),
+                                       ('A fake review on Google', 'review-defence'), ('Something else', 'repair-plan'),
+                                       ('There are threats to my child', 'high-risk')])
+def test_old_snapshot_links_show_todays_products_and_working_links(client, goal, key):
+    data = {**valid(), 'goal': goal, 'case_type': ''}
+    assert server.triage_snapshot(data)['key'] == key
+    queue_id, token = seed_room(data)
+    html = client.get('/private-case-room/' + queue_id + '?access_token=' + token).get_data(as_text=True)
+    from bs4 import BeautifulSoup
+    soup = BeautifulSoup(html, 'html.parser')
+    text = soup.get_text(' ', strip=True)
+    for old in ('DIY', 'Action Workspace', 'action workspace', 'from US$19', 'fixed-scope', 'Open free self-service',
+                'automated', 'pathway', 'exact scope'):
+        assert old not in text, (key, old)
+    step = server.TRIAGE_NEXT_STEPS[key]
+    assert '™' not in step['label'] + step['summary'] + step['cta']
+    assert step['summary'] in text
+    if key == 'removal-review':
+        assert 'letter pack' in text and 'US$19' in text
+    # Every link on the page opens a real page (no missing #anchors).
+    for a in soup.select('main a[href], .card a[href]'):
+        href = a['href']
+        if href.startswith('mailto:') or href.startswith('http'):
+            continue
+        path, _, frag = href.partition('#')
+        res = client.get(path)
+        assert res.status_code == 200, href
+        if frag:
+            assert f'id="{frag}"' in res.get_data(as_text=True), href
