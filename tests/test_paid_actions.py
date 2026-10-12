@@ -325,3 +325,72 @@ def test_customer_browser_flow_mobile(shop, tmp_path):
     finally:
         http.shutdown()
         thread.join()
+
+
+# ---- 12 Oct 2026 review: the letters people pay for must read properly ----
+
+@pytest.mark.parametrize('outcome', list(actions.ASK))
+@pytest.mark.parametrize('issue', list(actions.ISSUES))
+@pytest.mark.parametrize('authority', ['self', 'authorised'])
+def test_letters_read_properly_for_every_choice(outcome, issue, authority):
+    data = dict(actions.SAMPLE, requested_outcome=outcome, issue_type=issue, authority=authority)
+    letters = actions.draft_letters(data)
+    text = '\n'.join(letters)
+    assert 'on this page:\n' not in text.replace('this page:\n' + data['target_url'], '')  # the old doubled phrase
+    for doubled in ('from the page on this page', 'take the page down on this page', 'stop showing it on this page',
+                    'contains name confusion', '{', '}'):
+        assert doubled not in text, (doubled, outcome, issue, authority)
+    request_letter, followup, second = letters
+    if authority == 'authorised':
+        assert 'on behalf of [name of the person the page is about]' in request_letter
+        for first_person in ('about me', 'my name', 'my personal'):
+            assert first_person not in request_letter and first_person not in second, first_person
+    else:
+        assert 'on behalf of' not in request_letter
+    if issue == 'wrong-person':
+        assert ('I’m not that person' if authority == 'self' else 'They’re not that person') in request_letter
+    # The second letter names the link once, straight after the ask.
+    assert second.count('asking you to ') == 1
+    assert second.split('asking you to ')[1].split(':\n')[1].startswith(data['target_url'])
+
+
+def test_scope_check_allows_ordinary_words_and_still_stops_real_risks():
+    ok = ['It was a minor offence in 2012.', 'A minor traffic matter from 2015.', 'There is a minor error in the date.',
+          'Review of my childcare centre.']
+    stop = ['There is an active court proceeding involving a minor.', 'It names my child.', 'The case is still running.',
+            'He threatened me after it was posted.', 'Someone is trying sextortion.']
+    assert not [t for t in ok if actions.OUT_OF_SCOPE.search(t)]
+    assert all(actions.OUT_OF_SCOPE.search(t) for t in stop)
+
+
+def test_out_of_scope_message_is_plain_and_creates_nothing(shop):
+    client, session_for = shop
+    session_for('cs_test_scope')
+    csrf = start(client, 'cs_test_scope')
+    risky = fields(csrf); risky['problem_summary'] = 'It names my child.'
+    res = client.post('/diy-action/generate', data=risky)
+    text = res.get_data(as_text=True)
+    assert res.status_code == 400
+    assert 'automated' not in text.lower() and 'isn’t the right tool' in text
+    assert actions.backup(server)['actions'] == []
+    ordinary = fields(csrf); ordinary['problem_summary'] = 'It was a minor offence in 2012.'
+    assert client.post('/diy-action/generate', data=ordinary).status_code == 303
+
+
+def test_pack_emails_use_plain_names(shop, monkeypatch):
+    client, session_for = shop
+    session = session_for('cs_test_mailer')
+    sent = []
+    monkeypatch.setattr(server, 'send_brevo_email', lambda *a: sent.append(a) or True)
+    monkeypatch.setattr(server, 'STRIPE_WEBHOOK_SECRET', 'whsec_synthetic')
+    monkeypatch.setattr(server.stripe.Webhook, 'construct_event', lambda *a: {'id': 'evt_mail',
+        'type': 'checkout.session.completed', 'data': {'object': session}})
+    assert client.post('/webhook', data=b'synthetic').status_code == 200
+    start(client, 'cs_test_mailer')
+    client.post('/diy-action/recover', data={'email': 'person@example.com'})
+    assert len(sent) == 2
+    for _to, _name, subject, html in sent:
+        words = (subject + html).lower()
+        assert 'letter pack' in words
+        for old in ('action workspace', 'fmno workspace', 'grant access', 'automated'):
+            assert old not in words, old

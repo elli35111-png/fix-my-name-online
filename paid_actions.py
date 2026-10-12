@@ -33,33 +33,61 @@ ISSUES = {'outdated': 'outdated information', 'inaccurate': 'inaccurate or incom
 STATUSES = {'preparing', 'submitted', 'waiting', 'closed'}
 STATUS_LABELS = {'preparing': 'Preparing', 'submitted': 'Sent by me', 'waiting': 'Waiting for a reply', 'closed': 'Closed'}
 # Plain-English wording used inside the letters (keys unchanged for stored data).
+# {my} becomes "their" when someone writes for the person the page is about.
 ASK = {'correct': 'correct or update the page so it reflects the current facts',
-       'anonymise': 'remove my name and other identifying details from the page',
+       'anonymise': 'remove {my} name and other identifying details from the page',
        'noindex': 'add a “noindex” tag to the page, so search engines stop showing it',
        'remove': 'take the page down'}
-SUBJECT = {'correct': 'Request to update a page about me', 'anonymise': 'Request to remove my name from a page',
-           'noindex': 'Request to stop a page showing in search engines', 'remove': 'Request to remove a page about me'}
+# Short form for the later letters, where the link follows straight after.
+ASK_SHORT = {'correct': 'correct or update this page',
+             'anonymise': 'remove {my} name and other identifying details from this page',
+             'noindex': 'add a “noindex” tag to this page, so search engines stop showing it',
+             'remove': 'take this page down'}
+SUBJECT = {'correct': 'Request to update a page about {me}', 'anonymise': 'Request to remove {my} name from a page',
+           'noindex': 'Request to stop a page showing in search engines', 'remove': 'Request to remove a page about {me}'}
+# What's wrong, said properly for each kind of problem. Second item is used in the second letter.
+ISSUE_SENTENCE = {
+    'outdated': ('The page contains outdated information about {me}.', 'The page still shows outdated information about {me}, and it comes up when people search {my} name.'),
+    'inaccurate': ('The page contains inaccurate or incomplete information about {me}.', 'The page still shows inaccurate or incomplete information about {me}, and it comes up when people search {my} name.'),
+    'privacy': ('The page shows {my} personal information.', 'The page still shows {my} personal information, and it comes up when people search {my} name.'),
+    'wrong-person': ('People searching {my} name are confusing {me} with the person this page is about. {i_am_not} that person.',
+                     'People searching {my} name are still confusing {me} with the person this page is about.'),
+}
+VOICE = {'self': {'me': 'me', 'my': 'my', 'i_am_not': 'I’m not'},
+         'authorised': {'me': 'them', 'my': 'their', 'i_am_not': 'They’re not'}}
+
+
+def _say(template, voice):
+    return template.format(**voice)
 
 
 def draft_letters(data):
     """The three letters in the pack, built only from the buyer's own answers.
     Plain requests: no legal claims, no threats, no deadlines presented as law."""
     outcome = data.get('requested_outcome') or 'correct'
+    if outcome not in ASK:
+        outcome = 'correct'
+    authority = 'authorised' if data.get('authority') == 'authorised' else 'self'
+    voice = VOICE[authority]
     url, name = data.get('target_url', ''), data.get('name', '')
-    ask = ASK.get(outcome, ASK['correct'])
-    issue = ISSUES.get(data.get('issue_type') or 'outdated', 'outdated information')
-    on_behalf = '' if data.get('authority', 'self') == 'self' else 'I’m writing on behalf of the person named on the page, with their permission.\n\n'
-    request_letter = (f"Subject: {SUBJECT.get(outcome, SUBJECT['correct'])}\n\nHello,\n\nI’m writing about this page on your site:\n{url}\n\n"
-        f"{on_behalf}The page contains {issue} about me. {data.get('problem_summary', '')}\n\n"
+    ask, ask_short = _say(ASK[outcome], voice), _say(ASK_SHORT[outcome], voice)
+    issue_key = data.get('issue_type') if data.get('issue_type') in ISSUE_SENTENCE else 'outdated'
+    issue_first, issue_still = (_say(t, voice) for t in ISSUE_SENTENCE[issue_key])
+    summary = (data.get('problem_summary') or '').strip()
+    on_behalf = ('I’m writing on behalf of [name of the person the page is about], who has asked me to help with this.\n\n'
+                 if authority == 'authorised' else '')
+    subject = _say(SUBJECT[outcome], voice)
+    request_letter = (f"Subject: {subject}\n\nHello,\n\nI’m writing about this page on your site:\n{url}\n\n"
+        f"{on_behalf}{issue_first}{' ' + summary if summary else ''}\n\n"
         f"The current, correct position is:\n{data.get('correct_information', '')}\n\n"
         f"I can provide evidence of this: {data.get('evidence_summary', '')}\n\n"
         f"I’m asking you to {ask}. Could you please confirm you’ve received this request and let me know your decision? "
-        f"If you need anything else from me to check it, please tell me how to send it securely.\n\n"
+        f"If you need anything else to check it, please tell me how to send it securely.\n\n"
         f"I’d be grateful for a reply within 14 days.\n\nKind regards,\n{name}")
     followup = (f"Subject: Following up on my request about {url}\n\nHello,\n\nI wrote to you on [date you sent your first letter] about this page:\n{url}\n\n"
         f"I asked you to {ask}. I haven’t had a reply yet. Could you let me know whether you’ve received my request, and when I can expect an answer?\n\nKind regards,\n{name}")
     second = (f"Subject: Second request about {url}\n\nHello,\n\nI first wrote to you on [date of your first letter], and followed up on [date of your follow-up], "
-        f"asking you to {ask} on this page:\n{url}\n\nI still haven’t had a reply. The page continues to show {issue} about me, and it comes up when people search my name.\n\n"
+        f"asking you to {ask_short}:\n{url}\n\nI still haven’t had a reply. {issue_still}\n\n"
         f"I’d appreciate a decision either way. If you’re not able to make this change, could you tell me why, and whether there’s a complaints or review process I can use?\n\nKind regards,\n{name}")
     return request_letter, followup, second
 
@@ -123,7 +151,7 @@ def private(s, title, body, status=200):
 
 
 def error(s, text, status=400):
-    return private(s, 'Your letter pack', '<div class="card"><h1>Let’s check that.</h1><p>' + s.safe(text) + '</p><p><a class="btn" href="/diy-action/workspace">Back to my workspace</a> <a class="btn btn2" href="/self-service">Free check and plan</a></p></div>', status)
+    return private(s, 'Your letter pack', '<div class="card"><h1>Let’s check that.</h1><p>' + s.safe(text) + '</p><p><a class="btn" href="/diy-action/workspace">Back to my letter pack</a> <a class="btn btn2" href="/self-service">Free check and plan</a></p></div>', status)
 
 
 def paid(s, sid):
@@ -258,17 +286,17 @@ def checkout(s, tier):
             cancel_url=s.DOMAIN + '/diy-action', allow_promotion_codes=False,
             customer_creation='always', metadata={'tier': tier, 'plan_name': plan['name'], 'product_version': 'selfserve-v1'},
             payment_intent_data={'metadata': {'tier': tier, 'brand': 'FixMyNameOnline'}},
-            custom_text={'submit': {'message': 'One-time self-service documentation tool. You verify facts and submit requests yourself. No human review or external submissions included.'}})
+            custom_text={'submit': {'message': 'One-time letter pack for one link. You check the facts and send the letters yourself. Nobody at Fix My Name Online reviews your case or contacts anyone for you.'}})
         return redirect(stripe_data(row)['url'], code=302)
     except Exception:
         s.app.logger.warning('Paid action checkout unavailable; no payment created or confirmed')
-        return error(s, 'Checkout is temporarily unavailable. No payment has been confirmed. The free self-service desk is still available.', 503)
+        return error(s, 'Checkout isn’t available right now, and no payment has been taken. The free check and plan still work.', 503)
 
 
 def start(s):
     row = paid(s, request.args.get('session_id', '').strip())
     if not row:
-        return error(s, 'A completed, verified FMNO action purchase is required. Use your original payment return link or recover it by email.', 402)
+        return error(s, 'We couldn’t confirm a letter pack purchase for this link. Use the link from your payment confirmation, or get a new one by email from the recovery page.', 402)
     workspace = ensure_workspace(s, row)
     expiry = str(int(time.time()) + 86400)
     value = workspace['id'] + '.' + expiry
@@ -299,7 +327,7 @@ def _letter(s, title, text, key, row_id, note=''):
 def workspace_page(s):
     workspace = authenticated(s)
     if not workspace:
-        return error(s, 'Open your private payment return link to unlock this browser, or use workspace recovery.', 401)
+        return error(s, 'Open the link from your payment confirmation to unlock your letter pack on this browser, or get a new link by email from the recovery page.', 401)
     rows = records(s, workspace)
     token = sign(s, 'csrf', workspace['id'])
     hidden = '<input type="hidden" name="csrf" value="' + token + '">'
@@ -336,7 +364,7 @@ def workspace_page(s):
 </ol></section>'''
     if len(rows) < workspace['cap']:
         issues = ''.join(f'<option value="{k}">{v[0].upper() + v[1:]}</option>' for k, v in ISSUES.items())
-        outcomes = ''.join(f'<option value="{k}">{ASK[k][0].upper() + ASK[k][1:]}</option>' for k in OUTCOMES)
+        outcomes = ''.join(f'<option value="{k}">{(t := _say(ASK[k], VOICE["self"]))[0].upper() + t[1:]}</option>' for k in OUTCOMES)
         body += f'''<section class="card stack"><h2 class="h-sans">Create your letters{' for another link' if rows else ''}</h2><p class="meta">Use plain facts. Don’t include passwords, ID numbers or private documents. Once you create letters for a link, that link can’t be swapped.</p>
 <form method="post" action="/diy-action/generate" class="stack">{hidden}
 <div class="form-grid">
@@ -367,10 +395,16 @@ def workspace_page(s):
     return private(s, 'My letter pack', '<main id="main">' + body + '</main>')
 
 
+# Things a letter isn't the right first step for. "minor" only counts when it means a child,
+# so "a minor offence" or "a minor error" is fine.
+OUT_OF_SCOPE = re.compile(
+    r'\b(child(ren)?|kids?|under ?age|(a|the|is|was|involving|about|of) minors?\b(?!\s+(offen[cs]es?|traffic|matters?|errors?|mistakes?|issues?|details?|changes?|charges?|convictions?|breach(es)?|incidents?|corrections?|points?))|minors\b|suicid\w*|self[- ]harm|blackmail|sextortion|death threats?|threaten\w*|active (court|proceedings?|case)|ongoing (trial|proceedings?|case)|(case|matter|trial) (is )?still (running|ongoing|open)|complex defamation)\b', re.I)
+
+
 def generate(s):
     workspace = authenticated(s)
     if not workspace or not csrf_ok(s, workspace):
-        return error(s, 'Workspace verification failed. Reopen your private link.', 403)
+        return error(s, 'This page has expired. Open your letter pack again from the link in your payment confirmation.', 403)
     data = {k: request.form.get(k, '').strip() for k in LIMITS}
     if any(len(data[k]) > limit for k, limit in LIMITS.items()):
         return error(s, 'An entry exceeds its stated length limit.')
@@ -380,8 +414,8 @@ def generate(s):
     issue, outcome, authority = (request.form.get(k) for k in ('issue_type', 'requested_outcome', 'authority'))
     if issue not in ISSUES or outcome not in OUTCOMES or authority not in {'self', 'authorised'} or any(request.form.get(k) != 'yes' for k in ('truth_confirmed', 'scope_confirmed', 'related_confirmed')):
         return error(s, 'Confirm your authority, factual accuracy and that this is within the stated DIY scope.')
-    if re.search(r'\b(minor|child|suicid\w*|blackmail|sextortion|death threat|active (court|proceeding)|ongoing (trial|proceeding)|complex defamation)\b', ' '.join(data[k] for k in required), re.I):
-        return error(s, 'This appears outside the automated tool’s safety scope. Use the free safety guidance and suitable independent support, not an automated request.')
+    if OUT_OF_SCOPE.search(' '.join(data[k] for k in required)):
+        return error(s, 'The letter pack isn’t the right tool for this one. From what you wrote, it may involve a child, threats, self-harm, or a case that’s still running, and those need other help first. The free check puts the right help at the top of your plan. If we’ve read it wrong, reword your answers and try again. Nothing has been created or sent, and you can still refund this unused pack within 7 days.')
     data.update(issue_type=issue, requested_outcome=outcome, authority=authority, status='preparing', notes='', reference='', followup='')
     data['draft'], data['followup_draft'], data['second_draft'] = draft_letters(data)
     with db(s) as con:
@@ -393,7 +427,7 @@ def generate(s):
             return redirect('/diy-action/workspace', code=303)
         count = con.execute('SELECT count(*) FROM actions WHERE workspace=?', (workspace['id'],)).fetchone()[0]
         if count >= workspace['cap']:
-            return error(s, 'All URL slots are used. You can still edit your saved actions.', 409)
+            return error(s, 'This pack covers one link, and you’ve already created letters for it. You can still edit them.', 409)
         con.execute('INSERT INTO actions VALUES(?,?,?,?)', (secrets.token_hex(12), workspace['id'], data['target_url'], json.dumps(data)))
     return redirect('/diy-action/workspace', code=303)
 
@@ -401,7 +435,7 @@ def generate(s):
 def save(s):
     workspace = authenticated(s)
     if not workspace or not csrf_ok(s, workspace):
-        return error(s, 'Workspace verification failed.', 403)
+        return error(s, 'This page has expired. Open your letter pack again from the link in your payment confirmation.', 403)
     with db(s) as con:
         con.execute('BEGIN IMMEDIATE')
         row = con.execute('SELECT * FROM actions WHERE id=? AND workspace=?', (request.form.get('action_id', ''), workspace['id'])).fetchone()
@@ -427,7 +461,7 @@ def save(s):
 def export(s, kind):
     workspace = authenticated(s)
     if not workspace:
-        return error(s, 'Private workspace access required.', 401)
+        return error(s, 'Open your letter pack from the link in your payment confirmation first.', 401)
     payload = {'product': CATALOG[workspace['tier']]['name'], 'url_limit': workspace['cap'], 'actions': records(s, workspace)}
     if kind == 'json':
         body = json.dumps(payload, ensure_ascii=False, indent=2)
@@ -452,7 +486,7 @@ def export(s, kind):
 def reminder(s):
     workspace = authenticated(s)
     if not workspace:
-        return error(s, 'Private workspace access required.', 401)
+        return error(s, 'Open your letter pack from the link in your payment confirmation first.', 401)
     row = next((r for r in records(s, workspace) if r['id'] == request.args.get('action_id')), None)
     if not row:
         return error(s, 'Action not found.', 404)
@@ -462,8 +496,8 @@ def reminder(s):
     body = '\r\n'.join(['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FixMyNameOnline//Self Service//EN', 'BEGIN:VEVENT',
         f'UID:{row["id"]}@fixmynameonline.com', 'DTSTAMP:' + datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'),
         'DTSTART;VALUE=DATE:' + day.strftime('%Y%m%d'), 'DTEND;VALUE=DATE:' + (day + timedelta(days=1)).strftime('%Y%m%d'),
-        'SUMMARY:Review my saved action follow-up', 'DESCRIPTION:Check your private saved pack. No request is submitted automatically.',
-        'BEGIN:VALARM', 'TRIGGER:-PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Review my action follow-up', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR', ''])
+        'SUMMARY:Check for a reply to my letter', 'DESCRIPTION:Open your letter pack and check for a reply. If there isn’t one, send the follow-up yourself. Nothing is sent automatically.',
+        'BEGIN:VALARM', 'TRIGGER:-PT9H', 'ACTION:DISPLAY', 'DESCRIPTION:Check for a reply to my letter', 'END:VALARM', 'END:VEVENT', 'END:VCALENDAR', ''])
     return Response(body, mimetype='text/calendar', headers={'Content-Disposition': 'attachment; filename="FMNO-Follow-up.ics"', 'Cache-Control': 'no-store, private'})
 
 
@@ -474,8 +508,8 @@ def webhook(s, session):
     workspace = ensure_workspace(s, row)
     if not workspace['notified'] and workspace['email']:
         link = s.DOMAIN + '/diy-action/start?session_id=' + row['id']
-        sent = s.send_brevo_email(workspace['email'], '', 'Your private FMNO action workspace',
-             '<h1>Your self-service workspace</h1><p>Save this private link securely. Anyone with it can access your workspace.</p><p><a href="' + s.safe(link) + '">Open my action workspace</a></p><p>You review the facts and submit requests yourself. You can recover this link at fixmynameonline.com/diy-action/recover.</p>')
+        sent = s.send_brevo_email(workspace['email'], '', 'Your Fix My Name Online letter pack',
+             '<h1>Your letter pack is ready</h1><p>Thanks for buying the letter pack. Use this link to open it and create your letters:</p><p><a href="' + s.safe(link) + '">Open my letter pack</a></p><p>Keep this email private: anyone with the link can open your letter pack. If you lose it, get a new link at fixmynameonline.com/diy-action/recover.</p><p>You check the letters and send them yourself. We don’t send anything for you.</p><p>Fix My Name Online · Madison Jade Pty Ltd</p>')
         if sent:
             with db(s) as con:
                 con.execute('UPDATE workspaces SET notified=1 WHERE id=?', (workspace['id'],))
@@ -484,7 +518,7 @@ def webhook(s, session):
 
 def recover(s):
     if request.method == 'GET':
-        return private(s, 'Recover workspace', '<div class="card"><h1>Find your workspace.</h1><p>Use the email entered at Stripe checkout. We will not show whether an address has a purchase.</p><form method="post"><label>Checkout email<input name="email" type="email" maxlength="254" required></label><p><button class="btn">Send my private access link</button></p></form><p>Check spam. If email is unavailable, your original Stripe return link still works.</p></div>')
+        return private(s, 'Get back into your letter pack', '<div class="card"><h1>Get back into your letter pack.</h1><p>Enter the email you used at checkout and we’ll send you a new link. For privacy, we won’t say on screen whether an address has a purchase.</p><form method="post"><label>Checkout email<input name="email" type="email" maxlength="254" required></label><p><button class="btn">Email me a new link</button></p></form><p>Check your spam folder too. The link from your payment confirmation also still works.</p></div>')
     email = request.form.get('email', '').strip().lower()[:254]
     now = datetime.utcnow()
     # Render appends its trusted client hop; do not trust the spoofable first hop.
@@ -498,12 +532,14 @@ def recover(s):
             for key in keys:
                 con.execute('INSERT OR REPLACE INTO recovery_limits VALUES(?,?)', (key, now.isoformat()))
     if rows:
-        links = ''.join('<p><a href="' + s.safe(s.DOMAIN + '/diy-action/start?session_id=' + r['session_id']) + '">Open my private action workspace</a></p>' for r in rows)
+        links = ''.join('<p><a href="' + s.safe(s.DOMAIN + '/diy-action/start?session_id=' + r['session_id']) + '">Open my letter pack</a></p>' for r in rows)
         try:
-            s.send_brevo_email(email, '', 'Your FMNO workspace access', '<p>These private links grant access. Keep them secure.</p>' + links)
+            s.send_brevo_email(email, '', 'Your link to get back into your letter pack',
+                '<p>Here’s the link you asked for. Keep this email private: anyone with the link can open your letter pack.</p>' + links +
+                '<p>If you didn’t ask for this, you can ignore this email.</p><p>Fix My Name Online · Madison Jade Pty Ltd</p>')
         except Exception:
             s.app.logger.warning('Workspace recovery email unavailable')
-    return private(s, 'Workspace recovery', '<div class="card"><h1>Check your inbox.</h1><p>If an eligible purchase matches and email delivery is available, an access link will arrive shortly. Wait 15 minutes before trying again. Your original payment return link still works.</p></div>')
+    return private(s, 'Check your inbox', '<div class="card"><h1>Check your inbox.</h1><p>If that email matches a letter pack, a new link is on its way. If nothing arrives, check your spam folder, and wait 15 minutes before trying again. The link from your payment confirmation also still works.</p></div>')
 
 
 def refund(s):
@@ -514,7 +550,7 @@ def refund(s):
     with db(s) as con:
         con.execute('BEGIN IMMEDIATE')
         if con.execute('SELECT 1 FROM actions WHERE workspace=?', (workspace['id'],)).fetchone():
-            return error(s, 'The automated unused-purchase refund is not available after an action is saved. Statutory consumer rights remain unchanged. For billing or a faulty product, contact admin@fixmynameonline.com.')
+            return error(s, 'The 7-day refund button only works for packs that haven’t been used, and you’ve already created your letters. Your Australian Consumer Law rights still apply: if the pack doesn’t work as described, email admin@fixmynameonline.com.')
     row = paid(s, workspace['session_id'])
     if not row:
         # Recover a prior Stripe refund accepted before an interrupted readback.
