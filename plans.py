@@ -173,6 +173,9 @@ QUESTIONS = {
             {'value': 'private', 'label': 'It shows private details'},
             {'value': 'not-me', 'label': 'It’s about someone else with my name'},
             {'value': 'fake', 'label': 'Someone’s pretending to be me'}]},
+        # Asked only when the page can describe a case or investigation about the
+        # visitor. A question with `when` is shown (and required) only if it matches.
+        dict(_STATUS, when={'where': ['news', 'court'], 'wrong': ['wrong', 'private']}),
     ],
 }
 # Every problem also asks for the country and a safety check (added by the desk).
@@ -205,6 +208,14 @@ HELP_FIRST = {
         'au': ['legal-aid-au', 'clcs-au'], 'nz': ['nz-find-lawyer'], 'uk': ['uk-find-solicitor'], 'eu': [], 'us': [], 'ca': [], 'other': [],
         'numbers': {},
     },
+    # Shown when the visitor isn't sure the matter is finished. The steps stay,
+    # because it may well be over, but the advice comes first.
+    'status-unsure': {
+        'title': 'Not sure it’s finished? Talk to a lawyer before you ask for anything',
+        'text': 'If a court case or investigation might still be running, a request to a publisher or a court can affect it. Check with your lawyer, the court or Legal Aid before you send anything. Community legal centres can help if cost is a worry. Once you know it’s finished, the steps below are ready.',
+        'au': ['legal-aid-au', 'clcs-au'], 'nz': ['nz-find-lawyer'], 'uk': ['uk-find-solicitor'], 'eu': [], 'us': [], 'ca': [], 'other': [],
+        'numbers': {},
+    },
 }
 
 # Letters. Paragraphs can carry `when`. {{key|label}} is a fill-in field.
@@ -229,7 +240,8 @@ LETTERS = {
         {'text': 'Subject: Request about a court record on your site'},
         {'text': 'Hello,'},
         {'text': 'Your site shows a copy of a court record that names me:\n{{link|link to the page}}'},
-        {'text': 'The case was in {{year|year}} and it’s finished. {{outcome|the outcome, if it helps, e.g. the charge was dismissed}}.'},
+        {'when': {'status': ['finished']}, 'text': 'The case was in {{year|year}} and it’s finished. {{outcome|the outcome, if it helps, e.g. the charge was dismissed}}.'},
+        {'when': {'status': ['ongoing', 'unsure']}, 'text': 'The case was in {{year|year}}.'},
         {'text': '{{ask}}'},
         {'text': 'The page comes up when people search my name. I’d be grateful for a reply within 14 days.'},
         {'text': 'Kind regards,\n{{name|your name}}\n{{email|your email}}'},
@@ -573,6 +585,10 @@ PLANS = {
             {'id': 'follow', 'title': 'Wait, then follow up', 'check_back': True, 'body': 'If there’s no reply after 14 days, send a short follow-up.', 'letter': 'L5', 'letter_collapsed': True},
             {'id': 'refresh', 'title': 'Once the page changes, ask Google to refresh it', 'time': '5 minutes', 'links': ['google-refresh-tool', 'google-removal-overview']},
         ],
+        'ongoing_steps': [
+            {'id': 'evidence', 'title': 'Save your evidence', 'time': '5 minutes', 'checklist': EVIDENCE},
+            {'id': 'lawyer', 'title': 'Get advice before contacting anyone', 'body': 'While the case or investigation is running, ask a lawyer or Legal Aid before you contact the site about it. Come back to this plan once it’s finished.'},
+        ],
         'if_no': [
             {'when': {'country': ['uk', 'eu']}, 'text': 'You can ask Google to stop showing the page for searches of your name under UK or EU privacy law.', 'link': 'google-eu-privacy-form'},
             {'text': 'If the page shows your contact details, Google may remove those results even if the site won’t.', 'link': 'google-personal-info'},
@@ -584,30 +600,56 @@ PLANS = {
 # "Not sure" answers point to the most likely plan. The not-sure questions are
 # different from the target plan's, so each route also says how to answer the
 # target plan's questions: `answers` are the starting point and `map` turns the
-# visitor's "main problem" answer into the plan's own answers. Without this the
-# plan falls back to its defaults and the letter claims things the visitor never
-# said (for example "the story leaves out what happened next"). Only these
-# answers, plus country and safety, are used to build the plan.
-_NS_WHO = {'not-me': {'who': 'same-name'}}
+# visitor's "main problem" answer into the plan's own answers. `pass` lists
+# not-sure questions whose answer is copied across as-is (only when that
+# question was actually asked). Without this the plan falls back to its
+# defaults and the letter claims things the visitor never said (for example
+# "the story leaves out what happened next", or "your site lists my personal
+# information" when the listing is about someone else). Only these answers,
+# plus country and safety, are used to build the plan.
+# `looks_like` is the "From your answers, this looks like: ..." wording and the
+# tracker label, when the plan's own name would be wrong.
+_SAME_NAME = {'who': 'same-name'}
 NOT_SURE_ROUTES = [
-    {'when': {'wrong': ['fake']}, 'plan': 'fake-profile', 'answers': {'platform': 'other', 'doing': 'existing'}},
+    {'when': {'wrong': ['fake']}, 'plan': 'fake-profile', 'answers': {'platform': 'other', 'doing': 'existing'},
+     'looks_like': 'someone pretending to be you'},
+    # Someone else with my name: a tell-us-apart request, wherever it is. Never a
+    # removal request for "my" data, an update request, or a court-rules plan.
+    {'when': {'where': ['listing'], 'wrong': ['not-me']}, 'plan': 'general', 'answers': dict(_SAME_NAME),
+     'looks_like': 'a listing about someone else with your name'},
+    {'when': {'where': ['review'], 'wrong': ['not-me']}, 'plan': 'general', 'answers': dict(_SAME_NAME),
+     'looks_like': 'a review that mentions someone else with your name'},
+    {'when': {'where': ['court'], 'wrong': ['not-me']}, 'plan': 'general', 'answers': dict(_SAME_NAME),
+     'looks_like': 'a court record about someone else with your name'},
+    {'when': {'where': ['news'], 'wrong': ['not-me']}, 'plan': 'old-news', 'answers': {'who': 'same-name', 'now': 'unsure'},
+     'looks_like': 'a news story about someone else with your name'},
+    {'when': {'where': ['social'], 'wrong': ['not-me']}, 'plan': 'general', 'answers': {'where': 'social', 'who': 'same-name'},
+     'looks_like': 'a post about someone else with your name'},
     {'when': {'where': ['listing']}, 'plan': 'people-search', 'answers': {'who': 'me', 'listed': 'other', 'sites': 'one'}},
     # 'unsure' is a route-only value: the review plan's neutral title and lede,
     # and a neutral fill-in in the report wording (nothing about customers).
     {'when': {'where': ['review']}, 'plan': 'review', 'answers': {'about': 'me', 'platform': 'other', 'why': 'unsure'},
      'map': {'private': {'why': 'offensive'}}},
-    {'when': {'where': ['court'], 'wrong': ['not-me']}, 'plan': 'general', 'answers': {'who': 'same-name'}},
-    {'when': {'where': ['court']}, 'plan': 'court', 'answers': {'who': 'me', 'where': 'court-site', 'status': 'unsure'}},
-    {'when': {'where': ['news'], 'wrong': ['private']}, 'plan': 'general', 'answers': {}, 'asks': ['anonymise', 'noindex']},
-    {'when': {'where': ['news']}, 'plan': 'old-news', 'answers': {'who': 'me', 'now': 'outdated', 'status': 'unsure'},
-     'map': {'not-me': {'who': 'same-name', 'now': 'unsure'}}},
+    # Court and news: the visitor says whether the matter is finished. A running
+    # case gets the lawyer card instead of a letter; "not sure" gets it on top.
+    {'when': {'where': ['court']}, 'plan': 'court', 'answers': {'who': 'me', 'where': 'court-site', 'status': 'unsure'}, 'pass': ['status']},
+    {'when': {'where': ['news'], 'wrong': ['private']}, 'plan': 'general', 'answers': {'status': 'unsure'}, 'asks': ['anonymise', 'noindex'], 'pass': ['status'],
+     'looks_like': 'a news story that shows private details'},
+    {'when': {'where': ['news']}, 'plan': 'old-news', 'answers': {'who': 'me', 'now': 'outdated', 'status': 'unsure'}, 'pass': ['status']},
     # Social media is never a people-search listing: general plan, with a report step.
-    {'when': {'where': ['social']}, 'plan': 'general', 'answers': {'where': 'social'}, 'map': _NS_WHO},
-    {'when': {'wrong': ['private']}, 'plan': 'people-search', 'answers': {'who': 'me', 'listed': 'other', 'sites': 'one'}},
-    {'plan': 'general', 'answers': {}, 'map': _NS_WHO},
+    {'when': {'where': ['social']}, 'plan': 'general', 'answers': {'where': 'social'}, 'looks_like': 'a post on social media'},
+    # Anything else, including private details on another kind of site: ask the
+    # site owner (general plan). Only a site that lists people gets the
+    # people-search plan.
+    {'plan': 'general', 'answers': {}, 'map': {'not-me': dict(_SAME_NAME)}},
 ]
 # The general plan's ask defaults follow the visitor's main problem.
 _GENERAL_ASKS = {'wrong': ['correct', 'update'], 'private': ['anonymise', 'remove'], 'not-me': ['tell-apart']}
+
+
+def asked_questions(problem, answers):
+    """The questions actually shown for these answers (a question with `when` only shows if it matches)."""
+    return [q for q in QUESTIONS.get(problem, []) if matches(q.get('when'), answers)]
 
 
 def route_not_sure(answers):
@@ -615,11 +657,67 @@ def route_not_sure(answers):
     route = next(r for r in NOT_SURE_ROUTES if matches(r.get('when'), answers))
     out = dict(route.get('answers') or {})
     out.update((route.get('map') or {}).get(answers.get('wrong'), {}))
+    asked = {q['id'] for q in asked_questions('not-sure', answers)}
+    for key in route.get('pass') or []:
+        if key in asked and key in answers:
+            out[key] = answers[key]
     for key in ('country', 'safety'):
         if key in answers:
             out[key] = answers[key]
     asks = route.get('asks') or (_GENERAL_ASKS.get(answers.get('wrong')) if route['plan'] == 'general' else None)
     return route['plan'], out, asks
+
+
+def not_sure_looks_like(answers):
+    """'From your answers, this looks like: ...'. Mirrors looksLike in self-service.js."""
+    route = next(r for r in NOT_SURE_ROUTES if matches(r.get('when'), answers))
+    plan, out, _ = route_not_sure(answers)
+    if route.get('looks_like'):
+        return route['looks_like']
+    if out.get('who') == 'same-name':
+        return 'a page about someone else with your name'
+    problem = next((p for p in PROBLEMS if p['key'] == plan), None)
+    return problem['label'].lower() if problem else 'a page on someone else’s site'
+
+
+def help_first(answers):
+    """Help cards that lead the plan. Mirrors buildPlan in self-service.js."""
+    out = list(answers.get('safety') or [])
+    if answers.get('status') == 'ongoing':
+        out.append('ongoing')
+    elif answers.get('status') == 'unsure':
+        out.append('status-unsure')
+    return out
+
+
+def build(problem, answers):
+    """The plan a visitor sees, resolved the way the desk resolves it: plan key,
+    plan answers, help cards, steps, title, lede and letters (with the default asks)."""
+    if problem == 'not-sure':
+        key, a, fixed = route_not_sure(answers)
+    else:
+        key, a, fixed = problem, dict(answers), None
+    plan = PLANS[key]
+    ongoing = a.get('status') == 'ongoing'
+    steps = [s for s in (plan.get('ongoing_steps') if ongoing and plan.get('ongoing_steps') else plan['steps']) if matches(s.get('when'), a)]
+    asks = fixed
+    if asks is None:
+        step = next((s for s in plan['steps'] if s.get('asks')), None)
+        if step:
+            d = step.get('default_asks') or {}
+            asks = d.get(a.get('now')) or d.get('_') or [step['asks'][0]]
+    letters = {}
+    for step in steps:
+        letter = step.get('letter')
+        for alt in step.get('letter_when', []):
+            if matches(alt['when'], a):
+                letter = alt['letter']
+                break
+        if letter:
+            letters[letter] = letter_text(letter, a, asks or [])
+    return {'key': key, 'answers': a, 'asks': asks or [], 'help': help_first(a), 'steps': steps,
+            'title': pick(plan['title'], a), 'lede': pick(plan['lede'], a), 'letters': letters,
+            'pack': bool(plan.get('pack')) and not a.get('safety') and not ongoing}
 
 
 STATUSES = [

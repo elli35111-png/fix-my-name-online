@@ -451,6 +451,8 @@ def test_not_sure_routes_answer_every_question_of_the_plan_they_pick():
                     values.append('outdated')  # route-only value with its own title, lede and letter text
                 if plan == 'review' and q['id'] == 'why':
                     values.append('unsure')  # route-only value: neutral title, lede and report wording
+                if q['id'] == 'status' and answers.get('who') == 'same-name':
+                    continue  # someone else's case: whether it's over isn't the visitor's to say, and isn't asked
                 assert answers.get(q['id']) in values, (where, wrong, plan, q['id'], answers)
             if plan == 'general':
                 assert asks, (where, wrong)
@@ -476,6 +478,8 @@ def test_not_sure_news_answers_get_the_plan_and_letter_they_described(origin, wr
         page.goto(origin + '/self-service?problem=not-sure')
         page.locator('[data-q="where"] input[value="news"]').check()
         page.locator(f'[data-q="wrong"] input[value="{wrong}"]').check()
+        if wrong != 'not-me':
+            page.locator('[data-q="status"] input[value="finished"]').check()
         page.check('#safety-none')
         page.click('#show-plan')
         page.wait_for_selector('#add-to-tracker')
@@ -503,7 +507,7 @@ def test_not_sure_routes_never_claim_what_the_visitor_did_not_say():
             plan, answers, asks, outline, letters = _not_sure_letters(where, wrong)
             text = ' '.join(letters.values())
             assert 'no record of this person as a customer' not in text, (where, wrong)
-            if wrong == 'not-me' and where not in ('listing', 'review'):
+            if wrong == 'not-me':
                 # Someone else with my name: a tell-us-apart request, never an update or an "about me" letter.
                 assert 'I’m not that person' in text, (where, wrong, list(letters))
                 assert 'reflects what happened next' not in text and 'article about me' not in text, (where, wrong)
@@ -520,8 +524,8 @@ def test_not_sure_routes_never_claim_what_the_visitor_did_not_say():
     assert plan == 'general' and asks == ['anonymise', 'remove']
     assert [s['id'] for s in outline['steps']][:2] == ['evidence', 'report']
     assert 'Opt out' not in outline['title'] and 'L7' in letters and 'remove my name' in letters['L7']
-    # (c) review site, wrong or not me: neutral wording, nothing about customers
-    for wrong in ('wrong', 'not-me'):
+    # (c) review site, wrong: neutral wording, nothing about customers (not me: tell-apart, checked above)
+    for wrong in ('wrong',):
         plan, answers, asks, outline, letters = _not_sure_letters('review', wrong)
         assert plan == 'review' and answers['why'] == 'unsure'
         assert 'real customer' not in outline['lede'] and 'Match the review' in outline['title']
@@ -633,4 +637,195 @@ def test_mobile_menu_has_one_way_to_the_free_check(origin):
         page.goto(origin + '/')
         hrefs = page.eval_on_selector_all('.menu-sheet a', 'els => els.map(a => a.getAttribute("href"))')
         assert hrefs.count('/self-service') == 1 and '/self-service/tracker' in hrefs
+        browser.close()
+
+
+# ---------- systematic guard: every not-sure combination ----------
+# Each answer the visitor gives rules something out. No plan title, lede or
+# letter may claim what they ruled out, and a case that may still be running
+# always gets the lawyer card first.
+_NS = {q['id']: [o['value'] for o in q['options']] for q in plans.QUESTIONS['not-sure']}
+# Phrases that only fit when the page is about the visitor themselves.
+_ABOUT_ME = ('lists my personal information', 'remove my personal information', 'listings about me', 'article about me',
+             'page that mentions me', 'court record that names me', 'photo of me', 'reflects what happened next', 'Since then')
+_PEOPLE_SEARCH = ('opt out', 'opt-out', 'people-search', 'your site lists', 'listing')
+
+
+def _not_sure_cases():
+    """(answers, status asked?) for every where × wrong, and every status where it's asked.
+    Where it isn't asked, also try a stale status left over from an earlier answer."""
+    for where in _NS['where']:
+        for wrong in _NS['wrong']:
+            base = {'where': where, 'wrong': wrong, 'country': 'au', 'safety': []}
+            asked = 'status' in [q['id'] for q in plans.asked_questions('not-sure', base)]
+            if asked:
+                for status in _NS['status']:
+                    yield dict(base, status=status), True
+            else:
+                yield base, False
+                yield dict(base, status='finished'), False
+
+
+def _check_not_sure_case(answers, asked):
+    where, wrong, status = answers['where'], answers['wrong'], answers.get('status')
+    b = plans.build('not-sure', answers)
+    case = (where, wrong, status, b['key'])
+    letters = ' '.join(b['letters'].values())
+    claims = ' '.join([b['title'], b['lede'], letters])
+    # The status is the visitor's, and only when it was asked.
+    if asked:
+        assert b['answers']['status'] == status, case
+    else:
+        assert 'status' not in b['answers'], case
+    told_finished = asked and status == 'finished'
+    if not told_finished:
+        assert 'finished' not in claims.lower() and 'it’s over' not in claims, case
+    # Running or not sure: the lawyer card comes first; running: no letter at all.
+    if asked and status == 'ongoing':
+        assert 'ongoing' in b['help'] and not b['letters'] and not b['pack'], case
+    elif asked and status == 'unsure':
+        assert 'status-unsure' in b['help'], case
+    else:
+        assert not {'ongoing', 'status-unsure'} & set(b['help']), case
+    if b['key'] == 'court':
+        assert asked, case  # a court plan always knows whether the case is over
+    # Someone else with my name: tell-us-apart, never "my" data or "about me".
+    if wrong == 'not-me':
+        assert b['answers'].get('who') == 'same-name', case
+        assert 'I’m not that person' in letters, case
+        assert 'isn’t about you' in b['lede'], case
+        assert not [p for p in _ABOUT_ME if p in claims], (case, [p for p in _ABOUT_ME if p in claims])
+        assert 'someone else with your name' in plans.not_sure_looks_like(answers), case
+    else:
+        assert b['answers'].get('who') != 'same-name' and 'I’m not that person' not in letters, case
+    # People-search wording only for a site that lists people (about the visitor).
+    if where != 'listing' or wrong in ('not-me', 'fake'):
+        assert b['key'] != 'people-search', case
+        assert not [p for p in _PEOPLE_SEARCH if p in claims.lower()], (case, [p for p in _PEOPLE_SEARCH if p in claims.lower()])
+    # Pretending to be me: the impersonation report, described as what they said.
+    if wrong == 'fake':
+        assert b['key'] == 'fake-profile' and plans.not_sure_looks_like(answers) == 'someone pretending to be you', case
+    else:
+        assert 'pretending to be me' not in claims, case
+    # Only "it's wrong" letters say the page is wrong.
+    if wrong != 'wrong':
+        assert 'isn’t accurate now' not in letters and 'That isn’t correct' not in letters, case
+    return b
+
+
+def test_every_not_sure_answer_gets_a_plan_that_never_claims_what_was_ruled_out():
+    cases = list(_not_sure_cases())
+    assert len(cases) == 20 * 2 + 4 * 3  # 4 of the 24 where × wrong pairs ask the status
+    for answers, asked in cases:
+        _check_not_sure_case(answers, asked)
+    # The same rules hold for the plans picked directly.
+    for who in ('me', 'helping', 'same-name'):
+        for status in _NS['status']:
+            for where in ('copy', 'news', 'court-site', 'unsure'):
+                b = plans.build('court', {'who': who, 'where': where, 'status': status, 'country': 'au', 'safety': []})
+                if status != 'finished':
+                    assert 'finished' not in ' '.join(b['letters'].values()), (who, where, status)
+                assert ('ongoing' in b['help']) == (status == 'ongoing') and ('status-unsure' in b['help']) == (status == 'unsure')
+            for now in ('left-out', 'wrong', 'old', 'unsure'):
+                b = plans.build('old-news', {'who': who, 'now': now, 'status': status, 'country': 'au', 'safety': []})
+                if status != 'finished':
+                    assert 'finished' not in ' '.join(b['letters'].values()), (who, now, status)
+                if status == 'ongoing':
+                    assert not b['letters'] and 'ongoing' in b['help']
+    assert 'The case was in [year] and it’s finished.' in plans.letter_text('L1C', {'status': 'finished'})
+    assert 'finished' not in plans.letter_text('L1C', {'status': 'unsure'})
+
+
+def _norm(text):
+    return ' '.join(text.replace('[', '').replace(']', '').split())
+
+
+def test_every_not_sure_answer_in_the_real_desk_matches_the_guard(origin):
+    # The browser builds the plan, so walk every combination there too, and check
+    # it builds exactly what plans.build() checked above.
+    with sync_playwright() as p:
+        browser, page = new_page(p, 1280)
+        for answers, asked in _not_sure_cases():
+            case = (answers['where'], answers['wrong'], answers.get('status'))
+            page.goto(origin + '/self-service?problem=not-sure')
+            page.locator(f'[data-q="where"] input[value="{answers["where"]}"]').check()
+            if not asked and 'status' in answers:
+                # A stale answer: pick a pair that asks, answer it, then change the main problem.
+                page.locator('[data-q="wrong"] input[value="wrong"]').check()
+                if page.locator('[data-q="status"]').is_visible():
+                    page.locator(f'[data-q="status"] input[value="{answers["status"]}"]').check()
+            page.locator(f'[data-q="wrong"] input[value="{answers["wrong"]}"]').check()
+            assert page.locator('[data-q="status"]').is_visible() == asked, case
+            if asked:
+                page.locator(f'[data-q="status"] input[value="{answers["status"]}"]').check()
+            page.check('#safety-none')
+            page.click('#show-plan')
+            page.wait_for_selector('#add-to-tracker')
+            b = _check_not_sure_case(answers, asked)
+            assert page.locator('#looks-like strong').inner_text() == 'From your answers, this looks like: ' + plans.not_sure_looks_like(answers) + '.', case
+            shown = sorted(i.replace('letter-', '') for i in page.eval_on_selector_all('.letter-body', 'els => els.map(e => e.id)'))
+            assert shown == sorted(b['letters']), (case, shown, list(b['letters']))
+            for key, text in b['letters'].items():
+                assert _norm(page.locator('#letter-' + key).evaluate('e => [...e.children].map(p => p.textContent).join(" ")')) == _norm(text), (case, key)
+            for kind in ('ongoing', 'status-unsure'):
+                assert page.locator(f'[data-help="{kind}"]').count() == (1 if kind in b['help'] else 0), (case, kind)
+            if 'ongoing' in b['help'] or 'status-unsure' in b['help']:
+                assert page.locator('[data-help] a[href="https://nationallegalaid.org.au/"]').count() == 1, case
+        assert not page.errors, page.errors
+        browser.close()
+
+
+@pytest.mark.parametrize('where, wrong, looks, same_as, label', [
+    ('news', 'fake', 'someone pretending to be you', 'The steps are the same as for a fake profile.', 'Someone pretending to be you'),
+    ('review', 'fake', 'someone pretending to be you', 'The steps are the same as for a fake profile.', 'Someone pretending to be you'),
+    ('review', 'not-me', 'a review that mentions someone else with your name', None, 'Review that mentions someone else with your name'),
+    ('listing', 'not-me', 'a listing about someone else with your name', None, 'Listing about someone else with your name'),
+    ('other', 'private', 'a page on someone else’s site', None, 'Page on someone else’s site'),
+])
+def test_not_sure_banner_and_tracker_label_name_what_was_described(origin, where, wrong, looks, same_as, label):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 1280)
+        page.goto(origin + '/self-service?problem=not-sure')
+        page.locator(f'[data-q="where"] input[value="{where}"]').check()
+        page.locator(f'[data-q="wrong"] input[value="{wrong}"]').check()
+        page.check('#safety-none')
+        page.click('#show-plan')
+        page.wait_for_selector('#looks-like')
+        banner = page.locator('#looks-like').inner_text()
+        assert 'this looks like: ' + looks + '.' in banner
+        assert 'a fake profile.' not in banner.split('The steps')[0]
+        if same_as:
+            assert same_as in banner
+        page.click('#add-to-tracker')
+        page.wait_for_selector('.track-h')
+        assert page.locator('.track-h').first.inner_text() == label
+        assert not page.errors
+        browser.close()
+
+
+def test_not_sure_court_case_still_running_gets_the_lawyer_first(origin):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        page.goto(origin + '/self-service?problem=not-sure')
+        page.locator('[data-q="where"] input[value="court"]').check()
+        assert not page.locator('[data-q="status"]').is_visible()
+        page.locator('[data-q="wrong"] input[value="wrong"]').check()
+        assert page.locator('[data-q="status"]').is_visible()
+        page.check('#safety-none')
+        page.click('#show-plan')
+        assert 'Is the matter it describes finished?' in page.locator('#check-error').inner_text()
+        page.locator('[data-q="status"] input[value="ongoing"]').check()
+        page.click('#show-plan')
+        page.wait_for_selector('[data-help="ongoing"]')
+        assert page.locator('h1').inner_text().startswith('Get legal advice before you send anything.')
+        assert page.locator('.letter').count() == 0 and page.locator('.pack-offer').count() == 0
+        # Not sure: the lawyer card first, and the letter doesn't say it's finished.
+        page.click('text=Change my answers')
+        page.locator('[data-q="status"] input[value="unsure"]').check()
+        page.click('#show-plan')
+        page.wait_for_selector('[data-help="status-unsure"]')
+        assert page.locator('h1').inner_text().startswith('Check the matter is finished before you send anything.')
+        letter = page.locator('#letter-L1C').inner_text()
+        assert 'The case was in' in letter and 'finished' not in letter
+        assert not page.errors
         browser.close()

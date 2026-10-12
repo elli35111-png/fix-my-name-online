@@ -92,7 +92,7 @@ def price_cards(featured_cta='/diy-action'):
 </article>
 <article class="card price featured">
 <div><p class="eyebrow">Optional</p><h3 style="margin-top:6px">Letter pack for one link</h3><p class="amount" style="margin-top:12px">US$19<small>once · about A$29</small></p></div>
-<ul class="ticks"><li>Your request letter written out in full from a short form</li><li>A follow-up and a second letter, ready for when there’s no answer</li><li>Check-back dates and notes saved with each letter</li><li>Saved online, with an email link to get back in</li><li>Refund within 7 days if you haven’t used it</li></ul>
+<ul class="ticks"><li>Your request letter written out in full from a short form</li><li>A follow-up and a second letter, ready for when there’s no answer</li><li>Check-back dates and notes kept online with each letter</li><li>Saved online, with an email link to get back in</li><li>Refund within 7 days if you haven’t used it</li></ul>
 <p class="small">You still check and send everything yourself. No subscription.</p>
 <a class="btn btn-secondary btn-block" href="{featured_cta}">See what’s in the pack</a>
 </article>
@@ -260,13 +260,13 @@ def checked_note(link_ids):
     """Say when the links shown were last checked, and name any we couldn't check."""
     links = [plans.OFFICIAL_LINKS[i] for i in dict.fromkeys(link_ids) if i in plans.OFFICIAL_LINKS]
     dates = sorted(l['checked'] for l in links if l['checked'])
-    unchecked = [l['label'] for l in links if not l['checked']]
+    unchecked = ['“' + l['label'] + '”' for l in links if not l['checked']]
     parts = []
     if dates:
         parts.append('Official links last checked ' + plans.nice_date(dates[0]) + '.')
     if unchecked:
         names = unchecked[0] if len(unchecked) == 1 else ', '.join(unchecked[:-1]) + ' and ' + unchecked[-1]
-        parts.append(f'We haven’t been able to check {names} ourselves. If {"it doesn’t" if len(unchecked) == 1 else "one doesn’t"} open the right page, search that site’s help pages instead.')
+        parts.append(f'We haven’t been able to check the {names} link{"" if len(unchecked) == 1 else "s"} ourselves. If {"it doesn’t" if len(unchecked) == 1 else "one doesn’t"} open the right page, search that site’s help pages instead.')
     return f'<p class="small mt-3">{esc(" ".join(parts))}</p>' if parts else ''
 
 
@@ -381,7 +381,7 @@ def how_it_works():
 {section_head('Where we stand', 'What we do, and what we don’t')}
 <div class="grid grid-2">
 <div class="card"><h3>What we do</h3><ul class="ticks"><li>Give you a plan for your problem and your country</li><li>Give you letters you can edit, copy and download</li><li>Link to the official forms, and say when we last checked them</li><li>Give you a tracker that stays in your browser</li><li>Sell one optional extra: a US$19 letter pack for one link</li></ul></div>
-<div class="card"><h3>What we don’t do</h3><ul class="ticks no"><li>Search Google or give you a “score”</li><li>Contact anyone on your behalf</li><li>Give legal advice, or act as your lawyer</li><li>Promise any result</li><li>Sell or share what you type</li></ul></div>
+<div class="card"><h3>What we don’t do</h3><ul class="ticks no"><li>Search Google in the free check, or give you a “score”</li><li>Contact anyone on your behalf</li><li>Give legal advice, or act as your lawyer</li><li>Promise any result</li><li>Sell or share what you type</li></ul></div>
 </div>
 </div></section>
 <section class="section band"><div class="wrap">
@@ -493,7 +493,7 @@ def about():
 <h2>What we do</h2>
 <ul><li>Plans for each kind of problem, matched to your answers and your country</li><li>Letters you can edit, copy and send yourself</li><li>Links to the official forms, and when we last checked them</li><li>A tracker that stays in your browser</li></ul>
 <h2>What we don’t do</h2>
-<ul><li>Search Google for you or give you a score</li><li>Contact publishers, platforms, Google or anyone else on your behalf</li><li>Give legal advice or act as your lawyer</li><li>Promise any result</li><li>Sell or share what you type</li></ul>
+<ul><li>Search Google for you in the free check, or give you a score. (NameWatch, for existing subscribers only, runs searches for the names they gave us.)</li><li>Contact publishers, platforms, Google or anyone else on your behalf</li><li>Give legal advice or act as your lawyer</li><li>Promise any result</li><li>Sell or share what you type</li></ul>
 <h2>How we make money</h2>
 <p>From one optional product: the US$19 letter pack for one link. NameWatch, our alerts service, will be paid when it comes back. We don’t sell data, we don’t take money from publishers or platforms, and there are no ads on our tools.</p>
 <h2>How we write the plans</h2>
@@ -661,7 +661,7 @@ PRIVACY_COLLECT_TABLE = '''<div class="table-wrap table-stack" style="max-width:
 <tbody>
 <tr><td>Free check, plans and tracker</td><td>Nothing. Your answers, links, letters and notes stay in your browser.</td><td>In your browser tab, or on your browser if you switch on “Save on this browser”. You can clear it any time.</td></tr>
 <tr><td>Letter pack (paid)</td><td>Your checkout email and payment confirmation from Stripe, and what you enter in the workspace: name, country or state, the link, your facts, letters, notes, status and dates.</td><td>Our server, hosted by Render in the United States, and our backups.</td></tr>
-<tr><td>NameWatch (existing subscribers only)</td><td>Your email, your sign-up record, and the names and phrases you asked us to watch. We send those names and phrases to DuckDuckGo and Google News as searches, and keep the results each check finds.</td><td>On our own computer in Australia, not on Render, with backups there. Alerts and status notes are emailed to you from admin@fixmynameonline.com. We get an internal note with counts only, not your names or results.</td></tr>
+<tr><td>NameWatch (existing subscribers only)</td><td>Your sign-up record: your name, email, phone if you gave it, location, the names and phrases you asked us to watch, and any links and notes you added. We send the names and phrases to DuckDuckGo and Google News as searches, and keep the results each check finds.</td><td>Your sign-up record is on our server, hosted by Render in the United States, and in our backups, including a copy on our own computer in Australia. When you signed up, a copy was also emailed to us through Brevo, and your name, email, phone and location were sent to us as a Telegram notification. The search results, and what each check has already seen, are kept only on our own computer in Australia. Alerts and status notes are emailed to you from admin@fixmynameonline.com. For each alert we get an internal note with counts only, not your names or results.</td></tr>
 <tr><td>NameWatch waitlist</td><td>Your email address and the date you joined.</td><td>Our server, hosted by Render in the United States.</td></tr>
 <tr><td>Emails you send us</td><td>Whatever you include.</td><td>Our email inbox.</td></tr>
 <tr><td>Earlier tools (Free Search Snapshot and NameWatch sign-ups before October 2026)</td><td>What you entered at the time, such as your name, email, country and description.</td><td>Our server and backups, with a private link for you.</td></tr>
@@ -701,17 +701,18 @@ def privacy(ga_id=''):
 <h2 id="providers">5. Who else handles it</h2>
 <p>We use these providers to run the service. Some are outside Australia, so your information may be stored or processed overseas, mainly in the United States and the European Union:</p>
 <ul>
-<li><strong>Render</strong> (United States): hosts the website and stores letter pack and waitlist data.</li>
+<li><strong>Render</strong> (United States): hosts the website and stores letter pack and waitlist data, NameWatch sign-up records, and records from our earlier tools.</li>
 <li><strong>Stripe</strong>: processes payments and refunds.</li>
-<li><strong>Brevo</strong> (European Union): sends workspace access and recovery emails.</li>
+<li><strong>Brevo</strong> (European Union): sends workspace access and recovery emails. It also sent NameWatch sign-up confirmations, and our own copy of each NameWatch sign-up.</li>
 <li><strong>DuckDuckGo</strong> and <strong>Google News</strong> (United States): receive the names and phrases existing NameWatch subscribers asked us to watch, as search queries. They don’t receive your email address.</li>
 <li><strong>Google</strong>: analytics on information pages, and our email inbox.</li>
-<li><strong>Telegram</strong>: carries our private purchase notifications.</li>
+<li><strong>Telegram</strong>: carries our private purchase and NameWatch sign-up notifications.</li>
 </ul>
 <h2 id="keep">6. How long we keep it</h2>
 <ul>
 <li>Free check and tracker: we never have it. It stays until you clear it, or until you close the tab if you didn’t choose to save it.</li>
 <li>Letter pack: while we run the service, so you can come back to it, unless you ask us to delete it. Payment records are kept as tax law requires (generally five years in Australia).</li>
+<li>NameWatch: while your subscription runs, so the searches can carry on. After it ends, we keep your sign-up record and past results only until you ask us to delete them, or until we no longer need them to answer questions about your subscription. Payment records are kept as tax law requires.</li>
 <li>NameWatch waitlist: until we send the one email, or until you ask us to remove you. After the email is sent, we delete the list.</li>
 <li>Earlier tools: until you ask us to delete them, or until we no longer need them to give you access to your guidance.</li>
 </ul>

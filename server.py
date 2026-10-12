@@ -1065,10 +1065,10 @@ def send_onboarding_emails(data, queue_item):
         <div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#111;line-height:1.55\">
           <h1>NameWatch Alert™ is activated</h1>
           <p>Hi {safe(data.get('name'))},</p>
-          <p>We received the exact names and search context for your private monitoring file.</p>
-          <h2>What happens automatically</h2>
-          <ol><li>We create the first private baseline for the names you supplied.</li><li>FMNO runs the scheduled result sweep.</li><li>If a newly observed result needs attention, we email you a private alert.</li><li>You also receive a simple clear / watch / review-recommended status note.</li></ol>
-          <p>A newly observed result is not automatically harmful or newly published. It means the monitor did not see it in the prior baseline.</p>
+          <p>Thanks. We’ve got the names and phrases you want us to watch.</p>
+          <h2>What happens next</h2>
+          <ol><li>Our first search records what already shows up for those names. We don’t alert you about those.</li><li>After that, the search runs on a schedule.</li><li>When a search finds a result it hasn’t seen before, we email you the link.</li><li>If there’s nothing new, you get a short status note instead.</li></ol>
+          <p>A new result isn’t necessarily bad, or newly published. It just means our search hadn’t seen it before. NameWatch doesn’t contact anyone or remove anything.</p>
           <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · Madison Jade Pty Ltd</p>
         </div>
         """
@@ -1502,7 +1502,7 @@ SEO_GUIDES = {
             ('Decide what, if anything, to do', 'Most new results need nothing. If one is wrong, out of date or breaks a platform’s rules, the free check gives you the steps, a letter and the official forms for that kind of result.'),
         ],
         'faqs': [
-            ('Does Fix My Name Online offer alerts?', 'Our NameWatch alerts are paused while we rebuild them, and new sign-ups are closed. You can join the waitlist for one email when they’re back. In the meantime, Google Alerts and “Results about you” are free.'),
+            ('Does Fix My Name Online offer alerts?', 'We offer NameWatch alerts, but new sign-ups are paused while we rebuild it. If you already subscribe, your alerts carry on. You can join the waitlist for one email when it’s back. In the meantime, Google Alerts and “Results about you” are free.'),
             ('Does keeping an eye on things remove results?', 'No. It just helps you notice changes sooner. Removing or correcting anything is decided by the website, the platform or Google, and any request is one you send yourself.'),
         ],
     },
@@ -2321,15 +2321,15 @@ def onboarding_form():
         details = checkout_value(paid_session, 'customer_details', {}) or {}
         paid_email = checkout_value(details, 'email', '') or checkout_value(paid_session, 'customer_email', '') or ''
         body = f"""
-        <div class="card"><span class="pill ok">Payment verified · private activation</span><h1>Activate NameWatch monitoring</h1><p class="sub">Add the exact names and search context to monitor. FMNO uses this to create the first baseline and scheduled result sweep.</p>
+        <div class="card"><span class="pill ok">Payment confirmed</span><h1>Activate NameWatch monitoring</h1><p class="sub">Tell us the names and phrases to search for. Our first search records what already shows up, and later searches tell you what’s new. We use what you enter here for NameWatch and nothing else.</p>
         <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="sentinel"><input type="hidden" name="session_id" value="{safe(session_id)}">
           <div><label>Your name</label><input name="name" required autocomplete="name"></div><div><label>Alert email</label><input type="email" name="email" required autocomplete="email" value="{safe(paid_email)}"></div>
           <div><label>Country / location context</label><input name="business" placeholder="Example: Australia, Sydney, New York"></div><div><label>Phone optional</label><input name="phone" autocomplete="tel"></div>
           <div class="full"><label>Exact names and associated names to monitor</label><textarea name="names" required placeholder="One per line: full name, old name, business name, nickname or distinctive search phrase"></textarea><div class="microcopy">Use the spelling people are most likely to search. Add only names you are authorised to monitor.</div></div>
-          <div class="full"><label>Known links or search clues optional</label><textarea name="links" placeholder="Existing articles, profiles, reviews or URLs that belong in the first baseline"></textarea></div>
-          <div class="full"><label>Private context optional</label><textarea name="context" placeholder="Anything that helps distinguish you from people with a similar name"></textarea></div>
+          <div class="full"><label>Known links or search clues optional</label><textarea name="links" placeholder="Articles, profiles or reviews you already know about"></textarea></div>
+          <div class="full"><label>Anything else that helps optional</label><textarea name="context" placeholder="Anything that helps distinguish you from people with a similar name"></textarea></div>
           <input type="hidden" name="avoid" value="">
-          <div class="full"><button class="btn" type="submit">Activate NameWatch monitoring →</button><p class="note">Scheduled private monitoring and change alerts. A newly observed result is not automatically harmful or newly published.</p></div>
+          <div class="full"><button class="btn" type="submit">Activate NameWatch monitoring →</button><p class="note">We email you when a search finds something new. A new result isn’t necessarily bad, or newly published. See the <a href="/privacy#collect">privacy policy</a> for where this is kept.</p></div>
         </form></div>"""
         return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
     return page('This package is no longer offered', LEGACY_PACKAGE_NOTICE, robots='noindex,nofollow')
@@ -2379,7 +2379,7 @@ def submit_onboarding():
     record_email_alert_status('onboarding', f"FMNO onboarding: {plan_label} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'plan': data.get('plan'), 'email': data.get('email')})
     app.logger.info('Onboarding %s email status: %s', queue_item['id'], email_status)
 
-    body = f"""<div class="card"><span class="pill ok">NameWatch activated</span><h1>Your private monitoring file is queued.</h1><p class="sub">The first scheduled sweep establishes the baseline. We email you when a newly observed result needs attention and send a simple private status note.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Monitoring case: ' + safe(case.get('id')) if case else ''}<br>A newly observed result is not automatically harmful or newly published.</p><a class="btn" href="/">Back to FixMyNameOnline™</a></div>"""
+    body = f"""<div class="card"><span class="pill ok">NameWatch started</span><h1>Thanks. NameWatch has your names.</h1><p class="sub">Our first search records what already shows up for them. After that, we email you when a search finds something new, and send a short status note when there’s nothing.</p><p class="note">Your reference: {safe(queue_item['id'])}<br>A new result isn’t necessarily bad, or newly published. It just means our search hadn’t seen it before.</p><a class="btn" href="/">Back to Fix My Name Online</a></div>"""
     return page('Onboarding received — FixMyNameOnline™', body)
 
 
@@ -2499,7 +2499,7 @@ def success():
         return paid_actions.error(sys.modules[__name__], 'We couldn’t match this page to a finished payment, and nothing new has been charged. If you bought the letter pack, get a new access link by email. For anything else, email admin@fixmynameonline.com from the address you paid with and we’ll look into it.', 402, heading='We couldn’t confirm that payment yet.')
     if tier == 'sentinel':
         onboarding_url = f'/onboarding?plan=sentinel&amp;session_id={safe(session_id)}'
-        body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>One step left to activate NameWatch Alert™</h1><p class="sub">Add the exact names, associated names and location context to monitor. This securely connects the paid checkout to your private monitoring file.</p><ol><li>Open the private activation form.</li><li>Add each exact name or search phrase.</li><li>FMNO creates the first baseline and scheduled sweep.</li><li>We email you when a newly observed result needs attention.</li></ol><p><a class="btn" href="{onboarding_url}">Activate NameWatch monitoring →</a></p><p class="note">A newly observed result is not automatically harmful or newly published. Search engines decide what appears.</p></div>"""
+        body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>One step left: tell us which names to watch</h1><p class="sub">Your NameWatch payment went through. Next, add the names and phrases you want us to search for.</p><ol><li>Open the sign-up form.</li><li>Add each name or phrase people might search for.</li><li>Our first search records what already shows up.</li><li>After that, we email you when a search finds something new.</li></ol><p><a class="btn" href="{onboarding_url}">Activate NameWatch monitoring →</a></p><p class="note">A new result isn’t necessarily bad, or newly published. Search engines decide what appears.</p></div>"""
         return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
     return page('This package is no longer offered', LEGACY_PACKAGE_NOTICE, robots='noindex,nofollow')
 

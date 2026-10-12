@@ -246,7 +246,7 @@ def test_every_guide_reads_as_self_service_including_noindexed_ones():
 def test_link_check_dates_are_not_claimed_for_unchecked_links(client):
     text = visible_text(client.get('/help/fake-profiles').get_data(as_text=True))
     assert 'official links last checked' in text
-    assert 'haven’t been able to check facebook: report an impersonation account' in text
+    assert 'haven’t been able to check the “facebook: report an impersonation account” link' in text
     unchecked = [l for l in plans.OFFICIAL_LINKS.values() if not l['checked']]
     assert unchecked  # if they all get checked one day, this test can go
     about = visible_text(client.get('/about').get_data(as_text=True))
@@ -338,8 +338,15 @@ def test_terms_and_privacy_cover_namewatch_for_existing_subscribers(client):
     soup = BeautifulSoup(privacy, 'html.parser')
     rows = [tr.get_text(' ', strip=True) for tr in soup.select('#collect ~ .table-wrap tr, .table-wrap tr')]
     namewatch = next(r for r in rows if r.startswith('NameWatch (existing subscribers only)'))
-    for fact in ('DuckDuckGo', 'Google News', 'not on Render', 'admin@fixmynameonline.com', 'counts only'):
+    for fact in ('DuckDuckGo', 'Google News', 'admin@fixmynameonline.com', 'counts only',
+                 'phone', 'on our server, hosted by Render', 'backups', 'Brevo', 'Telegram',
+                 'search results, and what each check has already seen, are kept only on our own computer'):
         assert fact in namewatch, fact
+    assert 'not on Render' not in namewatch
+    providers_text = soup.find(id='providers').find_next('ul').get_text(' ', strip=True)
+    assert 'NameWatch sign-up records' in providers_text and 'records from our earlier tools' in providers_text
+    keep = soup.find(id='keep').find_next('ul').get_text(' ', strip=True)
+    assert 'NameWatch: while your subscription runs' in keep
     providers = soup.find(id='providers').find_next('ul').get_text(' ', strip=True)
     assert 'DuckDuckGo' in providers and 'Google News' in providers
 
@@ -358,3 +365,26 @@ def test_paid_pack_is_not_sold_on_what_the_free_check_already_has(client):
     assert 'reminder' not in offer
     # The free side still says it has them.
     assert 'Calendar reminder files' in client.get('/pricing').get_data(as_text=True)
+
+
+def test_namewatch_and_what_we_dont_do_copy_is_plain_and_accurate(client, monkeypatch):
+    guide = visible_text(client.get('/reputation-monitoring-alerts').get_data(as_text=True))
+    assert 'alerts are paused' not in guide and 'new sign-ups are paused while we rebuild it' in guide
+    assert 'if you already subscribe, your alerts carry on' in guide
+    how = visible_text(client.get('/how-it-works').get_data(as_text=True))
+    assert 'search google in the free check, or give you a “score”' in how
+    about = visible_text(client.get('/about').get_data(as_text=True))
+    assert 'search google for you in the free check' in about and 'namewatch, for existing subscribers only, runs searches' in about
+    home = visible_text(client.get('/').get_data(as_text=True))
+    assert 'check-back dates and notes kept online with each letter' in home
+    monkeypatch.setattr(server, 'verify_paid_checkout', lambda *a, **kw: {'payment_status': 'paid', 'customer_details': {'email': 'paid@example.com'}})
+    for path in ('/success.html?tier=sentinel&session_id=cs_x', '/onboarding?plan=sentinel&session_id=cs_x'):
+        text = visible_text(client.get(path).get_data(as_text=True))
+        for old in ('private monitoring file', 'fmno creates', 'first baseline', 'private activation', 'newly observed'):
+            assert old not in text, (path, old)
+    sent = []
+    monkeypatch.setattr(server, 'send_brevo_email', lambda to, name, subject, html, text='': sent.append((to, html)) or True)
+    server.send_onboarding_emails({'plan': 'sentinel', 'name': 'Test', 'email': 'paid@example.com'}, {'id': 'q1'})
+    customer = visible_text(sent[0][1])
+    assert 'private monitoring file' not in customer and 'baseline' not in customer and 'fmno runs' not in customer
+    assert 'doesn’t contact anyone or remove anything' in customer

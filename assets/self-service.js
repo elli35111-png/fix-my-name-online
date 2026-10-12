@@ -147,12 +147,31 @@
   function planKey(item) {
     return item.problem === 'not-sure' ? notSureRoute(item).plan : item.problem;
   }
+  // A question with `when` is only shown (and only counts) when it matches.
+  function askedQuestions(problem, answers) {
+    return (DATA.questions[problem] || []).filter(q => matches(q.when, answers));
+  }
   function planAnswers(item) {
     if (item.problem !== 'not-sure') return item.answers;
     const route = notSureRoute(item);
     const out = Object.assign({}, route.answers || {}, (route.map || {})[item.answers.wrong] || {});
+    const asked = askedQuestions('not-sure', item.answers).map(q => q.id);
+    for (const k of route.pass || []) if (asked.includes(k) && k in item.answers) out[k] = item.answers[k];
     for (const k of ['country', 'safety']) if (k in item.answers) out[k] = item.answers[k];
     return out;
+  }
+  // "From your answers, this looks like: ..." and the tracker label. Mirrors not_sure_looks_like in plans.py.
+  function looksLike(item) {
+    if (item.problem !== 'not-sure') return PROBLEMS[item.problem].label.toLowerCase();
+    const route = notSureRoute(item);
+    if (route.looks_like) return route.looks_like;
+    if (planAnswers(item).who === 'same-name') return 'a page about someone else with your name';
+    const p = PROBLEMS[route.plan];
+    return p ? p.label.toLowerCase() : 'a page on someone else’s site';
+  }
+  function itemName(item) {
+    const text = looksLike(item).replace(/^(an|a) /, '');
+    return text[0].toUpperCase() + text.slice(1);
   }
   function stepLetter(step, a) {
     let letter = step.letter || null;
@@ -172,6 +191,7 @@
     const ongoing = a.status === 'ongoing';
     const help = [...safety];
     if (ongoing) help.push('ongoing');
+    else if (a.status === 'unsure') help.push('status-unsure');
     const steps = (ongoing && plan.ongoing_steps ? plan.ongoing_steps : plan.steps).filter(s => matches(s.when, a));
     return {
       key, plan, steps, help, ongoing,
@@ -279,10 +299,10 @@
   function checkedNote(ids) {
     const known = ids.filter(id => DATA.links[id]);
     const dates = known.map(id => DATA.links[id].checked).filter(Boolean).sort();
-    const unchecked = known.filter(id => !DATA.links[id].checked).map(id => DATA.links[id].label);
+    const unchecked = known.filter(id => !DATA.links[id].checked).map(id => '“' + DATA.links[id].label + '”');
     const parts = [];
     if (dates.length) parts.push('Official links last checked ' + nice(dates[0]) + '.');
-    if (unchecked.length) parts.push(`We haven’t been able to check ${listText(unchecked)} ourselves. If ${unchecked.length === 1 ? 'it doesn’t' : 'one doesn’t'} open the right page, search that site’s help pages instead.`);
+    if (unchecked.length) parts.push(`We haven’t been able to check the ${listText(unchecked)} link${unchecked.length === 1 ? '' : 's'} ourselves. If ${unchecked.length === 1 ? 'it doesn’t' : 'one doesn’t'} open the right page, search that site’s help pages instead.`);
     return parts.length ? el('p', {class: 'small'}, parts.join(' ')) : null;
   }
 
@@ -426,12 +446,12 @@
   }
   function renderCheckInto() { render(); }
 
-  function radioGroup(q, item) {
+  function radioGroup(q, item, onPick) {
     const name = 'q-' + q.id;
-    return el('fieldset', {class: 'field', 'data-q': q.id},
+    return el('fieldset', {class: 'field', 'data-q': q.id, hidden: q.when && !matches(q.when, item.answers) ? true : null},
       el('legend', {class: 'label'}, q.label),
       el('div', {class: 'choices' + (q.stack ? '' : ' inline')}, q.options.map(o => el('label', {class: 'choice'},
-        el('input', {type: 'radio', name, value: o.value, checked: item.answers[q.id] === o.value ? true : null, onchange: e => { item.answers[q.id] = o.value; changed(); clearFlag(e.target.closest('[data-q]')); }}),
+        el('input', {type: 'radio', name, value: o.value, checked: item.answers[q.id] === o.value ? true : null, onchange: e => { item.answers[q.id] = o.value; changed(); clearFlag(e.target.closest('[data-q]')); if (onPick) onPick(); }}),
         el('span', {class: 'dot', 'aria-hidden': 'true'}),
         el('span', {}, o.label, o.small ? el('small', {}, o.small) : null)))));
   }
@@ -441,11 +461,15 @@
       DATA.countries.map(([v, l]) => el('option', {value: v, selected: d.answers.country === v ? true : null}, l)));
     const link = el('input', {class: 'input', id: 'q-link', 'aria-describedby': 'q-link-hint', type: 'url', inputmode: 'url', autocomplete: 'off', maxlength: String(LIMITS.link), placeholder: 'https://', value: d.link || null, oninput: e => { d.link = e.target.value.slice(0, LIMITS.link); changed(); clearFlag(e.target.closest('[data-q]')); }});
     const name = d.problem === 'not-sure' ? 'what you found' : PROBLEMS[d.problem].label.replace(/^(An|A) /, 'the ').toLowerCase();
+    // Follow-up questions (with `when`) appear as soon as they apply.
+    const groups = [];
+    const sync = () => groups.forEach(([q, node]) => { node.hidden = !matches(q.when, d.answers); });
+    qs.forEach(q => groups.push([q, radioGroup(q, d, sync)]));
     return el('section', {class: 'card', id: 'questions'},
       el('h2', {class: 'h-sans'}, `2. A few questions about ${name}`),
       el('p', {class: 'meta mt-1'}, 'They decide which steps, letters and official forms fit.'),
       el('div', {class: 'mt-3'},
-        qs.map(q => radioGroup(q, d)),
+        groups.map(([, node]) => node),
         el('div', {class: 'field'}, el('label', {class: 'label', for: 'q-country'}, 'Where do you live?'), el('span', {class: 'hint'}, 'This decides which laws and official routes apply.'), country),
         el('div', {class: 'field', 'data-q': 'link'}, el('label', {class: 'label', for: 'q-link'}, 'Paste the link ', el('span', {class: 'meta', style: 'font-weight:400'}, '(optional)')), el('span', {class: 'hint', id: 'q-link-hint'}, 'It stays in this browser. We use it to fill in your letter.'), link)));
   }
@@ -489,7 +513,7 @@
   }
   function showPlan() {
     const d = state.draft;
-    const missing = (DATA.questions[d.problem] || []).find(q => !d.answers[q.id]);
+    const missing = askedQuestions(d.problem, d.answers).find(q => !d.answers[q.id]);
     if (missing) { flag(missing.id, 'Please answer: ' + missing.label); return; }
     if (!Array.isArray(d.answers.safety)) { flag('safety', 'Please answer the safety check (tick “None of these” if none apply).', document.getElementById('safety-threat')); return; }
     if (d.link && !/^https?:\/\/[^\s]+\.[^\s]+/i.test(d.link)) { flag('link', 'That link doesn’t look right. It should start with https:// (or leave it empty).', document.getElementById('q-link')); return; }
@@ -618,12 +642,15 @@
     const first = built.help[0];
     const lede = first === 'ongoing'
       ? 'Because the case is still running, the advice comes first. The usual steps for the page are further down, for when you’re ready.'
-      : 'Because of what you ticked, the people who can act fastest are at the top. The steps for the page itself are further down, for when you’re ready.';
+      : first === 'status-unsure'
+        ? 'You weren’t sure the matter is finished. If a case or investigation is still running, a request now can affect it, so check that first. The usual steps for the page are further down.'
+        : 'Because of what you ticked, the people who can act fastest are at the top. The steps for the page itself are further down, for when you’re ready.';
     const agency = c === 'au' ? 'eSafety' : (c === 'nz' ? 'Netsafe' : '');
     let title;
     if (first === 'intimate') title = agency ? `Start with ${agency}. The rest of your plan is below.` : 'Start with the free removal routes. The rest of your plan is below.';
     else if (first === 'threat') title = agency ? `Start with the police and ${agency}. The rest of your plan is below.` : 'Start with the police. The rest of your plan is below.';
     else if (first === 'child') title = agency ? `Report it to ${agency} first. The rest of your plan is below.` : 'Report it to the platform and the police first. The rest of your plan is below.';
+    else if (first === 'status-unsure') title = 'Check the matter is finished before you send anything. The rest of your plan is below.';
     else title = 'Get legal advice before you send anything. The rest of your plan is below.';
     return {title, lede};
   }
@@ -645,7 +672,11 @@
         el('a', {class: 'btn btn-secondary btn-sm', href: '#plan-steps', onclick: e => { e.preventDefault(); const t = document.getElementById('plan-steps'); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, 'Go to the steps')),
       el('p', {class: 'small'}, 'The tracker keeps your ticks and shows you when to check back. Nothing is sent to us.')));
     if (safe) main.append(el('h2', {class: 'h-sans', id: 'plan-for-page'}, 'Then, for the page itself: ', built.title));
-    if (item.problem === 'not-sure') main.append(el('div', {class: 'callout callout-brand'}, svg('info', 'icon icon-sm'), el('p', {}, el('strong', {}, 'From your answers, this looks like: ' + (PROBLEMS[built.key] ? PROBLEMS[built.key].label.toLowerCase() : 'a page on someone else’s site') + '.'), 'If that’s not right, ', el('a', {href: '/self-service', onclick: e => { e.preventDefault(); go(''); }}, 'pick a different problem'), '.')));
+    if (item.problem === 'not-sure') {
+      const route = notSureRoute(item);
+      const same = route.looks_like && PROBLEMS[built.key] ? ' The steps are the same as for ' + PROBLEMS[built.key].label.toLowerCase() + '.' : '';
+      main.append(el('div', {class: 'callout callout-brand', id: 'looks-like'}, svg('info', 'icon icon-sm'), el('p', {}, el('strong', {}, 'From your answers, this looks like: ' + looksLike(item) + '.'), same ? same + ' ' : '', 'If that’s not right, ', el('a', {href: '/self-service', onclick: e => { e.preventDefault(); go(''); }}, 'pick a different problem'), '.')));
+    }
     main.append(el('div', {class: 'grid grid-2'},
       el('div', {class: 'card'}, el('p', {class: 'eyebrow'}, 'Who decides'), el('p', {class: 'mt-1'}, built.plan.who_decides)),
       el('div', {class: 'card'}, el('p', {class: 'eyebrow'}, 'Time'), el('p', {class: 'mt-1'}, built.plan.time))));
@@ -682,7 +713,7 @@
     copy.id = uid();
     copy.checkBack = copy.checkBack || addDays(built.plan.check_back_days);
     copy.status = Object.values(copy.done).some(Boolean) ? 'preparing' : 'not-started';
-    copy.label = copy.label || ((copy.problem === 'not-sure' ? 'Something I found' : PROBLEMS[copy.problem].label.replace(/^(An|A) /, '').replace(/^./, c => c.toUpperCase())) + (host(copy.link) ? ' · ' + host(copy.link) : ''));
+    copy.label = copy.label || (itemName(copy) + (host(copy.link) ? ' · ' + host(copy.link) : ''));
     copy.created = today(); copy.updated = today();
     state.items.unshift(copy); state.draft = null;
     justAdded = copy.id;
@@ -694,7 +725,7 @@
     return link.label + ': ' + link.url + (link.checked ? '' : ' (not checked by us)');
   }
   function planText(item, built) {
-    const lines = ['FIX MY NAME ONLINE · MY PLAN', built.title, '', 'Your plan for: ' + (item.label || (PROBLEMS[item.problem] || {label: 'something I found'}).label) + ' · ' + COUNTRY[item.answers.country]];
+    const lines = ['FIX MY NAME ONLINE · MY PLAN', built.title, '', 'Your plan for: ' + (item.label || itemName(item)) + ' · ' + COUNTRY[item.answers.country]];
     if (item.link) lines.push('Link: ' + item.link);
     lines.push('', 'WHO DECIDES', built.plan.who_decides, '', 'TIME', built.plan.time);
     built.help.forEach(t => lines.push('', 'FIRST: ' + DATA.help[t].title.toUpperCase(), DATA.help[t].text, ...(DATA.help[t][item.answers.country] || []).map(linkLine)));
