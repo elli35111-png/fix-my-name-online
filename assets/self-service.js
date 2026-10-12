@@ -138,9 +138,21 @@
   }
 
   // ---------- plan building ----------
+  // "Not sure" answers are routed to the closest plan. The route also answers
+  // that plan's own questions (see NOT_SURE_ROUTES in plans.py), so the plan
+  // and letter match what the visitor said instead of the plan's defaults.
+  function notSureRoute(item) {
+    return DATA.notSure.find(r => matches(r.when, item.answers)) || {plan: 'general', answers: {}};
+  }
   function planKey(item) {
-    if (item.problem !== 'not-sure') return item.problem;
-    return (DATA.notSure.find(r => matches(r.when, item.answers)) || {plan: 'general'}).plan;
+    return item.problem === 'not-sure' ? notSureRoute(item).plan : item.problem;
+  }
+  function planAnswers(item) {
+    if (item.problem !== 'not-sure') return item.answers;
+    const route = notSureRoute(item);
+    const out = Object.assign({}, route.answers || {}, (route.map || {})[item.answers.wrong] || {});
+    for (const k of ['country', 'safety']) if (k in item.answers) out[k] = item.answers[k];
+    return out;
   }
   function stepLetter(step, a) {
     let letter = step.letter || null;
@@ -155,7 +167,7 @@
   function buildPlan(item) {
     const key = planKey(item);
     const plan = DATA.plans[key];
-    const a = item.answers;
+    const a = planAnswers(item);
     const safety = a.safety || [];
     const ongoing = a.status === 'ongoing';
     const help = [...safety];
@@ -172,8 +184,13 @@
     const plan = DATA.plans[planKey(item)];
     const step = plan.steps.find(s => s.asks);
     if (!step) return [];
+    if (item.problem === 'not-sure') {
+      const route = notSureRoute(item);
+      const fixed = route.asks || (route.plan === 'general' ? DATA.generalAsks[item.answers.wrong] : null);
+      if (fixed) return fixed.slice();
+    }
     const d = step.default_asks || {};
-    return (d[item.answers.now] || d._ || [step.asks[0]]).slice();
+    return (d[planAnswers(item).now] || d._ || [step.asks[0]]).slice();
   }
   function askSentence(asks) {
     const phrases = asks.map(k => DATA.asks[k] && DATA.asks[k].phrase).filter(Boolean);
@@ -183,7 +200,8 @@
 
   // Letter as DOM (fill-in fields highlighted) and as plain text.
   function letterParas(key, item) {
-    return DATA.letters[key].paras.filter(p => matches(p.when, item.answers)).map(p => p.text.replace('{{ask}}', askSentence(item.asks.length ? item.asks : defaultAsks(item))));
+    const a = planAnswers(item);
+    return DATA.letters[key].paras.filter(p => matches(p.when, a)).map(p => p.text.replace('{{ask}}', askSentence(item.asks.length ? item.asks : defaultAsks(item))));
   }
   function fillValue(field, item) {
     if (field === 'link' && item.link) return item.link;
@@ -526,7 +544,7 @@
         return el('label', {class: 'choice'}, box, el('span', {class: 'box', 'aria-hidden': 'true'}), el('span', {}, ask.label, ask.small ? el('small', {}, ask.small) : null));
       })));
     }
-    const letter = stepLetter(step, item.answers);
+    const letter = stepLetter(step, planAnswers(item));
     if (letter) {
       const card = letterCard(letter, item, step.letter_label ? step.letter_label : null);
       card.dataset.letter = letter;
@@ -534,7 +552,7 @@
       else li.append(el('div', {class: 'mt-2'}, card));
     }
     if (step.where) li.append(el('p', {class: 'meta mt-2'}, el('strong', {}, 'Where to send it: '), step.where));
-    const links = stepLinks(step, item.answers);
+    const links = stepLinks(step, planAnswers(item));
     if (links.length) li.append(el('p', {class: 'btn-row mt-2'}, links.map((id, i) => linkButton(id, i === 0))), checkedNote(links));
     const doneBox = el('input', {type: 'checkbox', id: 'done-' + step.id, checked: done ? true : null});
     doneBox.addEventListener('change', () => { item.done[step.id] = doneBox.checked; li.classList.toggle('done', doneBox.checked); changed(); refreshProgress(item, built); });
@@ -682,10 +700,10 @@
       if (s.body) lines.push(s.body);
       (s.checklist || []).forEach((c, j) => lines.push(`   ${item.ticks[s.id + ':' + j] ? '[x]' : '[ ]'} ${c}`));
       if (s.asks) lines.push('   Asking for: ' + (item.asks.map(a => DATA.asks[a].label).join('; ') || 'not chosen yet'));
-      const letter = stepLetter(s, item.answers);
+      const letter = stepLetter(s, planAnswers(item));
       if (letter) lines.push('', '--- ' + DATA.letters[letter].name.toUpperCase() + ' ---', letterPlain(letter, item), '--- end ---');
       if (s.where) lines.push('Where to send it: ' + s.where);
-      stepLinks(s, item.answers).forEach(id => lines.push(linkLine(id)));
+      stepLinks(s, planAnswers(item)).forEach(id => lines.push(linkLine(id)));
     });
     if (built.ifNo.length) { lines.push('', 'IF THE ANSWER IS NO'); built.ifNo.forEach(i => lines.push('- ' + i.text + (i.link ? ' ' + DATA.links[i.link].url + (DATA.links[i.link].checked ? '' : ' (not checked by us)') : ''))); }
     if (!state.items.includes(item)) lines.push('');

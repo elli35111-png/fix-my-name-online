@@ -217,6 +217,7 @@ LETTERS = {
         {'text': 'I’m writing about this article on your site:\n{{link|link to the article}}\nHeadline: {{headline|headline}} · Published: {{date|date}}'},
         {'when': {'now': ['left-out', 'unsure']}, 'text': 'The article reports that {{says|what the article says, in one sentence}}. Since then, {{next|what happened next, e.g. the charge was withdrawn on 3 May 2021}}.'},
         {'when': {'now': ['wrong']}, 'text': 'The article says {{says|what the article says that’s wrong}}. That isn’t correct. {{fact|what actually happened, in one or two sentences}}.'},
+        {'when': {'now': ['outdated']}, 'text': 'The article says {{says|what the article says, in one sentence}}. That isn’t accurate now. {{fact|what’s wrong, or what has changed since, in one or two sentences}}.'},
         {'when': {'now': ['old']}, 'text': 'The article was published {{years|how many}} years ago. It’s about {{says|what it’s about, in one sentence}}, and it’s no longer relevant to my life or my work.'},
         {'text': '{{ask}}'},
         {'text': 'I’ve attached {{evidence|the court outcome, letter or other document}}, and I’m happy to provide anything else you need to check it.'},
@@ -315,11 +316,13 @@ PLANS = {
             {'when': {'who': ['same-name']}, 'text': 'Ask the publisher to add a detail that tells you apart.'},
             {'when': {'now': ['wrong']}, 'text': 'Ask the publisher to correct the story, then ask Google to catch up.'},
             {'when': {'now': ['old']}, 'text': 'Ask the publisher to update, anonymise or de-list the story.'},
+            {'when': {'now': ['outdated']}, 'text': 'Ask the publisher to fix or update the story, then ask Google to catch up.'},
             {'text': 'Ask the publisher to update the story, then ask Google to catch up.'},
         ],
         'lede': [
             {'when': {'who': ['same-name']}, 'text': 'The story isn’t about you, so you’re not asking anyone to change the reporting. You’re asking for a small detail that stops people confusing the two of you.'},
             {'when': {'now': ['wrong']}, 'text': 'A factual error is the clearest thing you can ask a publisher to fix. Here’s the order to do it in.'},
+            {'when': {'now': ['outdated']}, 'text': 'If parts of the story are wrong or out of date, you can ask the publisher to fix them. Here’s the order to do it in.'},
             {'when': {'now': ['old']}, 'text': 'Being old usually isn’t enough on its own. You can still ask the publisher to consider anonymising or de-listing an old story about a private person. Here’s how to ask.'},
             {'text': 'The story leaves out what happened next, so you have a clear and reasonable thing to ask for. Here’s the order to do it in.'},
         ],
@@ -333,7 +336,7 @@ PLANS = {
              'checklist': EVIDENCE + ['Proof of what happened next, like a court outcome or letter']},
             {'id': 'decide', 'title': 'Decide what to ask for', 'time': '5 minutes', 'when': {'who': ['me', 'helping']},
              'body': 'You can ask for more than one thing. Start with what matters most to you. Smaller asks are more often agreed to.',
-             'asks': ['update', 'correct', 'anonymise', 'noindex', 'remove'], 'default_asks': {'left-out': ['update'], 'unsure': ['update'], 'wrong': ['correct'], 'old': ['anonymise', 'noindex']}},
+             'asks': ['update', 'correct', 'anonymise', 'noindex', 'remove'], 'default_asks': {'left-out': ['update'], 'unsure': ['update'], 'wrong': ['correct'], 'outdated': ['correct', 'update'], 'old': ['anonymise', 'noindex']}},
             {'id': 'letter', 'title': 'Send your letter to the publisher', 'time': '15 minutes', 'you_send': True,
              'letter': 'L1', 'letter_when': [{'when': {'who': ['same-name']}, 'letter': 'L6'}],
              'where': 'Look for “Corrections”, “Contact the editor” or “Complaints” on the publisher’s site. Send it to one place and keep a copy.'},
@@ -559,16 +562,41 @@ PLANS = {
     },
 }
 
-# "Not sure" answers point to the most likely plan.
+# "Not sure" answers point to the most likely plan. The not-sure questions are
+# different from the target plan's, so each route also says how to answer the
+# target plan's questions: `answers` are the starting point and `map` turns the
+# visitor's "main problem" answer into the plan's own answers. Without this the
+# plan falls back to its defaults and the letter claims things the visitor never
+# said (for example "the story leaves out what happened next"). Only these
+# answers, plus country and safety, are used to build the plan.
+_NS_WHO = {'not-me': {'who': 'same-name'}}
 NOT_SURE_ROUTES = [
-    {'when': {'wrong': ['fake']}, 'plan': 'fake-profile'},
-    {'when': {'where': ['listing']}, 'plan': 'people-search'},
-    {'when': {'where': ['review']}, 'plan': 'review'},
-    {'when': {'where': ['court']}, 'plan': 'court'},
-    {'when': {'where': ['news']}, 'plan': 'old-news'},
-    {'when': {'wrong': ['private']}, 'plan': 'people-search'},
-    {'plan': 'general'},
+    {'when': {'wrong': ['fake']}, 'plan': 'fake-profile', 'answers': {'platform': 'other', 'doing': 'existing'}},
+    {'when': {'where': ['listing']}, 'plan': 'people-search', 'answers': {'who': 'me', 'listed': 'other', 'sites': 'one'}},
+    {'when': {'where': ['review']}, 'plan': 'review', 'answers': {'about': 'me', 'platform': 'other', 'why': 'not-customer'},
+     'map': {'private': {'why': 'offensive'}}},
+    {'when': {'where': ['court']}, 'plan': 'court', 'answers': {'who': 'me', 'where': 'court-site', 'status': 'unsure'}, 'map': _NS_WHO},
+    {'when': {'where': ['news'], 'wrong': ['private']}, 'plan': 'general', 'answers': {}, 'asks': ['anonymise', 'noindex']},
+    {'when': {'where': ['news']}, 'plan': 'old-news', 'answers': {'who': 'me', 'now': 'outdated', 'status': 'unsure'},
+     'map': {'not-me': {'who': 'same-name', 'now': 'unsure'}}},
+    {'when': {'wrong': ['private']}, 'plan': 'people-search', 'answers': {'who': 'me', 'listed': 'other', 'sites': 'one'}},
+    {'plan': 'general', 'answers': {}},
 ]
+# The general plan's ask defaults follow the visitor's main problem.
+_GENERAL_ASKS = {'wrong': ['correct', 'update'], 'private': ['anonymise', 'remove'], 'not-me': ['update']}
+
+
+def route_not_sure(answers):
+    """(plan key, answers for that plan, default asks or None). Mirrors planKey/planAnswers in self-service.js."""
+    route = next(r for r in NOT_SURE_ROUTES if matches(r.get('when'), answers))
+    out = dict(route.get('answers') or {})
+    out.update((route.get('map') or {}).get(answers.get('wrong'), {}))
+    for key in ('country', 'safety'):
+        if key in answers:
+            out[key] = answers[key]
+    asks = route.get('asks') or (_GENERAL_ASKS.get(answers.get('wrong')) if route['plan'] == 'general' else None)
+    return route['plan'], out, asks
+
 
 STATUSES = [
     ('not-started', 'Not started'), ('preparing', 'Preparing'), ('submitted', 'Sent by me'),
@@ -611,7 +639,7 @@ def client_payload():
     """Everything the browser needs to build plans. Plain data, no personal info."""
     return {
         'countries': COUNTRIES, 'links': OFFICIAL_LINKS, 'problems': PROBLEMS, 'questions': QUESTIONS,
-        'help': HELP_FIRST, 'letters': LETTERS, 'asks': ASKS, 'plans': PLANS, 'notSure': NOT_SURE_ROUTES,
+        'help': HELP_FIRST, 'letters': LETTERS, 'asks': ASKS, 'plans': PLANS, 'notSure': NOT_SURE_ROUTES, 'generalAsks': _GENERAL_ASKS,
         'statuses': STATUSES, 'lastChecked': LAST_CHECKED,
     }
 

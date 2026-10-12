@@ -435,3 +435,53 @@ def test_desk_without_javascript_still_points_to_every_plan(origin):
         page.locator('.menu summary').click()
         assert page.locator('.menu-sheet').is_visible()
         browser.close()
+
+
+def test_not_sure_routes_answer_every_question_of_the_plan_they_pick():
+    # Every not-sure answer pair lands on a plan whose own questions are all
+    # answered with real options, so nothing falls back to another visitor's story.
+    ns = {q['id']: [o['value'] for o in q['options']] for q in plans.QUESTIONS['not-sure']}
+    for where in ns['where']:
+        for wrong in ns['wrong']:
+            plan, answers, asks = plans.route_not_sure({'where': where, 'wrong': wrong, 'country': 'au', 'safety': []})
+            assert answers['country'] == 'au' and answers['safety'] == []
+            for q in plans.QUESTIONS.get(plan, []):
+                values = [o['value'] for o in q['options']]
+                if plan == 'old-news' and q['id'] == 'now':
+                    values.append('outdated')  # route-only value with its own title, lede and letter text
+                assert answers.get(q['id']) in values, (where, wrong, plan, q['id'], answers)
+            if plan == 'general':
+                assert asks, (where, wrong)
+    # News site: what they said decides the plan and the letter.
+    assert plans.route_not_sure({'where': 'news', 'wrong': 'wrong'})[1]['now'] == 'outdated'
+    assert plans.route_not_sure({'where': 'news', 'wrong': 'not-me'})[1]['who'] == 'same-name'
+    assert plans.route_not_sure({'where': 'news', 'wrong': 'private'})[0] == 'general'
+    outline = plans.outline('old-news', plans.route_not_sure({'where': 'news', 'wrong': 'wrong'})[1])
+    assert 'leaves out' not in outline['lede'] and 'wrong or out of date' in outline['lede']
+    assert [s['id'] for s in outline['steps']] == ['evidence', 'decide', 'letter', 'follow', 'refresh']
+    letter = plans.letter_text('L1', {'now': 'outdated'})
+    assert 'isn’t accurate now' in letter and 'Since then' not in letter
+
+
+@pytest.mark.parametrize('wrong, lede, letter, absent, steps', [
+    ('wrong', 'wrong or out of date', 'isn’t accurate now', 'Since then', 5),
+    ('not-me', 'isn’t about you', 'I’m not that person', 'Since then', 4),
+    ('private', 'person who runs the site', 'remove my name, or replace it with initials', 'Since then', 5),
+])
+def test_not_sure_news_answers_get_the_plan_and_letter_they_described(origin, wrong, lede, letter, absent, steps):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        page.goto(origin + '/self-service?problem=not-sure')
+        page.locator('[data-q="where"] input[value="news"]').check()
+        page.locator(f'[data-q="wrong"] input[value="{wrong}"]').check()
+        page.check('#safety-none')
+        page.click('#show-plan')
+        page.wait_for_selector('#add-to-tracker')
+        body = page.locator('#desk-app').inner_text()
+        assert lede in body, body[:600]
+        assert 'The story leaves out what happened next' not in body
+        letters = ' '.join(page.locator('.letter-body').all_inner_texts())
+        assert letter in letters and absent not in letters
+        assert page.locator('ol.steps > li:not(.if-no)').count() == steps
+        assert not page.errors
+        browser.close()
