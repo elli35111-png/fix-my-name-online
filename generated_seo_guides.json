@@ -270,7 +270,7 @@
       ],
       [
         "Check accuracy, context and age",
-        "Old material may be incomplete, missing an outcome, copied to a new page, or presented with a fresh date. These details can change which correction, privacy or outdated-content pathway makes sense."
+        "Old material may be incomplete, missing an outcome, copied to a new page, or presented with a fresh date. These details change whether a correction, a privacy request or Google’s outdated-content form makes sense."
       ],
       [
         "Do not make the article louder",
@@ -288,7 +288,7 @@
     "faqs": [
       [
         "Can an old article be removed?",
-        "Sometimes there may be a pathway, but it depends on the source, accuracy, public interest, privacy facts and publisher policies."
+        "Sometimes, but it depends on the source, accuracy, public interest, privacy facts and publisher policies."
       ],
       [
         "Can Google update an old snippet?",
@@ -356,7 +356,7 @@
       ],
       [
         "Decide what can be public",
-        "Use only true information you’re happy to share: biography, services, credentials, current projects, media context, business pages and contact pathways."
+        "Use only true information you’re happy to share: biography, services, credentials, current projects, media context, business pages and ways to contact you."
       ],
       [
         "Deal with sensitive results privately",
@@ -527,12 +527,12 @@
     "intro": "Bad Google results can affect jobs, clients, relationships and trust without anyone telling you why. Start with evidence, not panic.",
     "sections": [
       [
-        "Map page one first",
-        "Page one is where most damage happens. Capture web results, images, videos, business profiles and related searches."
+        "Start with the first page of results",
+        "The first page is what most people look at. Save the web results, images, videos, business profiles and related searches."
       ],
       [
         "Prioritise high-risk results",
-        "A court page, old article, review attack or image may matter more than a low-ranking directory page. Fix the highest-risk search paths first."
+        "A court page, old article, review attack or image may matter more than a low-ranking directory page. Deal with the results that could do the most harm first."
       ],
       [
         "Don’t use fake content",
@@ -746,7 +746,7 @@
         "Record the URL, headline, publication date, Google snippet, search query and where it ranks. Check whether copies, archives or scraped versions also appear."
       ],
       [
-        "Consider publisher and Google pathways",
+        "Ask the publisher, then Google",
         "Depending on the facts, options may include correction, update, anonymisation, noindex, outdated-content review or specific Google removal tools. Not every article qualifies."
       ],
       [
@@ -863,7 +863,7 @@
     "faqs": [
       [
         "Can false information always be removed?",
-        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+        "No. Some false or inaccurate material can be corrected or removed, but publishers, platforms and search engines make their own decisions."
       ],
       [
         "What should I save first?",
@@ -879,7 +879,7 @@
       ],
       [
         "Can Google remove false results?",
-        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Source-owner and search-engine pathways are separate."
+        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Asking the site owner and asking Google are separate steps."
       ],
       [
         "Can this help before a job interview or client meeting?",
@@ -930,7 +930,7 @@
     "faqs": [
       [
         "Can false information always be removed?",
-        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+        "No. Some false or inaccurate material can be corrected or removed, but publishers, platforms and search engines make their own decisions."
       ],
       [
         "What should I save first?",
@@ -946,7 +946,7 @@
       ],
       [
         "Can Google remove false results?",
-        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Source-owner and search-engine pathways are separate."
+        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Asking the site owner and asking Google are separate steps."
       ],
       [
         "Can this help before a job interview or client meeting?",
@@ -997,7 +997,7 @@
     "faqs": [
       [
         "Can false information always be removed?",
-        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+        "No. Some false or inaccurate material can be corrected or removed, but publishers, platforms and search engines make their own decisions."
       ],
       [
         "What should I save first?",
@@ -1013,7 +1013,7 @@
       ],
       [
         "Can Google remove false results?",
-        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Source-owner and search-engine pathways are separate."
+        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Asking the site owner and asking Google are separate steps."
       ],
       [
         "Can this help before a job interview or client meeting?",
@@ -1064,7 +1064,7 @@
     "faqs": [
       [
         "Can false information always be removed?",
-        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+        "No. Some false or inaccurate material can be corrected or removed, but publishers, platforms and search engines make their own decisions."
       ],
       [
         "What should I save first?",
@@ -1080,7 +1080,7 @@
       ],
       [
         "Can Google remove false results?",
-        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Source-owner and search-engine pathways are separate."
+        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Asking the site owner and asking Google are separate steps."
       ],
       [
         "Can this help before a job interview or client meeting?",
@@ -1131,7 +1131,7 @@
     "faqs": [
       [
         "Can false information always be removed?",
-        "No. Some false or inaccurate material has a valid pathway, but publishers, platforms and search engines make their own decisions."
+        "No. Some false or inaccurate material can be corrected or removed, but publishers, platforms and search engines make their own decisions."
       ],
       [
         "What should I save first?",
@@ -1147,7 +1147,7 @@
       ],
       [
         "Can Google remove false results?",
-        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Source-owner and search-engine pathways are separate."
+        "Sometimes Google can review eligible results or stale snippets, but it does not control every source page. Asking the site owner and asking Google are separate steps."
       ],
       [
         "Can this help before a job interview or client meeting?",
@@ -1281,7 +1281,7 @@
     "sections": [
       [
         "Search like a stranger, not like yourself",
-        "Use an incognito window, search your exact name, common variants, previous names, business names and location combinations. Your usual Google account can hide or personalise what other people see."
+        "Use a private or incognito window, so your own history doesn’t change the results. Then search your exact name, common variants, previous names, business names and your name with your suburb or city."
       ],
       [
         "Classify each result",
@@ -1328,7 +1328,7 @@
       ],
       [
         "Check whether the article can be reviewed",
-        "Publisher correction, anonymisation, noindex, outdated-content and privacy pathways vary by facts and jurisdiction. Some are realistic; some are not."
+        "What’s possible (a correction, removing your name, hiding the page from search, Google’s outdated-content form or a privacy request) depends on the facts and the country. Some are realistic; some are not."
       ],
       [
         "Add the current picture",
@@ -1389,7 +1389,7 @@
     "faqs": [
       [
         "Can false claims be removed?",
-        "Sometimes there are platform, publisher or legal pathways, but outcomes depend on evidence, policy, jurisdiction and public-interest factors."
+        "Sometimes the platform, the publisher or the law gives you an option, but outcomes depend on evidence, policy, jurisdiction and public-interest factors."
       ],
       [
         "Should I reply publicly?",
@@ -1422,7 +1422,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1465,7 +1465,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1508,7 +1508,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1551,7 +1551,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1594,7 +1594,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1637,7 +1637,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1680,7 +1680,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1723,7 +1723,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1766,7 +1766,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",
@@ -1809,7 +1809,7 @@
       ],
       [
         "Use Google tools only when they fit",
-        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy or legal pathways have separate eligibility rules and Google makes the final decision."
+        "Google generally reflects source pages. Outdated-content tools may help after a page is removed or materially changed. Privacy and legal requests have their own rules and Google makes the final decision."
       ],
       [
         "Keep a calm follow-up record",

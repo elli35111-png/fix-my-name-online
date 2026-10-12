@@ -3,6 +3,7 @@ import json
 from urllib.parse import urlparse
 
 import pytest
+from bs4 import BeautifulSoup
 import server
 import paid_actions as actions
 
@@ -81,6 +82,24 @@ def test_wrong_or_unpaid_checkout_cannot_unlock(shop, overrides):
     session_for('cs_test_denied', **overrides)
     assert client.get('/diy-action/start?session_id=cs_test_denied').status_code == 402
     assert client.get('/diy-action/workspace').status_code == 401
+
+
+def test_access_errors_point_to_recovery_not_back_to_the_same_error(shop):
+    client, _ = shop
+    for path, status in [('/diy-action/workspace', 401), ('/diy-action/start?session_id=cs_test_nothing', 402),
+                         ('/success.html?tier=sentinel&session_id=cs_test_nothing', 402)]:
+        res = client.get(path)
+        assert res.status_code == status, path
+        soup = BeautifulSoup(res.data, 'html.parser')
+        buttons = soup.select('.card a.btn')
+        assert buttons[0]['href'] == '/diy-action/recover' and buttons[0].get_text(strip=True) == 'Get a new access link', path
+        assert '/self-service' in [a['href'] for a in buttons], path
+        assert not soup.select('a[href="/diy-action/workspace"]'), path
+        assert res.headers['X-Robots-Tag'] == 'noindex, nofollow'
+    success = client.get('/success.html?tier=sentinel&session_id=cs_test_nothing').get_data(as_text=True)
+    assert 'Payment has not been verified' not in success and 'nothing new has been charged' in success
+    # Errors inside an unlocked workspace still go back to it.
+    assert 'href="/diy-action/workspace"' in client.get('/diy-action/export.pdf').get_data(as_text=True)
 
 
 def test_old_static_token_never_unlocks(shop):

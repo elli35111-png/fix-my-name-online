@@ -23,7 +23,11 @@ BANNED = ['we review', 'we check', 'we map', 'what we check', 'what we privately
           'evidence map', 'private search snapshot', 'reputation work', 'authority assets', 'search-risk',
           'removal-pathway', 'useful deliverable', 'operator base', 'mystery dashboards', 'track impressions',
           'it works more often than not', 'can usually be removed', 'can fix my name online check',
-          'public assets are only created', 'automated tool’s safety scope']
+          'public assets are only created', 'automated tool’s safety scope',
+          # 12 Oct 2026 audit: myths, overstated outcomes, AI tells and jargon
+          'repeated searches', 'personalise what other people see', 'updates or drops the old result',
+          'digital life sentence', 'not to sell fantasy', 'we exist because', 'pathway', 'trust signals',
+          'reputation signals', 'map page one', 'search paths', 'operator can be australian']
 
 
 @pytest.fixture(scope='module')
@@ -101,6 +105,22 @@ def test_no_agency_voice_or_promises_on_public_pages(client):
         hits = [b for b in BANNED if b in text]
         assert not hits, (path, hits)
         assert 'madisonjade pty' not in text, path
+
+
+def test_short_version_fits_the_guide(client):
+    generic = 'ask the website owner first, then ask google to catch up'
+    for path, expected in [('/reputation-monitoring-alerts', 'set up a free alert'),
+                           ('/online-reputation-management-for-business', 'match the review to a specific rule'),
+                           ('/online-reputation-management-australia', 'the first steps are the same in every country'),
+                           ('/private-reputation-repair', 'you don’t have to tell anyone'),
+                           ('/google-your-name-before-an-employer-does', 'search your name the way a stranger would')]:
+        soup = BeautifulSoup(client.get(path).data, 'html.parser')
+        short = soup.select_one('.short p').get_text(' ', strip=True).lower()
+        assert expected in short and generic not in short, (path, short)
+    # No guide still carries the old general-plan box.
+    for path in sitemap_paths(client):
+        if not path.startswith('/personal-search/'):
+            assert generic not in visible_text(client.get(path).get_data(as_text=True)), path
 
 
 def test_desk_plan_text_is_also_clean():

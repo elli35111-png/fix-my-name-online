@@ -276,6 +276,10 @@ p { margin: 0; }
 /* letter preview */
 .letter { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
 .letter-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; background: var(--surface-2); border-bottom: 1px solid var(--line); font-size: var(--t-sm); }
+.copy-note { margin: 0; padding: 0 14px; font-size: var(--t-sm); color: var(--ok-ink); }
+.copy-note:empty { display: none; }
+.copy-note:not(:empty) { padding: 8px 14px; background: var(--ok-bg); border-bottom: 1px solid var(--line); }
+.copy-note.is-error { color: var(--warn-ink); background: var(--warn-bg); }
 .letter-body { padding: 18px 20px; font: 400 .9375rem/1.65 var(--serif); color: var(--ink); white-space: normal; }
 .letter-body p + p { margin-top: 12px; }
 .fill { background: var(--warn-bg); color: var(--warn-ink); border-bottom: 1.5px dashed var(--warn-line); padding: 0 3px; border-radius: 3px; font-family: var(--sans); font-size: .875rem; }

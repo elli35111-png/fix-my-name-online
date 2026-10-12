@@ -68,7 +68,8 @@ def test_process_customer_creates_baseline_then_alerts_only_on_new_results(tmp_p
     assert len(sent) == 3  # customer baseline + customer alert + internal alert
     assert 'newly observed result' in sent[1][1]
     assert 'Court result' in sent[1][2]
-    assert 'not necessarily newly published' in sent[1][2]
+    assert "isn't necessarily new" in sent[1][2]
+    assert 'REVIEW RECOMMENDED' not in sent[1][2] and 'fixmynameonline.com/self-service' in sent[1][2]
 
 
 def test_dry_run_never_writes_state_or_sends_email(tmp_path, monkeypatch):

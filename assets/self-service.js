@@ -223,12 +223,30 @@
   function letterCard(key, item, label) {
     const name = label || ('Free letter · ' + DATA.letters[key].name);
     const reset = el('button', {type: 'button', class: 'btn btn-secondary btn-sm', 'data-reset': '1', hidden: !item.letters[key], onclick: () => { delete item.letters[key]; changed(); render(); }}, 'Reset');
+    // Feedback sits next to the button (not in the storage panel), and the
+    // button is captured before the await: e.currentTarget is null afterwards.
+    const copyNote = el('p', {class: 'copy-note small', role: 'status', 'aria-live': 'polite'});
     const copy = el('button', {type: 'button', class: 'btn btn-secondary btn-sm', onclick: async e => {
-      try { await navigator.clipboard.writeText(letterPlain(key, item)); e.currentTarget.lastChild.textContent = 'Copied'; } catch (_) { say('Copy didn’t work here. Select the letter text and copy it instead.'); }
+      const btn = e.currentTarget;
+      const label = btn.lastChild;
+      copyNote.textContent = '';
+      copyNote.classList.remove('is-error');
+      try {
+        await navigator.clipboard.writeText(letterPlain(key, item));
+        label.textContent = 'Copied';
+        copyNote.textContent = 'Letter copied. Paste it into your email or the site’s form.';
+        clearTimeout(btn._copyTimer);
+        btn._copyTimer = setTimeout(() => { label.textContent = 'Copy'; copyNote.textContent = ''; }, 4000);
+      } catch (_) {
+        label.textContent = 'Copy';
+        copyNote.classList.add('is-error');
+        copyNote.textContent = 'Copy didn’t work in this browser. Select the letter text and copy it instead, or use Download.';
+      }
     }}, svg('copy'), el('span', {}, 'Copy'));
     const dl = el('button', {type: 'button', class: 'btn btn-secondary btn-sm', onclick: () => download(letterPlain(key, item), 'text/plain;charset=utf-8', `FMNO-${DATA.letters[key].name.replace(/[^A-Za-z]+/g, '-')}.txt`)}, svg('download'), el('span', {}, 'Download'));
     return el('div', {class: 'letter'},
       el('div', {class: 'letter-bar'}, el('strong', {}, name), el('span', {class: 'btn-row'}, reset, copy, dl)),
+      copyNote,
       letterNode(key, item),
       el('p', {class: 'letter-hint small'}, 'Click into the letter to edit it. The highlighted parts are for you to fill in. You send it yourself.'));
   }
@@ -573,13 +591,33 @@
       el('p', {class: 'small'}, 'You set every status yourself. Nothing is sent to anyone from here.'));
   }
 
+  // When a safety box is ticked (or a case is still running), the first
+  // screen leads with the help, not the normal plan.
+  function safetyHead(built, item) {
+    if (!built.help.length) return null;
+    const c = item.answers.country;
+    const first = built.help[0];
+    const lede = first === 'ongoing'
+      ? 'Because the case is still running, the advice comes first. The usual steps for the page are further down, for when you’re ready.'
+      : 'Because of what you ticked, the people who can act fastest are at the top. The steps for the page itself are further down, for when you’re ready.';
+    const agency = c === 'au' ? 'eSafety' : (c === 'nz' ? 'Netsafe' : '');
+    let title;
+    if (first === 'intimate') title = agency ? `Start with ${agency}. The rest of your plan is below.` : 'Start with the free removal routes. The rest of your plan is below.';
+    else if (first === 'threat') title = agency ? `Start with the police and ${agency}. The rest of your plan is below.` : 'Start with the police. The rest of your plan is below.';
+    else if (first === 'child') title = agency ? `Report it to ${agency} first. The rest of your plan is below.` : 'Report it to the platform and the police first. The rest of your plan is below.';
+    else title = 'Get legal advice before you send anything. The rest of your plan is below.';
+    return {title, lede};
+  }
+
   function renderPlan(item, isDraft) {
     const built = buildPlan(item);
+    const safe = safetyHead(built, item);
     const problemLabel = item.problem === 'not-sure' ? 'Your answers' : PROBLEMS[item.problem].label.replace(/^(An|A) /, '');
     const eyebrow = `Your plan · ${problemLabel[0].toUpperCase() + problemLabel.slice(1)} · ${COUNTRY[item.answers.country]}`;
     const view = el('div');
-    view.append(head(isDraft ? 3 : 4, eyebrow, built.title, built.lede));
+    view.append(head(isDraft ? 3 : 4, eyebrow, safe ? safe.title : built.title, safe ? safe.lede : built.lede));
     const main = el('div', {class: 'stack-lg'});
+    if (safe) main.append(...helpCards(built, item));
     if (!isDraft) main.append(trackingCard(item));
     if (isDraft) main.append(el('div', {class: 'card stack-sm only-below-desk quick-actions no-print', id: 'quick-actions'},
       el('p', {}, el('strong', {}, `${built.steps.length} steps`), ' · ', COUNTRY[item.answers.country], built.plan.check_back_days ? ` · check back in ${built.plan.check_back_days} days` : ''),
@@ -587,7 +625,7 @@
         el('button', {type: 'button', class: 'btn btn-primary btn-sm', id: 'quick-add', onclick: () => addToTracker(item, built)}, svg('plus'), 'Add to my tracker'),
         el('a', {class: 'btn btn-secondary btn-sm', href: '#plan-steps', onclick: e => { e.preventDefault(); const t = document.getElementById('plan-steps'); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, 'Go to the steps')),
       el('p', {class: 'small'}, 'The tracker keeps your ticks and shows you when to check back. Nothing is sent to us.')));
-    main.append(...helpCards(built, item));
+    if (safe) main.append(el('h2', {class: 'h-sans', id: 'plan-for-page'}, 'Then, for the page itself: ', built.title));
     if (item.problem === 'not-sure') main.append(el('div', {class: 'callout callout-brand'}, svg('info', 'icon icon-sm'), el('p', {}, el('strong', {}, 'From your answers, this looks like: ' + (PROBLEMS[built.key] ? PROBLEMS[built.key].label.toLowerCase() : 'a page on someone else’s site') + '.'), 'If that’s not right, ', el('a', {href: '/self-service', onclick: e => { e.preventDefault(); go(''); }}, 'pick a different problem'), '.')));
     main.append(el('div', {class: 'grid grid-2'},
       el('div', {class: 'card'}, el('p', {class: 'eyebrow'}, 'Who decides'), el('p', {class: 'mt-1'}, built.plan.who_decides)),

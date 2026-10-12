@@ -192,6 +192,73 @@ def test_safety_and_ongoing_answers_put_help_first_and_hide_the_pack(origin):
         browser.close()
 
 
+@pytest.mark.parametrize('safety,heading', [
+    ('intimate', 'Start with eSafety.'),
+    ('threat', 'Start with the police and eSafety.'),
+    ('child', 'Report it to eSafety first.'),
+])
+def test_safety_plan_leads_with_help_on_phones(origin, safety, heading):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        page.goto(origin + '/self-service?problem=images')
+        page.locator('[data-q="whose"] input[value="mine"]').check()
+        page.locator('[data-q="where"] input[value="website"]').check()
+        page.check('#safety-' + safety)
+        page.click('#show-plan')
+        page.wait_for_selector('.help-first')
+        assert page.locator('h1').inner_text().startswith(heading)
+        # The help comes before the "N steps · Add to my tracker" strip, on the first screen.
+        assert page.evaluate("""() => {
+          const help = document.querySelector('.help-first'), quick = document.getElementById('quick-actions');
+          return !!(help.compareDocumentPosition(quick) & Node.DOCUMENT_POSITION_FOLLOWING);
+        }""")
+        assert page.locator('.help-first').first.bounding_box()['y'] < 812
+        # The usual plan is still there, labelled as coming after.
+        assert page.locator('#plan-for-page').inner_text().startswith('Then, for the page itself:')
+        assert page.locator('#plan-steps').count() == 1
+        assert not page.errors
+        browser.close()
+
+
+def test_plan_without_safety_boxes_keeps_its_own_heading(origin):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        answer_old_news(page, origin)
+        page.click('#show-plan')
+        page.wait_for_selector('#quick-actions')
+        assert page.locator('.help-first').count() == 0 and page.locator('#plan-for-page').count() == 0
+        assert 'Ask the publisher to update the story' in page.locator('h1').inner_text()
+        browser.close()
+
+
+def test_copy_button_confirms_next_to_the_letter(origin):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        context = browser.new_context(viewport={'width': 375, 'height': 812}, timezone_id='Australia/Adelaide')
+        context.grant_permissions(['clipboard-read', 'clipboard-write'], origin=origin)
+        page = context.new_page()
+        errors = []
+        page.on('pageerror', lambda error: errors.append(str(error)))
+        answer_old_news(page, origin)
+        page.click('#show-plan')
+        letter = page.locator('.letter').filter(has=page.locator('#letter-L1'))
+        letter.locator('button', has_text='Copy').click()
+        page.wait_for_function("document.querySelector('.copy-note') && document.querySelector('.copy-note').textContent.includes('copied')")
+        assert letter.locator('.btn-row button').nth(1).inner_text().strip() == 'Copied'
+        assert 'example.com/news/2019/story' in page.evaluate('navigator.clipboard.readText()')
+        note = letter.locator('.copy-note')
+        assert note.is_visible() and 'is-error' not in (note.get_attribute('class') or '')
+        assert 'didn’t work' not in page.locator('#desk-message').inner_text()
+        # When the browser blocks the clipboard, the message shows by the button.
+        page.evaluate("() => { navigator.clipboard.writeText = () => Promise.reject(new Error('blocked')); }")
+        letter.locator('.btn-row button').nth(1).click()
+        page.wait_for_function("document.querySelector('.copy-note').textContent.includes('didn’t work')")
+        assert 'is-error' in note.get_attribute('class')
+        assert 'didn’t work' not in page.locator('#desk-message').inner_text()
+        assert not errors
+        browser.close()
+
+
 def test_unanswered_questions_are_explained_not_ignored(origin):
     with sync_playwright() as p:
         browser, page = new_page(p, 375)
@@ -311,7 +378,11 @@ def test_routes_links_and_sensitive_tracking(monkeypatch):
     for path in ('/self-service', '/self-service/tracker', '/self-service?problem=old-news'):
         body = client.get(path).get_data(as_text=True)
         assert 'googletagmanager.com' not in body and 'connect.facebook.net' not in body, path
-    assert 'googletagmanager.com' in client.get('/').get_data(as_text=True)
+    home = client.get('/').get_data(as_text=True)
+    assert 'googletagmanager.com' in home
+    # Meta's automatic events record clicks (link text + address), which would
+    # send the problem tile someone picks. Privacy section 4 says we don't.
+    assert home.index("fbq('set', 'autoConfig', false, '12345')") < home.index("fbq('init', '12345')")
     assert client.get('/self-serve').headers['Location'] == '/self-service'
     tracker = client.get('/self-service/tracker')
     assert tracker.headers['X-Robots-Tag'] == 'noindex, nofollow'

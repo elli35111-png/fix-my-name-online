@@ -705,8 +705,46 @@ def privacy(ga_id=''):
 
 # ---------- guides ----------
 
+# Guides whose slug doesn't say what they're about, mapped by hand to the plan
+# that matches their content.
+GUIDE_PROBLEM = {
+    'online-reputation-management-for-business': 'review',
+}
+
+# "The short version" box. Problem guides use their plan's first line; guides
+# that aren't about one kind of result get a summary that fits what they cover,
+# instead of the general plan's line.
+GUIDE_SHORT = {
+    'check': 'Search your name the way a stranger would, in a private window, and write down what’s on the first page. Most of it will be fine. For anything that isn’t, save the link and a dated screenshot, then get a free plan for that one link.',
+    'monitoring': 'Check your name every month or two, and set up a free alert for it. If something new turns up, save the link and a dated screenshot before you decide what, if anything, to do.',
+    'business': 'Search your business the way a customer would, then sort what you find. Reviews are reported to the platform against its own rules. Old or wrong pages go to the site that runs them. Your own listings you can fix today.',
+    'removal': 'There’s no single button to remove your name from Google, because Google mostly shows other people’s pages. Take one link at a time: ask the site that runs the page first, then use Google’s forms once the page has changed. Some things have their own removal forms, like contact details and intimate images.',
+    'country': 'The first steps are the same in every country: save the link, ask the site that runs the page, then use Google’s forms. What changes is who can help if the answer is no, such as a privacy regulator, a press council or, in Australia, eSafety.',
+    'private': 'You don’t have to tell anyone what you found to get a plan. The free check runs in your browser, and every request is one you send yourself, quietly, to the people who can change the page.',
+    'false': 'Save everything before you reply. Then work out who can fix it: the site or platform that published it, and Google once the page has changed. If it’s seriously damaging, talk to a lawyer early, because defamation claims have short time limits.',
+    'general': 'Take one link at a time. The site that runs a page decides what’s on it, and Google decides what shows in search, so ask the site first and then ask Google to catch up. Start by saving the link and a dated screenshot.',
+}
+GUIDE_THEME = {
+    **dict.fromkeys(['how-to-check-your-online-reputation', 'what-shows-up-when-someone-googles-my-name',
+                     'google-your-name-before-an-employer-does', 'google-your-name-before-a-job-interview',
+                     'what-do-employers-see-when-they-google-me', 'online-reputation-repair-for-professionals',
+                     'fix-my-search-results-before-clients-see-them'], 'check'),
+    'reputation-monitoring-alerts': 'monitoring',
+    'google-search-results-hurting-my-business': 'business',
+    **dict.fromkeys(['can-i-remove-my-name-from-google', 'remove-my-name-from-google-search',
+                     'remove-bad-google-results', 'remove-negative-google-results', 'hide-bad-google-results'], 'removal'),
+    **dict.fromkeys(['online-reputation-management-australia', 'reputation-repair-australia',
+                     'worldwide-reputation-repair'], 'country'),
+    'private-reputation-repair': 'private',
+    **dict.fromkeys(['someone-posted-false-claims-about-me-online', 'false-information-about-me-online'], 'false'),
+    'fix-my-name': 'general',
+}
+
+
 def guide_problem(slug, text=''):
     """Which plan a guide should start. Codes only; used for /self-service?problem=…"""
+    if slug in GUIDE_PROBLEM:
+        return GUIDE_PROBLEM[slug]
     s = (slug + ' ' + text[:400]).lower()
     if 'review' in slug:
         return 'review'
@@ -736,11 +774,15 @@ def guide_page(*, slug, h1, eyebrow, intro, sections, faqs, related, checklist=N
 
     sections: [(heading, text)], faqs: [(q, a)], related: [(href, title)].
     """
-    problem = problem or guide_problem(slug, intro)
+    problem = GUIDE_PROBLEM.get(slug) or problem or guide_problem(slug, intro)
     p = PROBLEM_BY_KEY.get(problem)
     hub_crumb = f'<li><a href="/help/{p["hub"]}">{esc(p["hub_title"])}</a></li>' if p else ''
-    who = plans.outline(problem)['who_decides'] if problem in plans.PLANS else 'The website owner decides the page. Google decides what shows in search.'
-    first = plans.outline(problem)['title'] if problem in plans.PLANS else 'Ask the website owner first, then ask Google to catch up.'
+    theme = GUIDE_THEME.get(slug) or ('' if problem in plans.PLANS else 'general')
+    if theme:
+        short = GUIDE_SHORT[theme]
+    else:
+        outline = plans.outline(problem)
+        short = f'{outline["title"]} {outline["who_decides"]} Start by saving the link and a dated screenshot, then get a free plan for your situation.'
     toc_items, body = [], []
     for heading, text in sections:
         anchor = slugify(heading)
@@ -769,7 +811,7 @@ def guide_page(*, slug, h1, eyebrow, intro, sections, faqs, related, checklist=N
 </div></section>
 <div class="wrap doc-grid">
 <article class="prose">
-<div class="short"><h2>The short version</h2><p>{esc(first)} {esc(who)} Start by saving the link and a dated screenshot, then get a free plan for your situation.</p></div>
+<div class="short"><h2>The short version</h2><p>{esc(short)}</p></div>
 <div class="card stack-sm start-card"><p class="eyebrow">Free · No account · Nothing sent to us</p><p><strong>Get the steps, letters and official forms for your situation.</strong></p><p><a class="btn btn-primary" href="{start_href}" data-problem="{problem}">{start_label} {icon("arrow", "icon icon-sm")}</a></p></div>
 {extra_top}
 {"".join(body)}

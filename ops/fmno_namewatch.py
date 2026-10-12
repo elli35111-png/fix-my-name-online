@@ -361,19 +361,25 @@ https://fixmynameonline.com/name-watch-alerts
 
 
 def alert_body(customer_name: str, new_results: list[dict], queries: list[str]) -> str:
+    # Plain wording: this is an automated sweep, so nothing here should read as
+    # if a person at FMNO reviewed the results. The free check comes first; the
+    # US$19 letter pack is only mentioned as an option for one link.
     watch_count = sum(1 for item in new_results if item.get('risk_terms'))
-    status = 'REVIEW RECOMMENDED' if watch_count else 'WATCH'
+    status = 'Worth a look' if watch_count else 'For your information'
     return f"""Hi {customer_name or 'there'},
 
-NameWatch Alert™ status: {status}
+NameWatch Alert™: {status}
 
-The scheduled sweep found {len(new_results)} result(s) that were not in the prior baseline. {watch_count} title(s) contained a watch-term indicator.
+This month's automated sweep found {len(new_results)} result(s) that weren't there last time. {watch_count} of them had a word in the title from the watch list (for example "court" or "review").
 
 {format_results(new_results)}
 
-A newly observed result is not necessarily newly published, harmful, accurate, or about the correct person. Do not contact a publisher or platform until you confirm the identity, URL and facts.
+A result showing up for the first time isn't necessarily new, harmful, accurate or about you. Check the link and the facts before you contact anyone.
 
-If exactly one old article or bad link needs a structured self-service action, the fixed-price DIY workspace is available here:
+If one of these needs dealing with, the free check gives you a step-by-step plan, letters you can edit and the official forms:
+https://fixmynameonline.com/self-service
+
+For a single link you can also use the letter pack (US$19 once), which saves your letters and reminders online. You still check and send everything yourself:
 https://fixmynameonline.com/diy-action?source=namewatch_alert
 
 Monitored phrases: {', '.join(queries)}

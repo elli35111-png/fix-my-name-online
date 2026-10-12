@@ -340,7 +340,7 @@ PLANS = {
             {'id': 'follow', 'title': 'Wait, then follow up', 'check_back': True,
              'body': 'If there’s no reply after 14 days, send a short, polite follow-up. Your tracker will show it as due.', 'letter': 'L5', 'letter_collapsed': True},
             {'id': 'refresh', 'title': 'Once the page changes, ask Google to refresh it', 'time': '5 minutes', 'when': {'who': ['me', 'helping']},
-             'body': 'Paste the same link. Google checks the live page and updates or drops the old result.',
+             'body': 'Paste the same link. Google rechecks the live page and may update the result, or drop it if the page or the words are gone.',
              'links': ['google-refresh-tool', 'google-refresh-help']},
             {'id': 'own', 'title': 'Make it easy to tell you apart', 'time': '30 minutes', 'when': {'who': ['same-name']},
              'body': 'A simple, accurate profile of your own (LinkedIn, a work page, a short bio) gives people searching for you something that is clearly you. Keep a two-line explanation ready in case an employer asks.'},

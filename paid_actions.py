@@ -150,8 +150,20 @@ def private(s, title, body, status=200):
     return response
 
 
-def error(s, text, status=400):
-    return private(s, 'Your letter pack', '<div class="card"><h1>Let’s check that.</h1><p>' + s.safe(text) + '</p><p><a class="btn" href="/diy-action/workspace">Back to my letter pack</a> <a class="btn btn2" href="/self-service">Free check and plan</a></p></div>', status)
+def error(s, text, status=400, access=None, heading='Let’s check that.'):
+    """Error card. Access problems point to /diy-action/recover, never back to
+    the workspace (which would show the same error again)."""
+    if access is None:
+        access = status in (401, 402)
+    if access:
+        buttons = ('<a class="btn" href="/diy-action/recover">Get a new access link</a> '
+                   '<a class="btn btn2" href="/self-service">Free check and plan</a>')
+    elif status == 503:
+        buttons = '<a class="btn" href="/self-service">Free check and plan</a>'
+    else:
+        buttons = ('<a class="btn" href="/diy-action/workspace">Back to my letter pack</a> '
+                   '<a class="btn btn2" href="/self-service">Free check and plan</a>')
+    return private(s, 'Your letter pack', '<div class="card"><h1>' + s.safe(heading) + '</h1><p>' + s.safe(text) + '</p><p>' + buttons + '</p></div>', status)
 
 
 def paid(s, sid):
@@ -296,7 +308,7 @@ def checkout(s, tier):
 def start(s):
     row = paid(s, request.args.get('session_id', '').strip())
     if not row:
-        return error(s, 'We couldn’t confirm a letter pack purchase for this link. Use the link from your payment confirmation, or get a new one by email from the recovery page.', 402)
+        return error(s, 'We couldn’t confirm a letter pack purchase for this link. Use the link from your payment confirmation, or get a new one by email using the button below.', 402)
     workspace = ensure_workspace(s, row)
     expiry = str(int(time.time()) + 86400)
     value = workspace['id'] + '.' + expiry
@@ -327,7 +339,7 @@ def _letter(s, title, text, key, row_id, note=''):
 def workspace_page(s):
     workspace = authenticated(s)
     if not workspace:
-        return error(s, 'Open the link from your payment confirmation to unlock your letter pack on this browser, or get a new link by email from the recovery page.', 401)
+        return error(s, 'Open the link from your payment confirmation to unlock your letter pack on this browser, or get a new link by email using the button below.', 401)
     rows = records(s, workspace)
     token = sign(s, 'csrf', workspace['id'])
     hidden = '<input type="hidden" name="csrf" value="' + token + '">'
@@ -360,7 +372,7 @@ def workspace_page(s):
 <li><h3>If there’s no reply after 14 days, send the follow-up</h3><p class="step-meta"><span>{s.icon("calendar", "icon icon-sm")}Day 14</span></p><div class="mt-2">{_letter(s, 'Follow-up letter', followup, 'followup', rid, 'Fill in the dates in square brackets before you send it.')}</div>
 <p class="btn-row mt-2"><a class="btn btn-secondary btn-sm" href="/diy-action/reminder.ics?action_id={rid}">{s.icon("calendar", "icon icon-sm")}Add my check-back date to my calendar</a></p><p class="small">Save a check-back date first. The file works in Apple, Google and Outlook calendars.</p></li>
 <li><h3>Still nothing after about 30 days? Send the second letter</h3><p class="step-meta"><span>{s.icon("calendar", "icon icon-sm")}Day 30</span></p><div class="mt-2">{_letter(s, 'Second letter', second, 'second', rid, 'It asks for a decision either way, and whether there’s a complaints process. It makes no threats.')}</div></li>
-<li><h3>Once the page changes, ask Google to refresh it</h3><p class="muted mt-1">Paste the same link. Google checks the live page and updates or drops the old result.</p><p class="btn-row mt-2"><a class="btn btn-secondary btn-sm" href="https://search.google.com/search-console/remove-outdated-content" target="_blank" rel="noopener noreferrer">Google’s Refresh Outdated Content tool {s.icon("ext", "icon icon-sm")}</a></p></li>
+<li><h3>Once the page changes, ask Google to refresh it</h3><p class="muted mt-1">Paste the same link. Google rechecks the live page and may update the result, or drop it if the page or the words are gone.</p><p class="btn-row mt-2"><a class="btn btn-secondary btn-sm" href="https://search.google.com/search-console/remove-outdated-content" target="_blank" rel="noopener noreferrer">Google’s Refresh Outdated Content tool {s.icon("ext", "icon icon-sm")}</a></p></li>
 </ol></section>'''
     if len(rows) < workspace['cap']:
         issues = ''.join(f'<option value="{k}">{v[0].upper() + v[1:]}</option>' for k, v in ISSUES.items())
@@ -404,7 +416,7 @@ OUT_OF_SCOPE = re.compile(
 def generate(s):
     workspace = authenticated(s)
     if not workspace or not csrf_ok(s, workspace):
-        return error(s, 'This page has expired. Open your letter pack again from the link in your payment confirmation.', 403)
+        return error(s, 'This page has expired. Open your letter pack again from the link in your payment confirmation, or get a new link by email.', 403, access=True)
     data = {k: request.form.get(k, '').strip() for k in LIMITS}
     if any(len(data[k]) > limit for k, limit in LIMITS.items()):
         return error(s, 'An entry exceeds its stated length limit.')
@@ -435,7 +447,7 @@ def generate(s):
 def save(s):
     workspace = authenticated(s)
     if not workspace or not csrf_ok(s, workspace):
-        return error(s, 'This page has expired. Open your letter pack again from the link in your payment confirmation.', 403)
+        return error(s, 'This page has expired. Open your letter pack again from the link in your payment confirmation, or get a new link by email.', 403, access=True)
     with db(s) as con:
         con.execute('BEGIN IMMEDIATE')
         row = con.execute('SELECT * FROM actions WHERE id=? AND workspace=?', (request.form.get('action_id', ''), workspace['id'])).fetchone()

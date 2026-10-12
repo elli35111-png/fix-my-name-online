@@ -191,10 +191,14 @@ def tracking_head():
 </script>
 ''')
     if meta_pixel_id:
+        # autoConfig off: Meta's automatic events would otherwise record clicks
+        # (button text + link address), e.g. the problem tiles on the homepage.
+        # Privacy section 4 promises those choices are not sent to Meta.
         pid = safe(meta_pixel_id)
         parts.append(f'''
 <script>
 !function(f,b,e,v,n,t,s){{if(f.fbq)return;n=f.fbq=function(){{n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)}};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}}(window, document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('set', 'autoConfig', false, '{pid}');
 fbq('init', '{pid}');
 fbq('track', 'PageView');
 </script>
@@ -1285,12 +1289,12 @@ SEO_GUIDES = {
         'intro': 'Fix My Name Online is run by Madison Jade Pty Ltd in Australia, and its free tools work for people anywhere. This guide explains a careful, practical way to manage your reputation online: see what shows up, keep evidence, ask the right people, publish accurate information and keep checking.',
         'sections': [
             ('Start with the search result page, not guesses', 'The first step is to see what Google actually shows for your full name, business name, old names, common misspellings, locations, and words like review or complaint. Look at what a stranger would see, not just your exact name on its own.'),
-            ('Separate removable problems from reputation gaps', 'Some results may have a correction, outdated-content, privacy, platform-policy or publisher-request pathway. Others cannot be removed safely or realistically. Separate those early so you don’t spend months chasing takedowns that won’t happen.'),
+            ('Separate removable problems from reputation gaps', 'Some results can be corrected, updated or reported through the site, Google or a privacy form. Others can’t realistically be removed. Separate those early so you don’t spend months chasing takedowns that won’t happen.'),
             ('Make sure accurate information about you is easy to find', 'A current work profile, an up-to-date business listing or a short, true bio gives people something accurate to find. Keep it modest and true. Fake reviews and made-up pages break platform rules and can make things worse.'),
             ('Keep a simple record', 'Write down the searches you check, what shows up and the date. Check again every month or two, and after any page changes. If you have your own website, Google’s free Search Console tool can show whether Google has found your pages.'),
         ],
         'faqs': [
-            ('Do Australian reputation cases only affect Australia?', 'No. Australians are often searched by people overseas: clients, employers, investors and journalists. The operator can be Australian while the search risk is worldwide.'),
+            ('Do Australian reputation cases only affect Australia?', 'No. Australians are often searched by people overseas: clients, employers, investors and journalists. You may live in Australia, but the people searching your name could be anywhere.'),
             ('Can anyone guarantee page one?', 'No. Google makes its own decisions, and anyone who promises a ranking is guessing. What you can do is ask for wrong or outdated pages to be fixed, and keep accurate information about you up to date.'),
         ],
     },
@@ -1324,7 +1328,7 @@ SEO_GUIDES = {
             ('If the article stays', 'Write down the publisher’s answer and check the complaint routes for your country. Make sure accurate, current information about you, like a work profile or business page, is easy to find.'),
         ],
         'faqs': [
-            ('Can an old news article always be removed?', 'No. Some have a valid pathway; many do not. The first step is to assess the facts and available policies.'),
+            ('Can an old news article always be removed?', 'No. Some can be updated or taken down; many can’t. Start by checking the facts and what the publisher’s own policy allows.'),
             ('Can Google remove the snippet?', 'Sometimes outdated or policy-eligible snippets can be reviewed, but Google and the publisher make their own decisions.'),
         ],
     },
@@ -1367,10 +1371,10 @@ SEO_GUIDES = {
         'title': 'I Have Bad Results on Google — What Do I Do? | Fix My Name Online',
         'h1': 'I have bad results on Google. What do I do first?',
         'description': 'What to do if you have bad results on Google: save evidence, work out who decides, ask for one specific change, and avoid the reactions that make it worse.',
-        'intro': 'If you have bad results on Google, do not panic and do not start sending angry messages. The first move is to save evidence, understand what type of result it is, and choose the safest pathway before the result spreads or the wrong response makes it worse.',
+        'intro': 'If you have bad results on Google, do not panic and do not start sending angry messages. The first move is to save evidence, understand what type of result it is, and pick the right next step before a rushed response makes it worse.',
         'sections': [
             ('Step 1: save the result before reacting', 'Take screenshots of the Google result, page title, snippet, URL, date, search phrase and any image or review that appears. If the result changes later, this evidence helps show what was visible and when.'),
-            ('Step 2: identify what kind of bad result it is', 'A bad Google result can be an old news article, court mention, bad review, complaint page, image, outdated snippet, forum post, copied content or an associated-name result. Each one has a different pathway.'),
+            ('Step 2: identify what kind of bad result it is', 'A bad Google result can be an old news article, court mention, bad review, complaint page, image, outdated snippet, forum post, copied content or an associated-name result. Each one is handled a different way.'),
             ('Step 3: check whether removal or correction is realistic', 'Some results can be corrected by the publisher, reported to the platform, or refreshed in Google once the page changes. Others can’t. Working out which applies before you write saves time, and stops you asking for something that doesn’t fit.'),
             ('Step 4: build the stronger current story', 'If the bad result can’t be removed quickly, the next move is to publish accurate information about your name or business: profiles, pages, articles and FAQs that show the fuller current picture.'),
         ],
@@ -1387,7 +1391,7 @@ SEO_GUIDES = {
         'description': 'A calm plan for bad Google results about your name or business: save the evidence, work out who decides, ask for the right thing, and keep a record.',
         'intro': 'Bad Google results can affect jobs, clients, money, relationships and trust. The safest response is calm: save the evidence, work out what kind of result it is, ask the person who decides for one specific change, and keep a record.',
         'sections': [
-            ('Do not feed the result', 'Avoid public arguments, repeated searches from the same account, social posts about the issue or mass-reporting without evidence. The goal is to reduce risk, not create more signals around the problem.'),
+            ('Do not feed the result', 'Avoid public arguments, social posts about the issue and mass-reporting without evidence. These tend to draw more attention to the problem, not less.'),
             ('Check the searches people actually use', 'Try your full name, business name, old names, suburb, job and words like “review” or “complaint”. A problem often shows up for only one of these.'),
             ('Separate platform problems from search problems', 'Google shows results from other sites. A review platform, publisher, court database, social profile or complaint site may need a different response from Google itself.'),
             ('Create a private next-step plan', 'Decide whether this needs a request to the website, a platform report, a Google form, or simply watching for now. The right route depends on the evidence, who runs the source, how sensitive it is, and timing.'),
@@ -1422,7 +1426,7 @@ SEO_GUIDES = {
         'intro': 'There’s no single button for bad Google results. It’s a sequence: save the evidence, find who runs the page, ask them for one specific change, then ask Google to catch up. The wrong shortcut can make it louder.',
         'sections': [
             ('Find the source of the problem', 'Google may be showing a publisher page, review profile, social result, image, court database, complaint page or copied snippet. The source controls many of the next options.'),
-            ('Check removal, update or correction routes', 'Depending on the facts, there may be a publisher request, Google outdated-content request, review report, privacy pathway or legal pathway. Some matters need a lawyer first, for example defamation, which has short time limits.'),
+            ('Check removal, update or correction routes', 'Depending on the facts, there may be a publisher request, Google outdated-content request, review report, privacy request or legal route. Some matters need a lawyer first, for example defamation, which has short time limits.'),
             ('Keep your own information accurate', 'Profiles and pages you control should be truthful, specific and current. A few genuine ones do more than lots of thin ones.'),
             ('Review results over weeks, not minutes', 'Search engines crawl and rank over time. A sensible plan watches what Google shows over time, instead of expecting instant change.'),
         ],
@@ -1439,7 +1443,7 @@ SEO_GUIDES = {
         'intro': 'When bad search results appear for your name, it feels personal. People may search before hiring, dating, renting or trusting you. Start by seeing exactly what they see, privately, before you do anything public.',
         'sections': [
             ('Search all name variations', 'Check your full name, old names, middle name, nicknames, professional name, business name, city, suburb, occupation and terms people may add when they are suspicious.'),
-            ('Look at images, news and suggestions', 'Bad reputation signals are not only blue links. Image results, news tabs, autocomplete, people-also-search boxes and review snippets can shape first impressions.'),
+            ('Look at images, news and suggestions', 'It isn’t only the ordinary links. Image results, news tabs, autocomplete, people-also-search boxes and review snippets can shape first impressions.'),
             ('Decide what should stay private', 'You don’t need to share your whole story online. Anything you do publish about yourself should be true and something you’re comfortable having out there.'),
             ('Add accurate information you control', 'A current work profile, a business page or a short bio gives people searching your name something true and up to date to find.'),
         ],
@@ -1472,7 +1476,7 @@ SEO_GUIDES = {
         'description': 'Options for outdated Google search results, old snippets, changed pages, removed content, old articles and search results that no longer reflect the current facts.',
         'intro': 'Outdated Google search results can make old information look current. Sometimes the source page changed, the snippet is stale, an old page was copied, or a result no longer reflects the current facts. The first step is evidence, not panic.',
         'sections': [
-            ('Check the live page and Google snippet separately', 'A result can be outdated because the publisher page changed but Google still shows the old snippet. It can also be outdated because another site copied or republished old information. Each case needs a different pathway.'),
+            ('Check the live page and Google snippet separately', 'A result can be outdated because the publisher page changed but Google still shows the old snippet. It can also be outdated because another site copied or republished old information. Each needs a different fix.'),
             ('Collect proof of what changed', 'Save the search phrase, result title, snippet, URL, date, screenshots, original publication date and any current page showing the updated facts. Outdated-content requests are stronger when the difference is clear.'),
             ('Know the limits of Google tools', 'Google may update or remove certain stale results under its policies, but it does not control every publisher page and does not erase every old reference. Publisher contact or legal advice may be needed in some cases.'),
             ('Keep accurate information about you current', 'While you wait for a reply, make sure the pages you control, like a work profile or business listing, are up to date. They give people searching your name the current picture.'),
@@ -1538,7 +1542,7 @@ SEO_GUIDES = {
         'title': 'Google Review Defence for Small Business | Fix My Name Online',
         'h1': 'Google review defence for small businesses hit by unfair reviews',
         'description': 'Google review defence for small businesses facing fake, unfair, malicious, competitor, ex-employee or review-bombing attacks on Google.',
-        'intro': 'For a small business, one unfair Google review can affect phone calls, bookings and trust. The best defence is not a public fight. It is evidence, policy review, calm responses and stronger trust signals around the business.',
+        'intro': 'For a small business, one unfair Google review can affect phone calls, bookings and trust. A public fight rarely helps. What does help is keeping evidence, checking the platform’s rules, replying calmly and getting more genuine reviews from real customers.',
         'sections': [
             ('Save the review evidence', 'Record the review text, rating, reviewer name, date, screenshots, business relationship, timeline and any signs of fake, competitor, ex-employee or coordinated activity.'),
             ('Check possible Google policy issues', 'A review may involve conflict of interest, spam, harassment, impersonation, irrelevant content or another policy issue. The report should connect facts to policy, not just say the review is unfair.'),
@@ -1606,7 +1610,7 @@ SEO_GUIDES = {
         'title': 'A Bad Review Is Costing Me Customers | Fix My Name Online',
         'h1': 'A bad review is costing me customers. What can I do?',
         'description': 'Plain-English Google review defence for business owners worried that a fake, unfair or damaging review is costing calls, bookings and customers.',
-        'intro': 'One bad review can change how strangers see a business before they ever call. The best response is evidence, policy review, a calm public reply and stronger trust signals around the business.',
+        'intro': 'One bad review can change how strangers see a business before they ever call. What helps most is keeping evidence, checking the platform’s rules, a calm public reply and more genuine reviews from real customers.',
         'sections': [
             ('Save the review and the pattern', 'Record the review text, star rating, reviewer name, date, screenshots, booking history and any signs of fake, competitor, ex-staff or coordinated behaviour.'),
             ('Check whether it may breach policy', 'Google decides review removals. A useful report connects facts to possible policy issues instead of simply saying the review is unfair.'),
@@ -1657,10 +1661,10 @@ SEO_GUIDES = {
         'title': 'Can I Remove My Name From Google? | Fix My Name Online',
         'h1': 'Can I remove my name from Google?',
         'description': 'Can you remove your name from Google? What Google controls, what only the website can change, and the forms you can use yourself.',
-        'intro': 'Many people ask if they can remove their name from Google. The honest answer is: sometimes specific results may have pathways, but Google is an index of pages across the web, not a single profile you can simply delete.',
+        'intro': 'Many people ask if they can remove their name from Google. The honest answer is that some specific results can be removed, but Google is an index of pages across the web, not a single profile you can simply delete.',
         'sections': [
             ('Google usually shows pages from other websites', 'The result may come from a publisher, review site, social profile, directory, court database, forum or copied page. The source often controls the content.'),
-            ('Some personal information has special pathways', 'Certain privacy, outdated-content, explicit image, doxxing, impersonation or policy issues may be reviewable. Evidence and exact URLs matter.'),
+            ('Some personal information has its own removal forms', 'Certain privacy, outdated-content, explicit image, doxxing, impersonation or policy issues may be reviewable. Evidence and exact URLs matter.'),
             ('Removing a name is different from fixing a search page', 'If a result can’t be removed, you can still ask for it to be corrected or updated, and make sure accurate, current information about you is easy to find.'),
             ('Plan before you contact anyone', 'A rushed message to a publisher or platform can backfire. Save the result and work out what to ask for first. The free check helps with that.'),
         ],
@@ -1677,7 +1681,7 @@ SEO_GUIDES = {
         'intro': 'People often search for how to hide bad Google results because they feel exposed. No honest service can hide, bury or control Google results. The better question is what can be corrected, updated, reported or balanced with true, current information.',
         'sections': [
             ('Avoid anyone promising secret control over Google', 'Guaranteed hiding, burying or instant removal claims are red flags. Search engines decide what ranks.'),
-            ('Check whether the result itself has a pathway', 'Some problems may qualify for correction, privacy review, outdated-content review, review reporting or publisher contact. Others will not.'),
+            ('Check whether that particular result can be removed', 'Some problems may qualify for correction, privacy review, outdated-content review, review reporting or publisher contact. Others will not.'),
             ('Add accurate information honestly', 'A few genuine, current profiles and pages you control give people a fuller view over time.'),
             ('Keep an eye on new results', 'Search your name, old names and business name every month or two. Free tools like Google Alerts can also tell you about new mentions.'),
         ],
@@ -1712,7 +1716,7 @@ SEO_GUIDES = {
         'sections': [
             ('First: freeze the evidence', 'Screenshot the results, URLs, snippets, reviews, images and dates before anything changes. Good evidence prevents guesswork.'),
             ('Second: stop risky reactions', 'Do not threaten, spam, fake reviews, make public accusations or publish panic posts. Those actions can become new reputation problems.'),
-            ('Third: triage the pathway', 'Decide whether the issue needs a request to the website, a platform report, watching for changes, accurate information of your own, or legal advice. Different problems need different tools.'),
+            ('Third: work out the right route', 'Decide whether the issue needs a request to the website, a platform report, watching for changes, accurate information of your own, or legal advice. Different problems need different tools.'),
             ('Fourth: update what you control', 'While you wait for replies, update your own profiles and pages so the current picture is easy to find.'),
         ],
         'faqs': [
@@ -1793,71 +1797,51 @@ def google_past_present_article():
     <section class="page-head"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">Home</a></li><li><a href="/learn">Guides</a></li></ol></nav><p class="eyebrow" style="margin-top:20px">Essay · Fix My Name Online</p><h1 style="margin-top:8px">When Google makes your past look like your present</h1></div></section>
     <div class="wrap"><article class="prose essay">
       <img class="article-hero" src="/assets/old-records-google-past-present-hero-1200.jpg" width="1200" height="800" alt="A person looking at search results on a laptop late at night">
-      <p>People try to move on.</p>
-      <p>That should not be controversial.</p>
-      <p>They get up. They go to work. They apply for better jobs. They start over after a divorce, a court case, a bad business deal, a public mistake, an allegation, a family breakdown, a review bomb, or a chapter they would give anything not to relive.</p>
-      <p>They do the hard part. They rebuild.</p>
-      <p>Then one night they Google their name and there it is again.</p>
-      <p>An old court page. An appeal transcript. A scraped public record. A page they have never seen before, sitting on a website they do not control, dressed up with a fresh date or a new URL so Google treats it like something new.</p>
-      <blockquote>To everyone else, it is a search result. To them, it can feel like being dragged back into the worst room of their life.</blockquote>
+      <p>Most people who’ve been through something hard want the same thing afterwards: to get on with their lives.</p>
+      <p>They go back to work, apply for better jobs, start again after a divorce, a court case, a business that failed, a public mistake, an allegation or a family falling-out. It takes years, and it’s mostly quiet work that nobody sees.</p>
+      <p>Then one night they search their own name and the old story is back on the first page.</p>
+      <p>Sometimes it’s an old court page or an appeal decision. Sometimes it’s a copy of a public record on a site they’ve never heard of, with a new address and a recent-looking date, so it looks like news.</p>
+      <blockquote>To everyone else it’s one search result. To the person named, it can feel like being sent back to the worst year of their life.</blockquote>
 
-      <h2>The punishment does not always end when the case ends</h2>
-      <p>There are people walking around right now who have already paid the price for whatever happened.</p>
-      <p>Some were cleared. Some appealed. Some changed. Some were never fairly understood in the first place. Some made a mistake years ago and have spent every day since trying to become someone better.</p>
-      <p>But Google does not show the years after.</p>
-      <p>It does not show the person getting clean. The parent showing up. The worker doing honest days. The business owner trying again. The quiet repair. The private shame. The effort.</p>
-      <p>It shows a headline. It shows a snippet. It shows a date.</p>
-      <p>And if that date looks fresh, the past can suddenly look like it happened yesterday.</p>
-      <blockquote>That is not accountability. That is a digital life sentence.</blockquote>
+      <h2>The case ends. The search result doesn’t.</h2>
+      <p>Plenty of people have already dealt with whatever happened. Some were cleared. Some won an appeal. Some made a mistake years ago and have worked hard since to put it right. Some were never fairly described in the first place.</p>
+      <p>A search result can’t show any of that. It shows a headline, a couple of lines of text and a date. If the date looks recent, something from ten years ago can read like it happened last month.</p>
+      <p>That’s the part that feels unfair. The record may be accurate about the day it describes, and still give a stranger the wrong picture of who you are now.</p>
 
-      <h2>This is how lives get quietly damaged</h2>
-      <p>Most people do not get a phone call saying, “We found something on Google and decided not to hire you.”</p>
-      <p>They do not get told, “The client searched your name and got nervous.”</p>
-      <p>They do not get told, “The landlord looked you up.”</p>
-      <p>They just feel the silence.</p>
-      <p>The interview goes nowhere. The deal cools off. The date gets awkward. The family argument starts again. The person has to explain themselves to someone who has already made up their mind from three lines on a screen.</p>
-      <blockquote>A stranger sees the result for five seconds. The person named carries the consequence for years.</blockquote>
+      <h2>Most of the damage happens quietly</h2>
+      <p>Employers, clients and landlords rarely tell you they searched your name and changed their mind. The interview just doesn’t go anywhere, or the deal goes cold, or a new friend gets a bit distant.</p>
+      <p>When it does come up, you’re explaining yourself to someone who has already formed a view from a few lines on a screen.</p>
+      <blockquote>A stranger looks at the result for a few seconds. The person named can live with it for years.</blockquote>
 
-      <h2>Old information can become newly harmful</h2>
-      <p>Public records, legal decisions, appeal documents and tribunal pages can exist online. That is one thing.</p>
-      <p>But some websites collect old material, copy it, repackage it, and make it easier for Google to find under a person's full name. A page may get a new URL. A new crawl date. A new layout. A fresh-looking timestamp. A title written for search.</p>
-      <p>The result can be completely distorted.</p>
-      <p>A person may have moved on. The matter may be old. The outcome may be missing. The context may be wrong. The page may be copied from somewhere else.</p>
-      <p>But Google is not a human being sitting down with the whole story.</p>
-      <p>Google ranks pages. Sometimes the page that wins is the one that hurts the person most.</p>
+      <h2>Old information can be made to look new</h2>
+      <p>Court decisions, tribunal pages and public records can lawfully be online. That’s a separate question.</p>
+      <p>The problem is that some sites copy old material, put it on a new page with your full name in the title, and Google treats it as a fresh page. The outcome of the case might be missing. The details might be wrong. The page might be a copy of a copy.</p>
+      <p>Google doesn’t read the whole story. It ranks pages, and sometimes the page that ranks best is the one that’s least fair to you.</p>
 
-      <h2>People are not clickbait</h2>
-      <p>A person's name is not a traffic strategy.</p>
-      <p>Their worst day should not be recycled for clicks. Their family should not have to keep finding it. Their children should not have to explain it. Their employer should not see the old version before meeting the real person standing in front of them today.</p>
-      <p>People deserve context. They deserve a chance to move forward. They deserve to know what is being shown about them and what options they may have.</p>
-      <p>That does not mean every record can be removed. It does not mean Google can be forced to forget everything. No responsible service should promise that.</p>
-      <p>But it does mean people should not be left alone with it.</p>
+      <h2>A name isn’t clickbait</h2>
+      <p>Someone’s worst day shouldn’t keep being recycled for clicks. Their family shouldn’t keep stumbling across it, and an employer shouldn’t meet the old version before the real person in front of them.</p>
+      <p>That doesn’t mean every record can come down. Some records are meant to stay public, and Google can’t be made to forget everything. Anyone who promises otherwise isn’t being straight with you.</p>
+      <p>But you shouldn’t have to work it out on your own, either.</p>
 
       <h2>What to check first</h2>
-      <p>If an old record, court page, review site, article, or scraped profile is showing for your name, the first step is not panic. The first step is evidence.</p>
+      <p>If an old record, court page, review, article or copied profile is showing for your name, start by writing down exactly what’s there. Keep a note of:</p>
       <ul>
-        <li>what appears in Google for your name</li>
-        <li>the exact URL and page title</li>
-        <li>the snippet Google is showing</li>
-        <li>the date Google appears to be using</li>
-        <li>the original date of the matter</li>
-        <li>whether the page is copied, duplicated, republished, or missing context</li>
-        <li>whether the website offers a correction, removal, or privacy process</li>
-        <li>whether Google tools may apply for outdated or misleading results</li>
-        <li>whether your current, accurate identity is missing from page one</li>
+        <li>what shows up when you search your name</li>
+        <li>the exact link and page title</li>
+        <li>the short description Google shows under it</li>
+        <li>the date Google shows, if any</li>
+        <li>when the events actually happened</li>
+        <li>whether the page is a copy of something else, or leaves out the outcome</li>
+        <li>whether the site has a way to ask for a correction or removal</li>
+        <li>whether one of Google’s own forms might apply, for example for an outdated result</li>
       </ul>
-      <p>From there, a person may be able to prepare a correction request, removal request, de-indexing request, outdated content request, privacy complaint, legal review, or a broader search repair plan.</p>
-      <p>The right answer depends on the facts.</p>
+      <p>With that in hand, you can work out what to ask for. It might be a correction from the site, an update to an old article, a request to Google to refresh an out-of-date result, a privacy complaint, or advice from a lawyer if it’s defamatory or a case is still running.</p>
+      <p>Which one fits depends on the facts.</p>
 
-      <h2>Your past should not be made to look like your present</h2>
-      <p>This is why Fix My Name Online exists.</p>
-      <p>Not to sell fantasy. Not to promise magic. Not to tell people we can erase every hard thing that ever happened.</p>
-      <p>We exist because people are being judged by search results before they get to speak.</p>
-      <p>We exist because old material can be made to look new.</p>
-      <p>We exist because ordinary people need a private, calm way to work out what can be done next, and to do it themselves.</p>
-      <p>If your name search is bringing up old records, court pages, reviews, articles, scraped profiles, or outdated material, start with the free check. It runs in your browser, and nothing you type is sent to us.</p>
-      <p>Google your name.</p>
-      <p>Then ask one question: is this really the full story?</p>
+      <h2>Why we built this</h2>
+      <p>Fix My Name Online exists because people get judged by a search result before they get the chance to explain, and because most people don’t know where to start.</p>
+      <p>We can’t erase the past, and we won’t pretend to. What we can do is show you the steps that are open to you, give you letters you can edit, and point you to the official forms. You stay in charge and send everything yourself.</p>
+      <p>If old records, court pages, reviews, articles or copied profiles are coming up for your name, start with the free check. It runs in your browser, and nothing you type is sent to us.</p>
 
       <div class="card stack-sm">
         <h2 class="h-sans" style="margin-top:0">Start with the free check</h2>
@@ -1963,14 +1947,14 @@ def fix_your_name_online_guide():
     return authority_guide_page(
         'fix-your-name-online',
         'Fix Your Name Online: Repair What Google Shows | Fix My Name Online™',
-        'How to fix your name online when Google shows old, false, damaging or incomplete information: search mapping, evidence, correction pathways and practical next steps.',
+        'How to fix your name online when Google shows old, false, damaging or incomplete information: checking what shows up, keeping evidence, asking for corrections and practical next steps.',
         'Fix your name online: what to do when Google shows the wrong story',
         'If “fix your name” means changing a passport, licence or legal identity record, use the relevant government authority. If it means fixing what employers, clients, dates or customers see when they search your name online, begin with the search result page itself.',
         [
             ('1. Search the name the way another person would', 'Use the full name, common spelling, previous name, location, profession and business. Check normal web results, images, news, video and obvious combinations such as the name plus review, complaint, court or company. Record results rather than relying on memory.'),
-            ('2. Separate factual errors from unwanted but accurate material', 'A wrong name, wrong date, copied page, misleading snippet or impersonation problem may have a different pathway from an accurate article or lawful public record. Label each item as false, outdated, incomplete, private, review-related, copied, or simply unflattering before deciding what to do.'),
+            ('2. Separate factual errors from unwanted but accurate material', 'A wrong name, wrong date, copied page, misleading snippet or impersonation problem is handled differently from an accurate article or lawful public record. Label each item as false, outdated, incomplete, private, review-related, copied, or simply unflattering before deciding what to do.'),
             ('3. Check the source before asking Google', 'Google usually displays information from another page. A correction from the publisher, profile owner or platform can be more effective than starting with a general request to Google. Preserve the original page and the Google result because the wording may differ.'),
-            ('4. Use the official pathway that matches the evidence', 'Possible routes include publisher correction, platform reporting, review policy, privacy tools, outdated-content refresh, account recovery or legal advice. Do not send every complaint to every channel. A focused request with exact URLs and evidence is easier to assess.'),
+            ('4. Use the official route that matches the evidence', 'Possible routes include publisher correction, platform reporting, review policy, privacy tools, outdated-content refresh, account recovery or legal advice. Do not send every complaint to every channel. A focused request with exact URLs and evidence is easier to assess.'),
             ('5. Strengthen the current, accurate identity', 'When the search page is dominated by old or incomplete information, add useful current proof: an official profile, company page, clear biography, professional work, contact details and accurate articles. The goal is not fake praise; it is a fuller and verifiable current picture.'),
         ],
         [
@@ -2509,7 +2493,7 @@ def success():
     if tier in paid_actions.CATALOG:
         return redirect('/diy-action/start?session_id=' + session_id, code=303)
     if not verify_paid_checkout(session_id, expected_tier=tier):
-        return paid_actions.error(sys.modules[__name__], 'Payment has not been verified. Open your original payment return link.', 402)
+        return paid_actions.error(sys.modules[__name__], 'We couldn’t match this page to a finished payment, and nothing new has been charged. If you bought the letter pack, get a new access link by email. For anything else, email admin@fixmynameonline.com from the address you paid with and we’ll look into it.', 402, heading='We couldn’t confirm that payment yet.')
     if tier == 'sentinel':
         onboarding_url = f'/onboarding?plan=sentinel&amp;session_id={safe(session_id)}'
         body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>One step left to activate NameWatch Alert™</h1><p class="sub">Add the exact names, associated names and location context to monitor. This securely connects the paid checkout to your private monitoring file.</p><ol><li>Open the private activation form.</li><li>Add each exact name or search phrase.</li><li>FMNO creates the first baseline and scheduled sweep.</li><li>We email you when a newly observed result needs attention.</li></ol><p><a class="btn" href="{onboarding_url}">Activate NameWatch monitoring →</a></p><p class="note">A newly observed result is not automatically harmful or newly published. Search engines decide what appears.</p></div>"""
