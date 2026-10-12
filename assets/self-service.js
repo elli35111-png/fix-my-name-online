@@ -288,11 +288,12 @@
 
   // ---------- shared view parts ----------
   const LABELS = ['What’s showing up', 'A few questions', 'Your plan', 'Track it'];
+  // step = null leaves the progress out (an empty tracker isn't step 4 of anything).
   function head(step, eyebrow, title, lede) {
     return el('section', {class: 'page-head'}, el('div', {class: 'wrap'},
-      el('ol', {class: 'stepper', 'aria-label': 'Progress'}, LABELS.map((l, i) => el('li', {class: i + 1 < step ? 'done' : (i + 1 === step ? 'now' : ''), 'aria-current': i + 1 === step ? 'step' : null}, el('span', {}, l)))),
-      el('p', {class: 'step-count'}, `Step ${step} of 4 · ${LABELS[step - 1]}`),
-      el('p', {class: 'eyebrow', style: 'margin-top:28px'}, eyebrow),
+      step ? el('ol', {class: 'stepper', 'aria-label': 'Progress'}, LABELS.map((l, i) => el('li', {class: i + 1 < step ? 'done' : (i + 1 === step ? 'now' : ''), 'aria-current': i + 1 === step ? 'step' : null}, el('span', {}, l)))) : null,
+      step ? el('p', {class: 'step-count'}, `Step ${step} of 4 · ${LABELS[step - 1]}`) : null,
+      el('p', {class: 'eyebrow', style: step ? 'margin-top:28px' : null}, eyebrow),
       el('h1', {style: 'margin-top:8px', tabindex: '-1', id: 'view-title'}, title),
       lede ? el('p', {class: 'lede'}, lede) : null,
       el('p', {class: 'desk-message', role: 'status', 'aria-live': 'polite', id: 'desk-message'}, flash)));
@@ -439,7 +440,7 @@
     const country = el('select', {class: 'select', id: 'q-country', onchange: e => { d.answers.country = e.target.value; changed(); if (window.fmnoSetSafety) window.fmnoSetSafety(e.target.value); }},
       DATA.countries.map(([v, l]) => el('option', {value: v, selected: d.answers.country === v ? true : null}, l)));
     const link = el('input', {class: 'input', id: 'q-link', 'aria-describedby': 'q-link-hint', type: 'url', inputmode: 'url', autocomplete: 'off', maxlength: String(LIMITS.link), placeholder: 'https://', value: d.link || null, oninput: e => { d.link = e.target.value.slice(0, LIMITS.link); changed(); clearFlag(e.target.closest('[data-q]')); }});
-    const name = d.problem === 'not-sure' ? 'what you found' : PROBLEMS[d.problem].label.replace(/^(An|A) /, '').toLowerCase();
+    const name = d.problem === 'not-sure' ? 'what you found' : PROBLEMS[d.problem].label.replace(/^(An|A) /, 'the ').toLowerCase();
     return el('section', {class: 'card', id: 'questions'},
       el('h2', {class: 'h-sans'}, `2. A few questions about ${name}`),
       el('p', {class: 'meta mt-1'}, 'They decide which steps, letters and official forms fit.'),
@@ -579,7 +580,7 @@
       el('p', {class: 'eyebrow'}, 'At a glance'),
       el('p', {}, el('strong', {}, `${n} of ${built.steps.length} steps done`)),
       el('div', {class: 'bar'}, el('span', {style: `width:${Math.round(100 * n / Math.max(1, built.steps.length))}%`})),
-      el('ul', {class: 'checklist mt-1'}, built.steps.map(s => el('li', {}, el('span', {class: 'box' + (item.done[s.id] ? ' on' : ''), 'aria-hidden': 'true'}), el('a', {href: '#step-' + s.id, onclick: e => { e.preventDefault(); const t = document.getElementById('step-' + s.id); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, s.title)))),
+      el('ol', {class: 'glance-steps mt-1'}, built.steps.map((s, i) => el('li', {class: item.done[s.id] ? 'is-done' : ''}, el('span', {class: 'glance-mark', 'aria-hidden': 'true'}, item.done[s.id] ? svg('check', 'icon icon-sm') : String(i + 1)), item.done[s.id] ? el('span', {class: 'sr'}, 'Done: ') : null, el('a', {href: '#step-' + s.id, onclick: e => { e.preventDefault(); const t = document.getElementById('step-' + s.id); if (t) t.scrollIntoView({behavior: 'smooth'}); }}, s.title)))),
       isDraft ? el('p', {class: 'small'}, 'Add it to your tracker to keep your ticks, set a check-back date and come back to it.') : null,
       planActions(item, built, isDraft, 'glance'));
   }
@@ -769,7 +770,7 @@
   }
   function renderTracker() {
     const view = el('div');
-    view.append(head(4, 'My tracker', 'Everything you’re working on, in one place.', 'Update each one as things happen. You set every status yourself. We never see this list.'));
+    view.append(head(state.items.length ? 4 : null, 'My tracker', 'Everything you’re working on, in one place.', 'Update each one as things happen. You set every status yourself. We never see this list.'));
     const main = el('div', {class: 'stack'});
     const added = justAdded && state.items.find(i => i.id === justAdded);
     justAdded = null;

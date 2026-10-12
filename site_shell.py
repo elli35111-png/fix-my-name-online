@@ -113,7 +113,7 @@ def header(current=None, desk=False):
 {compact}
 <details class="menu">
 <summary class="menu-btn" aria-label="Open menu">{icon("menu", "icon icon-sm")}<span>Menu</span></summary>
-<nav class="menu-sheet" aria-label="Menu">{sheet}<a href="/self-service">Free check and plan</a><a href="/self-service/tracker">My tracker</a><a class="btn btn-primary btn-block" href="/self-service">Start free check</a></nav>
+<nav class="menu-sheet" aria-label="Menu">{sheet}<a href="/self-service/tracker">My tracker</a><a class="btn btn-primary btn-block" href="/self-service">Start free check</a></nav>
 </details>
 </div>
 </div>

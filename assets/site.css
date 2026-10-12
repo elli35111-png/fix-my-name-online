@@ -351,11 +351,13 @@ p { margin: 0; }
 .chooser { margin-top: var(--s5); }
 @media (min-width: 1024px) { .chooser { margin-top: 0; } }
 .chooser h2 { font: 600 var(--t-lg)/1.3 var(--sans); }
-.how { counter-reset: how; display: grid; gap: var(--s4); }
+.how { counter-reset: how; display: grid; gap: var(--s6); }
+@media (min-width: 720px) { .how { gap: var(--s5); } }
+.page-head + .section-tight { padding-top: var(--s4); }
 @media (min-width: 720px) { .how { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1024px) { .how { grid-template-columns: repeat(4, 1fr); } }
 .how li { list-style: none; counter-increment: how; }
-.how li::before { content: counter(how); display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 14px; border-radius: 50%; background: var(--brand-soft); color: var(--brand-soft-ink); font: 700 var(--t-sm)/1 var(--sans); }
+.how li::before { content: counter(how); display: grid; place-items: center; width: 32px; height: 32px; margin-bottom: 10px; border-radius: 50%; background: var(--brand-soft); color: var(--brand-soft-ink); font: 700 var(--t-sm)/1 var(--sans); }
 .how { padding: 0; margin: 0; }
 .problem { display: flex; flex-direction: column; gap: 10px; }
 .problem .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-soft-ink); }
@@ -460,7 +462,10 @@ a .icon-sm { display: inline-block; }
 .textarea { min-height: 120px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--r); background: var(--surface); color: var(--ink); font: 400 var(--t-md)/1.5 var(--sans); resize: vertical; }
 .input:focus, .select:focus, .textarea:focus { outline: 3px solid var(--focus); outline-offset: 1px; border-color: var(--brand); }
 .check-row { display: flex; gap: 12px; align-items: flex-start; font-size: var(--t-sm); cursor: pointer; }
-.check-row input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--brand); flex: none; }
+.check-row input { appearance: none; -webkit-appearance: none; position: relative; width: 22px; height: 22px; margin: 1px 0 0; flex: none; border: 1.5px solid var(--line-strong); border-radius: 6px; background: var(--surface); cursor: pointer; }
+.check-row input:checked { background: var(--brand); border-color: var(--brand); }
+.check-row input:checked::after { content: ""; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center/14px no-repeat; }
+.check-row input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .honey { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .form-msg { font-size: var(--t-sm); }
 .form-msg:empty { display: none; }
@@ -518,9 +523,15 @@ fieldset.field legend { padding: 0; margin-bottom: 10px; }
 .steps > li.if-no::before { content: "?"; }
 .bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
 .bar span { display: block; height: 6px; background: var(--brand); border-radius: 6px; transition: width .2s; }
-#glance .checklist li { align-items: center; }
-#glance .checklist a { color: var(--ink-2); text-decoration: none; }
-#glance .checklist a:hover { color: var(--ink); text-decoration: underline; }
+.glance-steps { list-style: none; margin: 0; padding: 0; }
+.glance-steps li { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: var(--t-sm); }
+.glance-steps li:first-child { border-top: 0; }
+.glance-mark { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line-strong); color: var(--ink-3); font: 600 12px/1 var(--sans); }
+.glance-steps .is-done .glance-mark { background: var(--brand-soft); border-color: transparent; color: var(--brand-soft-ink); }
+.glance-steps .is-done .glance-mark .icon { width: 14px; height: 14px; }
+.glance-steps a { color: var(--ink-2); text-decoration: none; }
+.glance-steps .is-done a { color: var(--ink-3); }
+.glance-steps a:hover { color: var(--ink); text-decoration: underline; }
 .form-grid { display: grid; gap: var(--s4); grid-template-columns: 1fr; }
 @media (min-width: 640px) { .form-grid { grid-template-columns: 1fr 1fr; } }
 .label-sm { display: block; font: 600 var(--t-sm)/1.4 var(--sans); margin-bottom: 6px; }

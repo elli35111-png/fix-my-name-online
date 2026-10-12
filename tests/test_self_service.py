@@ -485,3 +485,47 @@ def test_not_sure_news_answers_get_the_plan_and_letter_they_described(origin, wr
         assert page.locator('ol.steps > li:not(.if-no)').count() == steps
         assert not page.errors
         browser.close()
+
+
+def test_small_polish_grammar_empty_tracker_glance_and_checkboxes(origin):
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        page = browser.new_page(viewport={'width': 1280, 'height': 900}, color_scheme='dark')
+        page.errors = []
+        page.on('pageerror', lambda e: page.errors.append(str(e)))
+        # An empty tracker doesn't claim to be step 4 of 4.
+        page.goto(origin + '/self-service/tracker')
+        page.wait_for_selector('#view-title')
+        assert page.locator('.stepper').count() == 0 and page.locator('.step-count').count() == 0
+        # "A few questions about the old news story", not "about old news story".
+        page.goto(origin + '/self-service?problem=old-news')
+        assert 'A few questions about the old news story' in page.locator('#questions h2').inner_text()
+        for q, v in (('who', 'me'), ('now', 'left-out'), ('status', 'finished')):
+            page.locator(f'[data-q="{q}"] input[value="{v}"]').check()
+        page.check('#safety-none')
+        page.click('#show-plan')
+        page.wait_for_selector('#glance')
+        # At a glance shows status markers, not checkboxes you can't tick.
+        assert page.locator('#glance .box, #glance input[type=checkbox]').count() == 0
+        page.check('#done-decide')
+        assert page.locator('#glance .is-done').count() == 1
+        assert 'Done:' in page.locator('#glance .is-done').inner_text()
+        # Every checkbox in the plan looks the same in dark mode.
+        page.check('#tick-evidence-0')
+        native = page.evaluate("getComputedStyle(document.getElementById('tick-evidence-0')).appearance")
+        custom = page.evaluate("getComputedStyle(document.querySelector('#step-decide .choice .box')).borderRadius")
+        assert native == 'none'
+        assert page.evaluate("getComputedStyle(document.getElementById('tick-evidence-0')).borderRadius") == custom
+        assert page.evaluate("getComputedStyle(document.getElementById('tick-evidence-0')).backgroundColor") == \
+            page.evaluate("getComputedStyle(document.querySelector('#step-decide .choice:has(input:checked) .box')).backgroundColor")
+        assert not page.errors
+        browser.close()
+
+
+def test_mobile_menu_has_one_way_to_the_free_check(origin):
+    with sync_playwright() as p:
+        browser, page = new_page(p, 375)
+        page.goto(origin + '/')
+        hrefs = page.eval_on_selector_all('.menu-sheet a', 'els => els.map(a => a.getAttribute("href"))')
+        assert hrefs.count('/self-service') == 1 and '/self-service/tracker' in hrefs
+        browser.close()
