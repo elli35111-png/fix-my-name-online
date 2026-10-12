@@ -1,7 +1,7 @@
 """
 Fix My Name Online — Universal Removal Request Generator
 Jurisdiction-aware removal letter generator for worldwide coverage.
-Copyright (c) 2026 MadisonJade Pty Ltd. All Rights Reserved.
+Copyright (c) 2026 Madison Jade Pty Ltd. All Rights Reserved.
 """
 
 from typing import Dict, List, Optional

@@ -355,7 +355,7 @@ The first sweep created a private baseline with {len(results)} distinct observed
 Important: an observed result is not automatically harmful, accurate, new, or about the correct person. It means the public search source returned it for one of the supplied phrases. Review links carefully before taking action.
 
 FixMyNameOnline™
-Operated by MadisonJade Pty Ltd
+Operated by Madison Jade Pty Ltd
 https://fixmynameonline.com/name-watch-alerts
 """
 
@@ -379,7 +379,7 @@ https://fixmynameonline.com/diy-action?source=namewatch_alert
 Monitored phrases: {', '.join(queries)}
 
 FixMyNameOnline™
-Operated by MadisonJade Pty Ltd
+Operated by Madison Jade Pty Ltd
 """
 
 
@@ -395,7 +395,7 @@ This is a monitoring status, not a promise that every search engine, private res
 Monitored phrases: {', '.join(queries)}
 
 FixMyNameOnline™
-Operated by MadisonJade Pty Ltd
+Operated by Madison Jade Pty Ltd
 """
 
 

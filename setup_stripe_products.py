@@ -5,8 +5,8 @@ Creates launch-safe products/prices for the FMNO funnel.
 Usage:
   STRIPE_SECRET_KEY=sk_live_... python setup_stripe_products.py
 
-Copyright (c) 2026 MadisonJade Pty Ltd. All rights reserved.
-FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
+Copyright (c) 2026 Madison Jade Pty Ltd. All rights reserved.
+FixMyNameOnline™ is a trademark of Madison Jade Pty Ltd.
 """
 import os
 import json

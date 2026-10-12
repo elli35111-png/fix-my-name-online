@@ -5,8 +5,8 @@ Runs role-specific internal agent tasks and stores draft outputs in fulfilment c
 This is intentionally QC-gated: workers prepare drafts, maps, notes, and reports.
 They do not publish, submit platform requests, or send legal/sensitive material.
 
-Copyright (c) 2026 MadisonJade Pty Ltd. All rights reserved.
-FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
+Copyright (c) 2026 Madison Jade Pty Ltd. All rights reserved.
+FixMyNameOnline™ is a trademark of Madison Jade Pty Ltd.
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from fulfilment_engine import (
 )
 
 DEFAULT_OPERATOR_JURISDICTION = "au"
-DEFAULT_OPERATOR_NAME = "MadisonJade Pty Ltd / FixMyNameOnline™"
+DEFAULT_OPERATOR_NAME = "Madison Jade Pty Ltd / FixMyNameOnline™"
 SERVICE_SCOPE = "worldwide"
 
 

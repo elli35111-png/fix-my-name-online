@@ -208,7 +208,7 @@ def test_diy_product_and_legacy_offer_gates():
     assert 'Sample with example details' in body
     checkout = c.get('/checkout/diy-action')
     assert checkout.status_code == 503
-    assert 'Checkout is temporarily unavailable' in checkout.get_data(as_text=True)
+    assert 'Checkout isn’t available right now, and no payment has been taken.' in checkout.get_data(as_text=True)
     for legacy in ('removal-review', 'review-defence', 'starter', 'pro', 'premium'):
         res = c.get('/checkout/' + legacy)
         assert res.status_code == 302
@@ -265,28 +265,12 @@ def test_post_snapshot_paid_paths_only_sell_automated_products():
         assert retired not in body
 
 
-def test_snapshot_email_contains_one_matching_route_and_free_self_service(monkeypatch):
+def test_retired_snapshot_never_emails(monkeypatch):
     sent = []
     monkeypatch.setattr(server, 'send_brevo_email', lambda *args: sent.append(args) or True)
-    monkeypatch.setattr(server, 'send_internal_alert_email', lambda *args: {'admin@example.com': True})
-    result = server.send_snapshot_emails(
-        {'name': 'Test Person', 'email': 'person@example.com'},
-        server.TRIAGE_NEXT_STEPS['alerts'],
-        {'id': 'FMNO-TEST', 'priority': 'standard'},
-        case=None,
-        report=None,
-        case_room=None,
-    )
-    assert result['customer_email_sent'] is True
-    customer_html = sent[0][3]
-    assert server.DOMAIN + '/name-watch-alerts' in customer_html
-    assert server.DOMAIN + '/self-service' in customer_html
-    assert server.DOMAIN + '/diy-action' not in customer_html
-    assert 'not a live Google search' in customer_html
-    assert 'privately review' not in customer_html
-    assert result['internal_email_sent'] == {}
-    assert 'Removal Review™' not in customer_html
-    assert 'Review Defence™' not in customer_html
+    client().post('/submit-snapshot', data={'name': 'Test Person', 'email': 'person@example.com', 'goal': 'x'})
+    assert sent == []
+    assert not hasattr(server, 'send_snapshot_emails')
 
 
 def test_namewatch_success_keeps_checkout_session_in_secure_onboarding_link(monkeypatch):

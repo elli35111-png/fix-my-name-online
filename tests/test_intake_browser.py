@@ -13,7 +13,6 @@ import server
 def intake_origin(monkeypatch, tmp_path):
     for attr in ('LEADS_FILE', 'FULFILMENT_QUEUE_FILE', 'CLICK_EVENTS_FILE', 'CASE_ROOMS_FILE', 'CONCIERGE_TRANSCRIPTS_FILE'):
         monkeypatch.setattr(server, attr, tmp_path / (attr + '.jsonl'))
-    monkeypatch.setattr(server, 'send_snapshot_emails', lambda *a, **kw: {})
     def forbidden(*a, **kw):
         raise AssertionError('Unexpected outbound/manual workflow')
     for attr in ('safe_create_fulfilment_case', 'run_free_snapshot_pipeline', 'send_telegram_alert'):
@@ -30,16 +29,24 @@ VALID = {'name': 'Synthetic QA Person', 'email': 'synthetic-browser-qa@example.c
          'case_type': 'Old article or outdated result', 'problem_links': '', 'source_page': 'browser_qa'}
 
 
+def seed_room():
+    """One existing private room, as the retired Snapshot left them."""
+    data = dict(VALID)
+    triage = server.triage_snapshot(data)
+    queue_item = server.make_queue_item('free_snapshot', data, triage)
+    room = server.save_case_room(queue_item, data, triage)
+    return '/private-case-room/%s?access_token=%s' % (queue_item['id'], room['access_token'])
+
+
 @pytest.mark.parametrize('width', [360, 768, 1440])
 def test_legacy_intake_and_room_render_in_the_new_shell(intake_origin, width, tmp_path):
-    """The old Snapshot form is retired, but cached forms and the 10 existing
-    private rooms must keep working, inside the shared shell."""
-    import re
+    """The old Snapshot form is retired: cached forms land on the free check and
+    store nothing. The existing private rooms keep working, inside the shared shell."""
     client = server.app.test_client()
     result = client.post('/submit-snapshot', data=VALID)
-    assert result.status_code == 200
-    assert len(server.LEADS_FILE.read_text().splitlines()) == 1
-    room = re.search(r'href="(/private-case-room/[^"]+)"', result.get_data(as_text=True)).group(1).replace('&amp;', '&')
+    assert result.status_code == 303 and result.headers['Location'] == '/self-service?from=snapshot'
+    assert not server.LEADS_FILE.exists()
+    room = seed_room()
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': width, 'height': 1000})
@@ -49,7 +56,8 @@ def test_legacy_intake_and_room_render_in_the_new_shell(intake_origin, width, tm
         assert page.url.endswith('/self-service?from=snapshot')
         assert 'now this free check' in page.locator('#desk-app').inner_text()
         page.goto(intake_origin + room)
-        assert 'not a live Google search' in page.locator('body').inner_text()
+        text = page.locator('body').inner_text()
+        assert 'not a live Google search' in text and 'MadisonJade' not in text
         assert page.locator('header.site-header').count() == 1
         assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         screenshot_dir = Path(__file__).resolve().parents[1] / 'qa_proof'

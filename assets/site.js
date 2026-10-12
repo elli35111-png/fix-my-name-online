@@ -1,4 +1,6 @@
-/* Fix My Name Online: small shared behaviour. No data leaves the page from this file. */
+/* Fix My Name Online: small shared behaviour. This file sends nothing anywhere:
+   no fetch, no analytics events. (Analytics, where a page has them, are loaded
+   separately and only count page views.) */
 (() => {
   'use strict';
 
@@ -93,11 +95,4 @@
     });
   }
 
-  // Problem tiles on marketing pages: optional analytics event carrying the problem code only.
-  document.addEventListener('click', e => {
-    const tile = e.target.closest('a[data-problem]');
-    if (tile && typeof window.gtag === 'function') {
-      try { window.gtag('event', 'choose_problem', {problem: tile.dataset.problem}); } catch (_) { /* ignore */ }
-    }
-  });
 })();

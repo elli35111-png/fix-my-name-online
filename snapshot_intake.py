@@ -97,5 +97,5 @@ a:focus-visible,button:focus-visible,summary:focus-visible{{outline:3px solid #f
 <div class="step"><b>03 · Choose your next action</b><br><span class="sub">Use the free self-service checklist, explore an exact paid tool, or stop here.</span></div></div>
 <div class="recommend"><h2>Prefer to work privately on your device?</h2><p class="note">Use the free self-service desk without sending an intake. Organise your evidence, record progress and export your notes.</p><a class="btn btn2" href="/self-service">Open self-service →</a></div>
 <p class="note">Threats, immediate safety concerns, minors and active legal proceedings need appropriate safety or independent professional help, not a DIY request pack.</p>
-<p class="microcopy">Operated by MadisonJade Pty Ltd<br>ABN 56 661 580 936<br>Private intake · no public case disclosure</p></aside></div>
+<p class="microcopy">Operated by Madison Jade Pty Ltd<br>ABN 56 661 580 936<br>Private intake · no public case disclosure</p></aside></div>
 <script src="/assets/snapshot-intake.js" defer></script>'''

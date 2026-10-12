@@ -79,7 +79,7 @@ def price_cards(featured_cta='/diy-action'):
 </article>
 <article class="card price featured">
 <div><p class="eyebrow">Optional</p><h3 style="margin-top:6px">Letter pack for one link</h3><p class="amount" style="margin-top:12px">US$19<small>once · about A$29</small></p></div>
-<ul class="ticks"><li>A request letter built from your facts</li><li>A follow-up and a second letter, ready for when there’s no answer</li><li>Calendar reminders for your check-back dates</li><li>Saved online, with an email link to get back in</li><li>Refund within 7 days if you haven’t used it</li></ul>
+<ul class="ticks"><li>Your request letter written out in full from a short form</li><li>A follow-up and a second letter, ready for when there’s no answer</li><li>Calendar reminders for your check-back dates</li><li>Saved online, with an email link to get back in</li><li>Refund within 7 days if you haven’t used it</li></ul>
 <p class="small">You still check and send everything yourself. No subscription.</p>
 <a class="btn btn-secondary btn-block" href="{featured_cta}">See what’s in the pack</a>
 </article>
@@ -129,7 +129,7 @@ def home():
 {section_head('Before you start', 'Straight answers')}
 <div class="truths">
 <div class="truth">{icon("info")}<div><h3>Google can drop a result. Only the website can delete the page.</h3><p class="muted" style="margin-top:6px">If Google removes a link, the page still exists. The site owner is the only one who can change or delete it, so most plans start with them.</p></div></div>
-<div class="truth">{icon("clock")}<div><h3>Old isn’t always removable. Out of date often is.</h3><p class="muted" style="margin-top:6px">A story being old usually isn’t enough on its own. A story that’s wrong, or leaves out what happened next, gives you something specific to ask for.</p></div></div>
+<div class="truth">{icon("clock")}<div><h3>“It’s old” is a weak reason. “It’s out of date” is a specific one.</h3><p class="muted" style="margin-top:6px">A story being old usually isn’t enough on its own. A story that’s wrong, or leaves out what happened next, gives you something specific to ask the publisher to fix.</p></div></div>
 <div class="truth">{icon("shield")}<div><h3>No one can promise a result. Including us.</h3><p class="muted" style="margin-top:6px">Publishers, platforms and Google make the decisions. Anyone who guarantees a removal is guessing. We help you ask clearly and politely.</p></div></div>
 <div class="truth">{icon("alert")}<div><h3>Some things need real help first.</h3><p class="muted" style="margin-top:6px">If you’re being threatened, a child is involved, there are intimate images, or a court case is still running, start with eSafety, the police or a lawyer. Your plan will point you to them.</p></div></div>
 </div>
@@ -225,12 +225,12 @@ def desk(plan_json):
 # ---------- problem hubs (/help/<slug>) ----------
 
 HUB_INTRO = {
-    'old-news-articles': ('Old news stories about you', 'An old article is the most common reason people Google themselves and wince. You can’t make a publisher change it, but you can ask the right way, in the right order, and many publishers do respond to a clear, polite request.'),
-    'people-search-sites': ('People-search sites', 'People-search and “background check” sites collect addresses, phone numbers, ages and relatives into listings. Most have an opt-out. It’s tedious, but it works more often than not, and Google will consider removing your contact details from search too.'),
+    'old-news-articles': ('Old news stories about you', 'An old article is the most common reason people Google themselves and wince. You can’t make a publisher change it. What you can do is ask the right person for one specific thing, in the right order, with the evidence to back it up.'),
+    'people-search-sites': ('People-search sites', 'People-search and “background check” sites collect addresses, phone numbers, ages and relatives into listings. Most have an opt-out page you can use yourself. It’s tedious, and listings can come back, so it’s worth keeping a record. Google also has a form to ask it to remove your contact details from search.'),
     'fake-profiles': ('Fake profiles and impersonation', 'A fake account using your name or photos can be upsetting and, if it’s messaging people you know, urgent. Platforms take impersonation seriously, and their own report forms are the fastest route.'),
-    'court-and-tribunal-records': ('Court and tribunal records', 'Court records, and copies of them on other websites, can follow people long after a matter is finished. Courts rarely change published judgments, but the sites that copy them often will, and some rules may protect you.'),
+    'court-and-tribunal-records': ('Court and tribunal records', 'Court records, and copies of them on other websites, can follow people long after a matter is finished. Courts rarely change published judgments. Copies on other websites are a different matter: you can ask the site owner to remove or anonymise them, and in some places a spent-conviction scheme or a non-publication order may apply.'),
     'reviews': ('Reviews about you or your business', 'A bad review hurts, but platforms only remove reviews that break a specific rule. Knowing which rule, and replying calmly in public, does more than any amount of arguing.'),
-    'photos-and-images': ('Photos of you online', 'Photos posted without your OK can usually be removed by asking the site, by using a copyright request if you took the photo, or through the platform’s own tools. Intimate images have their own fast, free routes.'),
+    'photos-and-images': ('Photos of you online', 'If a photo of you is online without your OK, you can ask the site to take it down, use a copyright request if you took the photo, or use the platform’s own reporting tools. Intimate images have their own free routes, and eSafety can act quickly in Australia.'),
 }
 
 HUB_GUIDES = {
@@ -241,6 +241,20 @@ HUB_GUIDES = {
     'reviews': ['false-review-damaging-my-name', 'google-review-defence'],
     'photos-and-images': ['remove-outdated-google-search-results', 'how-to-request-noindex-for-an-old-webpage'],
 }
+
+
+def checked_note(link_ids):
+    """Say when the links shown were last checked, and name any we couldn't check."""
+    links = [plans.OFFICIAL_LINKS[i] for i in dict.fromkeys(link_ids) if i in plans.OFFICIAL_LINKS]
+    dates = sorted(l['checked'] for l in links if l['checked'])
+    unchecked = [l['label'] for l in links if not l['checked']]
+    parts = []
+    if dates:
+        parts.append('Official links last checked ' + plans.nice_date(dates[0]) + '.')
+    if unchecked:
+        names = unchecked[0] if len(unchecked) == 1 else ', '.join(unchecked[:-1]) + ' and ' + unchecked[-1]
+        parts.append(f'We haven’t been able to check {names} ourselves. If {"it doesn’t" if len(unchecked) == 1 else "one doesn’t"} open the right page, search that site’s help pages instead.')
+    return f'<p class="small mt-3">{esc(" ".join(parts))}</p>' if parts else ''
 
 
 def link_html(link_id, primary=False):
@@ -278,6 +292,7 @@ def hub(slug, guide_titles):
         steps.append('<li>' + ''.join(parts) + '</li>')
     if_no = ''.join(f'<li>{esc(i["text"])}' + (f' {link_html(i["link"])}' if i.get('link') else '') + '</li>' for i in plan['if_no'])
     steps.append(f'<li class="if-no"><h3>If the answer is no</h3><ul class="ticks mt-1">{if_no}</ul></li>')
+    shown_links = [l for step in plan['steps'] for l in step['links']] + [i['link'] for i in plan['if_no'] if i.get('link')]
     guides = ''.join(f'<a href="/{esc(s)}">{esc(t)} {icon("arrow", "icon icon-sm")}</a>' for s, t in guide_titles)
     related = f'<section class="mt-4"><h2 class="h-sans">Related guides</h2><div class="related mt-2">{guides}</div></section>' if guides else ''
     other = ''.join(f'<a href="/help/{q["hub"]}">{esc(q["hub_title"])} {icon("arrow", "icon icon-sm")}</a>' for q in PROBLEMS if q['hub'] != slug)
@@ -291,7 +306,8 @@ def hub(slug, guide_titles):
 </div></section>
 <div class="wrap doc-grid">
 <div class="stack-lg">
-<div class="short"><h2>The short version</h2><p>{esc(plan["title"])} {esc(p["who"])} Start with the free check below to get the plan for your situation and your country.</p></div>
+<div class="short"><h2>The short version</h2><p>{esc(plan["title"])} {esc(p["who"])} The free check gives you the plan for your situation and your country, with a letter you can edit.</p>
+<p class="btn-row mt-2"><a class="btn btn-primary" href="/self-service?problem={p["key"]}" data-problem="{p["key"]}">Start this plan {icon("arrow", "icon icon-sm")}</a><span class="small">About two minutes · Free · Nothing you type is sent to us</span></p></div>
 <div class="grid grid-2">
 <div class="card"><p class="eyebrow">Who decides</p><p class="mt-1">{esc(plan["who_decides"])}</p></div>
 <div class="card"><p class="eyebrow">Time</p><p class="mt-1">{esc(plan["time"])}</p></div>
@@ -301,7 +317,8 @@ def hub(slug, guide_titles):
 <p class="eyebrow">The plan, in outline</p>
 <p class="meta mt-1">This is the plan for someone in Australia. The free check changes the steps, letters and official links for your answers and your country.</p>
 <ol class="steps mt-3">{"".join(steps)}</ol>
-<p class="small mt-3">Official links last checked {LAST_REVIEWED}.</p>
+{checked_note(shown_links)}
+<p><a class="btn btn-secondary" href="/self-service?problem={p["key"]}" data-problem="{p["key"]}">Get this plan for your country {icon("arrow", "icon icon-sm")}</a></p>
 </section>
 {related}
 <section class="mt-4"><h2 class="h-sans">Other problems</h2><div class="related mt-2">{other}</div></section>
@@ -330,6 +347,7 @@ def how_it_works():
 <li><h3>Send it yourself</h3><p class="muted mt-1">You copy or download the letter and send it, or fill in the official form. We never contact a publisher, a platform or Google for you.</p></li>
 <li><h3>Keep track</h3><p class="muted mt-1">Add the plan to your tracker, set a check-back date and update the status as things happen. A “no” is a normal outcome, and the plan tells you what to try next.</p></li>
 </ol>
+<p class="btn-row mt-3"><a class="btn btn-primary" href="/self-service">Start free check {icon("arrow", "icon icon-sm")}</a><span class="small">About two minutes · Free · No account · Nothing you type is sent to us</span></p>
 </div></section>
 <section class="section band"><div class="wrap">
 {section_head('Who decides what', 'Knowing who decides saves weeks', 'Most wasted effort comes from asking the wrong people, or asking in the wrong order.')}
@@ -346,7 +364,7 @@ def how_it_works():
 <section class="section"><div class="wrap">
 {section_head('Where we stand', 'What we do, and what we don’t')}
 <div class="grid grid-2">
-<div class="card"><h3>What we do</h3><ul class="ticks"><li>Give you a plan for your problem and your country</li><li>Give you letters you can edit, copy and download</li><li>Link to the official forms, with the date we last checked them</li><li>Give you a tracker that stays in your browser</li><li>Sell one optional extra: a US$19 letter pack for one link</li></ul></div>
+<div class="card"><h3>What we do</h3><ul class="ticks"><li>Give you a plan for your problem and your country</li><li>Give you letters you can edit, copy and download</li><li>Link to the official forms, and say when we last checked them</li><li>Give you a tracker that stays in your browser</li><li>Sell one optional extra: a US$19 letter pack for one link</li></ul></div>
 <div class="card"><h3>What we don’t do</h3><ul class="ticks no"><li>Search Google or give you a “score”</li><li>Contact anyone on your behalf</li><li>Give legal advice, or act as your lawyer</li><li>Promise any result</li><li>Sell or share what you type</li></ul></div>
 </div>
 </div></section>
@@ -363,7 +381,7 @@ def pricing():
         ('Letters you can edit, copy and download', '✓', '✓'),
         ('Links to the official forms', '✓', '✓'),
         ('Tracker with check-back dates', '✓ (in your browser)', '✓ (saved online)'),
-        ('Request letter built from the facts you enter', '', '✓'),
+        ('Letters written out in full from a short form, saved online', '', '✓'),
         ('Follow-up letter and a second letter', 'Follow-up only', '✓'),
         ('Calendar reminder files', '✓', '✓'),
         ('Get back in from another device', '', '✓ (by email link)'),
@@ -413,7 +431,7 @@ FULL_FAQ = [
     ]),
     ('Privacy and data', [
         ('What happens to what I type?', 'On the free check and tracker, nothing leaves your browser unless you choose to save or download it. If you buy the letter pack, we store what you put in it so you can come back to it. The <a href="/privacy">privacy policy</a> has the details.'),
-        ('Do you use analytics?', 'Only on our information pages, like this one. There are no analytics on the free check, the tracker, the letter pack workspace or any form.'),
+        ('Do you use analytics?', 'Only on our information pages, like this one, to count visits and see which pages help. There are none on the free check, the tracker, the letter pack workspace, the NameWatch page with its waitlist form, or anywhere else you type something.'),
     ]),
     ('Money', [
         ('Is it really free?', 'Yes. The check, the plan, the letters, the official links and the tracker are free. The only paid thing is the optional US$19 letter pack for one link.'),
@@ -450,18 +468,19 @@ def about():
 <p class="eyebrow">About and trust</p>
 <h1 style="margin-top:8px">A small Australian company that builds self-service tools.</h1>
 <p class="lede">{BRAND} is run by {COMPANY}, ABN {ABN}, in South Australia. We make plans, letters and trackers you use yourself. We don’t act for you, and we’re not a law firm.</p>
+<p class="btn-row mt-3 only-below-desk"><a class="btn btn-primary" href="/self-service">Start free check {icon("arrow", "icon icon-sm")}</a></p>
 </div></section>
 <div class="wrap doc-grid"><div class="prose">
 <h2>Who we are</h2>
 <p>{COMPANY} is an Australian private company (ABN {ABN}). You can check the ABN on the <a href="https://abr.business.gov.au/ABN/View?abn={ABN.replace(" ", "")}" rel="noopener" target="_blank">Australian Business Register</a>. You can reach us at <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.</p>
 <h2>What we do</h2>
-<ul><li>Plans for each kind of problem, matched to your answers and your country</li><li>Letters you can edit, copy and send yourself</li><li>Links to the official forms, with the date we last checked them</li><li>A tracker that stays in your browser</li></ul>
+<ul><li>Plans for each kind of problem, matched to your answers and your country</li><li>Letters you can edit, copy and send yourself</li><li>Links to the official forms, and when we last checked them</li><li>A tracker that stays in your browser</li></ul>
 <h2>What we don’t do</h2>
 <ul><li>Search Google for you or give you a score</li><li>Contact publishers, platforms, Google or anyone else on your behalf</li><li>Give legal advice or act as your lawyer</li><li>Promise any result</li><li>Sell or share what you type</li></ul>
 <h2>How we make money</h2>
 <p>From one optional product: the US$19 letter pack for one link. NameWatch, our alerts service, will be paid when it comes back. We don’t sell data, we don’t take money from publishers or platforms, and there are no ads on our tools.</p>
 <h2>How we write the plans</h2>
-<p>Each plan is written from the official sources it links to: Google’s help pages, regulators, complaints bodies and the platforms themselves. Every official link shows the date we last checked it, and every guide shows when it was last reviewed. If you spot something out of date, please tell us.</p>
+<p>Each plan is written from the official sources it links to: Google’s help pages, regulators, complaints bodies and the platforms themselves. Each official link shows the date it was last confirmed to open the right page. A few sites, such as Facebook and Instagram, block that kind of check; where a link couldn’t be confirmed, the plan says so. Every guide shows when it was last reviewed. If you spot something out of date, please tell us.</p>
 <h2 id="legal-help">Need a lawyer?</h2>
 <p>Some problems need legal advice, not a letter. That includes defamation (which has short time limits), anything to do with a case that’s still running, and whether a spent-conviction scheme or a non-publication order applies to you. Here’s where to start:</p>
 <ul>
@@ -654,7 +673,7 @@ def privacy(ga_id=''):
 <p>We don’t sell personal information, we don’t share it for advertising, and we don’t use what you type to contact anyone.</p>
 <h2 id="analytics">4. Analytics and cookies</h2>
 <p>Our information pages (the homepage, guides, pricing and similar) use Google Analytics{ga} to count visits and see which pages help people. If we run advertising, those same pages may also use Meta’s (Facebook’s) measurement pixel. These tools use cookies and send data to Google or Meta.</p>
-<p>There are no analytics or advertising tools on the free check, the tracker, the letter pack workspace, the waitlist or any form.</p>
+<p>Analytics see the page address, the page you came from, and general device and location information. They don’t see what you type on our tools, because there are no analytics or advertising tools on the free check, the tracker, the letter pack workspace, or the NameWatch page and its waitlist form. We don’t send which problem you pick, or anything else you choose in the free check, to Google or Meta.</p>
 <p>The letter pack workspace uses one essential cookie to keep you signed in on that browser for 24 hours.</p>
 <h2 id="providers">5. Who else handles it</h2>
 <p>We use these providers to run the service. Some are outside Australia, so your information may be stored or processed overseas, mainly in the United States and the European Union:</p>

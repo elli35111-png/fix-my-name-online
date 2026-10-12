@@ -2,8 +2,8 @@
 FixMyNameOnline™ — Flask Web Server
 Landing page, Free Search Snapshot intake, Stripe checkout, and fulfilment-safe onboarding.
 
-Copyright (c) 2026 MadisonJade Pty Ltd. All rights reserved.
-FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
+Copyright (c) 2026 Madison Jade Pty Ltd. All rights reserved.
+FixMyNameOnline™ is a trademark of Madison Jade Pty Ltd.
 """
 import html
 import os
@@ -24,7 +24,6 @@ from pathlib import Path
 import stripe
 import requests
 from flask import Flask, request, jsonify, send_from_directory, redirect, Response
-from snapshot_intake import snapshot_form_body, validate_snapshot, LIMITS as SNAPSHOT_LIMITS
 
 try:
     from fulfilment_engine import (
@@ -67,7 +66,9 @@ def analytics_allowed(path, method='GET'):
     path = path or '/'
     if method != 'GET' or is_private_path(path):
         return False
-    if path == '/self-service' or path.startswith(('/self-service', '/personal-search', '/static/', '/assets/', '/api/')):
+    # No analytics anywhere a visitor types something: the free check, the
+    # tracker and the NameWatch waitlist form (Meta's pixel can read form fields).
+    if path == '/self-service' or path.startswith(('/self-service', '/name-watch-alerts', '/personal-search', '/static/', '/assets/', '/api/')):
         return False
     return True
 
@@ -634,7 +635,7 @@ def fallback_concierge_reply(topic, collected, next_question, ready=False):
 
 
 def build_concierge_messages(topic, collected, user_message, next_question, ready):
-    system = '''You are Private Search Concierge™ for FixMyNameOnline™, operated by MadisonJade Pty Ltd.
+    system = '''You are Private Search Concierge™ for FixMyNameOnline™, operated by Madison Jade Pty Ltd.
 Tone: premium, calm, private, human, concise.
 Role: AI-assisted intake only. Keep replies short and move toward Free Search Snapshot™.
 Never claim to have searched Google, verified a result, or promise human review. Guidance is based only on the visitor's answers. The free self-service desk is available at /self-service.
@@ -1050,37 +1051,6 @@ def free_snapshot_used(email):
     return bool(email_l and any((row.get('email') or '').strip().lower() == email_l for row in read_jsonl(LEADS_FILE)))
 
 
-def send_snapshot_emails(data, triage, queue_item, case=None, report=None, case_room=None):
-    room_link = (case_room or {}).get('case_room_url') or ''
-    room_cta = f'<p><a href="{safe(room_link)}" style="background:#111827;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block">Open Private Case Room™</a></p>' if room_link else ''
-    customer_html = f"""
-    <div style=\"font-family:Arial,sans-serif;max-width:620px;margin:auto;color:#111\">
-      <h1>Your Free Search Snapshot™ request is in</h1>
-      <p>Hi {safe(data.get('name'))},</p>
-      <p>We received your private FixMyNameOnline™ snapshot request.</p>
-      <h2>Suggested next step: {safe(triage['label'])}</h2>
-      <p>{safe(triage['summary'])}</p>
-      <p>This is automated guidance from your answers, not a live Google search or verified findings about you. No one is contacted on your behalf. You decide whether to act.</p>
-      {room_cta}
-      <p><a href=\"{DOMAIN}{triage['url']}\" style=\"background:#d91f3d;color:#fff;padding:12px 18px;text-decoration:none;border-radius:10px;display:inline-block\">{safe(triage['cta'])}</a></p>
-      <div style=\"border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:20px 0\">
-        <h2 style=\"margin-top:0\">A free way to stay in control</h2>
-        <p>Organise your evidence, record progress and export your own notes at the free self-service desk. No payment or new intake is needed.</p>
-        <p><a href=\"{DOMAIN}/self-service\">Open free self-service</a></p>
-        <p>If the situation involves threats, minors, active proceedings or a complex legal dispute, use appropriate safety or independent professional channels instead of a DIY pack.</p>
-      </div>
-      <p style=\"font-size:12px;color:#666\">Reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
-    </div>
-    """
-
-    try:
-        sent = send_brevo_email(data.get('email'), data.get('name'), 'Your Free Search Snapshot™ request is in', customer_html)
-    except Exception:
-        app.logger.warning('Snapshot confirmation unavailable; saved on-screen guidance remains accessible.')
-        sent = False
-    return {'customer_email_sent': sent, 'internal_email_sent': {}}
-
-
 def send_onboarding_emails(data, queue_item):
     plan_label = PLANS.get(data.get('plan'), {}).get('name', data.get('plan', 'Private onboarding'))
     if data.get('plan') == 'sentinel':
@@ -1092,7 +1062,7 @@ def send_onboarding_emails(data, queue_item):
           <h2>What happens automatically</h2>
           <ol><li>We create the first private baseline for the names you supplied.</li><li>FMNO runs the scheduled result sweep.</li><li>If a newly observed result needs attention, we email you a private alert.</li><li>You also receive a simple clear / watch / review-recommended status note.</li></ol>
           <p>A newly observed result is not automatically harmful or newly published. It means the monitor did not see it in the prior baseline.</p>
-          <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
+          <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · Madison Jade Pty Ltd</p>
         </div>
         """
         internal_html = f"""
@@ -1104,50 +1074,9 @@ def send_onboarding_emails(data, queue_item):
             'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'NameWatch Alert™ activated — FixMyNameOnline™', customer_html),
             'internal_email_sent': send_internal_alert_email(f"FMNO NameWatch onboarding — {data.get('name', '')}", internal_html),
         }
-    customer_html = f"""
-    <div style=\"font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#111;line-height:1.55\">
-      <h1>We’ve received your private onboarding</h1>
-      <p>Hi {safe(data.get('name'))},</p>
-      <p>Thank you — we’ve received your details for <strong>{safe(plan_label)}</strong>.</p>
-      <p>In plain English: we are going to look at what people may see when they search your name or business, work out what can safely be improved, and prepare positive, accurate material for your approval before anything public is used.</p>
-
-      <h2>What happens next</h2>
-      <ol>
-        <li><strong>Private review:</strong> we check the names, links, reviews, search terms and context you sent us.</li>
-        <li><strong>Search map:</strong> we map the main searches and the gaps where stronger positive assets may help.</li>
-        <li><strong>Asset plan:</strong> we prepare a simple plan for the positive pages, profiles, bios or content assets that make sense for your situation.</li>
-        <li><strong>Drafts:</strong> we draft the first approved materials using only accurate information you have provided or approved.</li>
-        <li><strong>Quality check:</strong> we check the wording for accuracy, privacy, tone and safety.</li>
-        <li><strong>Your approval:</strong> you review the material before anything is published, submitted or used publicly.</li>
-        <li><strong>Delivery report:</strong> we send you a private update showing what was prepared, approved, published/queued, and what happens next.</li>
-      </ol>
-
-      <h2>What we may ask you for</h2>
-      <ul>
-        <li>Your preferred name, business name and any old/associated names to monitor.</li>
-        <li>Links, screenshots or search terms that worry you.</li>
-        <li>Accurate bio facts: role, business, location, services, qualifications, achievements, photos or logo.</li>
-        <li>Anything sensitive, private, disputed, outdated or not to be mentioned publicly.</li>
-      </ul>
-
-      <h2>Important</h2>
-      <p>We do not guarantee Google rankings, removals, review removals, de-indexing or platform decisions. Search engines, publishers and platforms make their own decisions. Our job is to build a safer, stronger, truthful search presence and prepare any possible removal/review pathway carefully.</p>
-      <p>If you have a question, reply to this email and include your private reference below, or use the private question form: <a href="{DOMAIN}/questions">{DOMAIN}/questions</a>.</p>
-      <p style=\"font-size:12px;color:#666\">Private reference: {safe(queue_item['id'])}<br>FixMyNameOnline™ · MadisonJade Pty Ltd</p>
-    </div>
-    """
-    internal_html = f"""
-    <div style=\"font-family:Arial,sans-serif;max-width:760px;margin:auto;color:#111\">
-      <h1>New FMNO private onboarding</h1>
-      <p><strong>Queue ID:</strong> {safe(queue_item['id'])}</p>
-      <p><strong>Plan:</strong> {safe(plan_label)}</p>
-      <pre style=\"background:#f5f5f5;padding:16px;border-radius:10px;white-space:pre-wrap\">{safe(json.dumps(data, indent=2, ensure_ascii=False))}</pre>
-    </div>
-    """
-    return {
-        'customer_email_sent': send_brevo_email(data.get('email'), data.get('name'), 'Private onboarding received — FixMyNameOnline™', customer_html),
-        'internal_email_sent': send_internal_alert_email(f"FMNO onboarding: {plan_label} — {data.get('name', '')}", internal_html),
-    }
+    # Older managed packages are no longer offered and submit_onboarding() stops
+    # before this point, so there is no customer email for them.
+    return {}
 
 
 @app.route('/data', defaults={'filename': ''}, methods=['GET', 'HEAD'])
@@ -1351,18 +1280,18 @@ SEO_GUIDES = {
     'online-reputation-management-australia': {
         'eyebrow': 'Australian reputation management',
         'title': 'Online Reputation Management Australia — Fix My Name Online',
-        'h1': 'Online reputation management in Australia, built for real search risk',
-        'description': 'Australian online reputation management for individuals, businesses and professionals dealing with Google results, reviews, old articles and associated-name search risk.',
+        'h1': 'Online reputation management in Australia: what you can do yourself',
+        'description': 'A practical, self-service guide for Australians dealing with what Google shows for their name or business: old articles, reviews, people-search listings and the official routes.',
         'intro': 'Fix My Name Online is run by Madison Jade Pty Ltd in Australia, and its free tools work for people anywhere. This guide explains a careful, practical way to manage your reputation online: see what shows up, keep evidence, ask the right people, publish accurate information and keep checking.',
         'sections': [
-            ('Start with the search result page, not guesses', 'The first step is to see what Google actually shows for your full name, business name, old names, common misspellings, locations, and words like review or complaint. Ranking work fails when it is built around one vanity keyword instead of the real search pattern people use before they trust someone.'),
+            ('Start with the search result page, not guesses', 'The first step is to see what Google actually shows for your full name, business name, old names, common misspellings, locations, and words like review or complaint. Look at what a stranger would see, not just your exact name on its own.'),
             ('Separate removable problems from reputation gaps', 'Some results may have a correction, outdated-content, privacy, platform-policy or publisher-request pathway. Others cannot be removed safely or realistically. Separate those early so you don’t spend months chasing takedowns that won’t happen.'),
-            ('Publish accurate pages that deserve to rank', 'Modern SEO rewards pages that are useful, specific and trustworthy. For reputation repair, that means accurate biographies, service pages, business proof, profile assets, helpful articles, FAQs and evidence-based updates — not thin AI filler.'),
-            ('Use Search Console and monitoring', 'Google Search Console, sitemap submission, URL inspection, analytics and ranking checks are not optional. They show whether Google can find, crawl, index and understand the pages you’ve published.'),
+            ('Make sure accurate information about you is easy to find', 'A current work profile, an up-to-date business listing or a short, true bio gives people something accurate to find. Keep it modest and true. Fake reviews and made-up pages break platform rules and can make things worse.'),
+            ('Keep a simple record', 'Write down the searches you check, what shows up and the date. Check again every month or two, and after any page changes. If you have your own website, Google’s free Search Console tool can show whether Google has found your pages.'),
         ],
         'faqs': [
             ('Do Australian reputation cases only affect Australia?', 'No. Australians are often searched by people overseas: clients, employers, investors and journalists. The operator can be Australian while the search risk is worldwide.'),
-            ('Can anyone guarantee page one?', 'No. Google makes its own decisions. The realistic goal is clear, useful, accurate pages about you that Google can understand, improved over time.'),
+            ('Can anyone guarantee page one?', 'No. Google makes its own decisions, and anyone who promises a ranking is guessing. What you can do is ask for wrong or outdated pages to be fixed, and keep accurate information about you up to date.'),
         ],
     },
     'reputation-repair-for-individuals': {
@@ -1373,26 +1302,26 @@ SEO_GUIDES = {
         'intro': 'People get searched before job interviews, dates, rentals, partnerships, media calls and client decisions. Individual reputation repair is about making the search result page more accurate, current and complete without making unsafe promises.',
         'sections': [
             ('Map the person behind the search', 'A real plan checks legal names, previous names, nicknames, professional names, locations, business links, images, news results, review sites and common risk phrases. One bad result may be less damaging than a pattern of associated searches.'),
-            ('Create assets that answer real questions', 'Useful positive assets should explain who the person is now, what they do, what is verified, what they are comfortable publishing and what should stay private. Thin pages do not build trust.'),
-            ('Handle sensitive claims carefully', 'Where allegations, court mentions, old articles or disputes exist, the safest public approach is factual, calm and proportionate. Legal advice may be needed for legal claims; reputation work should not pretend to be a law firm.'),
-            ('Measure progress by search coverage', 'The goal is not one page in isolation. Keep track of which of your own pages appear for your name, old name, business name and location.'),
+            ('Put accurate information where people will find it', 'A short, true bio, a current work profile or a business page tells people who you are now. Share only what you’re comfortable having online; some things can stay private.'),
+            ('Handle sensitive claims carefully', 'Where allegations, court mentions, old articles or disputes exist, keep anything you say in public factual, calm and short. If it’s a legal question, such as defamation, talk to a lawyer; we’re not a law firm.'),
+            ('Check back over time', 'Search your name, old names, business name and suburb every month or two and note what has changed, so you can see whether a request worked.'),
         ],
         'faqs': [
             ('Is this public?', 'The free check runs in your browser, so your planning stays private. Only publish information that’s true and that you’re comfortable sharing.'),
-            ('How long does individual reputation repair take?', 'Some assets can be published quickly, but organic search visibility usually takes weeks or months depending on competition and existing result authority.'),
+            ('How long does it take?', 'A request usually takes about 30 minutes of your time. Replies often take two to six weeks, and changes in Google can take longer after the page itself changes.'),
         ],
     },
     'old-news-article-on-google': {
         'eyebrow': 'Old article search risk',
         'title': 'Old News Article Showing on Google — Options and Limits | Fix My Name Online',
         'h1': 'Old news article showing on Google? Start with options, limits and evidence',
-        'description': 'What to do when an old news article, court mention or outdated story appears on Google: review pathways, evidence, outdated-content requests and positive search assets.',
+        'description': 'What to do when an old news article, court mention or outdated story appears on Google: what to save, who decides, what to ask the publisher for, and Google’s refresh tool.',
         'intro': 'Old articles can keep following people long after the facts, context or life circumstances have changed. The right response depends on the source, accuracy, legal status, public interest, indexing and available evidence.',
         'sections': [
             ('Check whether the article is accurate and current', 'Correction and publisher requests are strongest when there is a clear factual error, missing outcome, outdated snippet, privacy issue or changed circumstance that can be evidenced.'),
             ('Understand what Google controls', 'Google usually indexes pages created by others. It may remove or update some results under specific policies, but it does not rewrite publisher content. That is why publisher, platform and search-engine paths need to be separated.'),
             ('Prepare evidence before asking', 'Screenshots, URLs, dates, cached snippets, legal outcomes, publisher contact details and proof of identity or authority can matter. A vague emotional request is weaker than a calm, documented request.'),
-            ('Build the fuller current story', 'If the article cannot be removed, a reputation plan can create accurate current assets that help searchers see more than the old result: bios, business pages, profiles, interviews, FAQs and useful articles.'),
+            ('If the article stays', 'Write down the publisher’s answer and check the complaint routes for your country. Make sure accurate, current information about you, like a work profile or business page, is easy to find.'),
         ],
         'faqs': [
             ('Can an old news article always be removed?', 'No. Some have a valid pathway; many do not. The first step is to assess the facts and available policies.'),
@@ -1402,17 +1331,17 @@ SEO_GUIDES = {
     'fake-google-reviews-help': {
         'eyebrow': 'Google review defence',
         'title': 'Fake Google Reviews Help — Evidence, Reporting and Response | Fix My Name Online',
-        'h1': 'Fake Google reviews need evidence, calm responses and a repair plan',
-        'description': 'Help for fake, malicious or unfair Google reviews: audit the pattern, collect evidence, check policy pathways, draft owner responses and rebuild trust signals.',
+        'h1': 'Fake Google reviews: evidence, a proper report and a calm reply',
+        'description': 'What to do about a fake, malicious or unfair Google review: save the evidence, match it to Google’s rules, report it, and write a calm public reply.',
         'intro': 'A fake or malicious review can cost calls, bookings and trust. The strongest response isn’t panic or a public fight. It’s clear evidence, a report that names the policy, a calm public reply, and honest reviews over time.',
         'sections': [
             ('Document the pattern', 'Record review dates, reviewer names, wording, star rating, business relationship, screenshots and any signs of competitor, ex-employee, ex-partner or review-bombing activity.'),
             ('Match the issue to platform policy', 'Google decides whether a review is removed. A good report connects the facts to a specific policy, rather than simply saying the review is unfair.'),
             ('Respond for future customers', 'A calm owner response is often read by prospects. It should be short, factual, non-defamatory and focused on customer care, not a public argument.'),
-            ('Rebuild surrounding trust', 'More accurate business profiles, service pages, testimonials where allowed, FAQs, proof assets and monitoring reduce the damage of one hostile review result.'),
+            ('Keep the rest of your profile strong', 'Keep your business details current and ask every customer for an honest review, without offering anything in return. A steady stream of real reviews puts one bad one in context.'),
         ],
         'faqs': [
-            ('Can you delete fake Google reviews?', 'No agency can directly delete Google reviews. The free plan helps you document, report and respond. Google makes the decision.'),
+            ('Can anyone delete fake Google reviews for me?', 'No. Only Google can remove a review. The free plan walks you through saving the evidence, reporting it against the right rule, and replying. Google decides.'),
             ('Should I reply publicly?', 'Often yes, but carefully. The reply should reassure future customers, not escalate the dispute.'),
         ],
     },
@@ -1421,80 +1350,80 @@ SEO_GUIDES = {
         'title': 'How to Check Your Online Reputation Before People Search You | Fix My Name Online',
         'h1': 'How to check your online reputation before clients, employers or dates search you',
         'description': 'A practical online reputation self-audit checklist for names, business names, old names, Google results, reviews, images, snippets and associated search terms.',
-        'intro': 'Most reputation problems are discovered too late — after a client goes quiet, an employer hesitates or a partner searches a name. A simple search audit shows what needs monitoring, challenging or strengthening.',
+        'intro': 'Most people find a problem result too late, after a client goes quiet or an employer hesitates. Checking your own name now shows you what’s fine, what’s wrong, and what you might want to ask someone to fix.',
         'sections': [
             ('Search like a stranger', 'Use your full name, quoted name, old names, nicknames, business names, suburb, city, job title, review terms and risk words. Check web results, images, videos, news and review profiles.'),
             ('Record what appears on page one and two', 'Titles, snippets and images can matter as much as the page itself. Screenshot the result, URL, date and search phrase so changes can be tracked.'),
-            ('Classify the problem', 'Group results into positive assets, neutral listings, outdated items, bad reviews, complaint pages, old articles, images and associated-name risks. Each group needs a different response.'),
-            ('Strengthen the weak spots', 'If there are too few accurate assets, build them. If a result may breach policy, document it. If new issues keep appearing, set up monitoring.'),
+            ('Sort what you find', 'Group results into fine, out of date, wrong, about someone else, reviews, and photos. Each kind has a different person who decides and a different thing to ask for.'),
+            ('Deal with the ones that matter', 'If a result is wrong or out of date, ask the website to fix it. If it breaks a platform’s rules, report it. If there’s little accurate information about you, add a current profile you control.'),
         ],
         'faqs': [
             ('Should I search in private browsing?', 'It can help reduce personalization, but location and device still influence results. Track the exact search phrase and date.'),
-            ('What should I do first if I find something bad?', 'Save evidence before reacting. Then decide whether it is a removal/review issue, monitoring issue or positive-footprint issue.'),
+            ('What should I do first if I find something bad?', 'Save the link and a dated screenshot before you react. Then start the free check to get the steps for that kind of result.'),
         ],
     },
     'bad-results-on-google-what-to-do': {
         'eyebrow': 'Bad Google results help',
         'title': 'I Have Bad Results on Google — What Do I Do? | Fix My Name Online',
         'h1': 'I have bad results on Google. What do I do first?',
-        'description': 'What to do if you have bad results on Google: save evidence, check removal pathways, avoid risky reactions and build a stronger search footprint.',
+        'description': 'What to do if you have bad results on Google: save evidence, work out who decides, ask for one specific change, and avoid the reactions that make it worse.',
         'intro': 'If you have bad results on Google, do not panic and do not start sending angry messages. The first move is to save evidence, understand what type of result it is, and choose the safest pathway before the result spreads or the wrong response makes it worse.',
         'sections': [
             ('Step 1: save the result before reacting', 'Take screenshots of the Google result, page title, snippet, URL, date, search phrase and any image or review that appears. If the result changes later, this evidence helps show what was visible and when.'),
             ('Step 2: identify what kind of bad result it is', 'A bad Google result can be an old news article, court mention, bad review, complaint page, image, outdated snippet, forum post, copied content or an associated-name result. Each one has a different pathway.'),
-            ('Step 3: check whether removal or correction is realistic', 'Some results may have a publisher correction, privacy, outdated-content, review-policy or platform-reporting pathway. Others may not. A careful review prevents wasted time and avoids making unsafe claims.'),
+            ('Step 3: check whether removal or correction is realistic', 'Some results can be corrected by the publisher, reported to the platform, or refreshed in Google once the page changes. Others can’t. Working out which applies before you write saves time, and stops you asking for something that doesn’t fit.'),
             ('Step 4: build the stronger current story', 'If the bad result can’t be removed quickly, the next move is to publish accurate information about your name or business: profiles, pages, articles and FAQs that show the fuller current picture.'),
         ],
         'faqs': [
-            ('Can bad results on Google be removed?', 'Sometimes there is a valid pathway; often there is not. Google, publishers and platforms make their own decisions. The first step is to review the facts and available policies.'),
-            ('Should I contact the website immediately?', 'Not always. Save evidence first and check the risk. Some messages help, but rushed or emotional contact can make a sensitive result harder to handle.'),
-            ('Can Fix My Name Online check this privately?', 'Yes. Start with the free check, and keep the search phrase, links, screenshots or review details handy.'),
+            ('Can bad results on Google be removed?', 'Sometimes. Often they can’t, or only once the website changes the page. Google, publishers and platforms make their own decisions. The free check shows which routes fit your situation.'),
+            ('Should I contact the website immediately?', 'Not always. Save evidence first and work out what to ask for. A calm, specific message helps; a rushed or angry one can make things harder.'),
+            ('Can Fix My Name Online look at this for me?', 'No. We don’t search for you or review your case. The free check runs in your browser: you tell it what kind of result you found and answer a few questions, and it gives you the steps, a letter you can edit and the official forms. Nothing you type is sent to us.'),
         ],
     },
     'what-to-do-if-google-results-are-bad': {
         'eyebrow': 'Bad search results action plan',
         'title': 'What To Do If Google Results Are Bad | Fix My Name Online',
         'h1': 'What to do if your Google results are bad',
-        'description': 'A practical action plan for bad Google results around your name or business: evidence, risk review, removal options and positive search assets.',
-        'intro': 'Bad Google results can affect jobs, clients, finance, relationships and business trust. The safest response is a calm action plan: capture the evidence, classify the result, review possible pathways and strengthen the search page with accurate positive assets.',
+        'description': 'A calm plan for bad Google results about your name or business: save the evidence, work out who decides, ask for the right thing, and keep a record.',
+        'intro': 'Bad Google results can affect jobs, clients, money, relationships and trust. The safest response is calm: save the evidence, work out what kind of result it is, ask the person who decides for one specific change, and keep a record.',
         'sections': [
             ('Do not feed the result', 'Avoid public arguments, repeated searches from the same account, social posts about the issue or mass-reporting without evidence. The goal is to reduce risk, not create more signals around the problem.'),
-            ('Map the searches people actually use', 'Check your full name, business name, old names, suburb, profession, review terms and risk phrases. Reputation repair works best when it targets the real search combinations people type.'),
+            ('Check the searches people actually use', 'Try your full name, business name, old names, suburb, job and words like “review” or “complaint”. A problem often shows up for only one of these.'),
             ('Separate platform problems from search problems', 'Google shows results from other sites. A review platform, publisher, court database, social profile or complaint site may need a different response from Google itself.'),
-            ('Create a private next-step plan', 'Decide whether this needs a request to the website, a platform report, a Google form, or simply watching for now. The correct pathway depends on evidence, source authority, sensitivity and timing.'),
+            ('Create a private next-step plan', 'Decide whether this needs a request to the website, a platform report, a Google form, or simply watching for now. The right route depends on the evidence, who runs the source, how sensitive it is, and timing.'),
         ],
         'faqs': [
             ('How urgent is a bad Google result?', 'It depends on where it ranks, what the snippet says, whether it appears for your exact name and whether clients, employers or customers are likely to search it.'),
-            ('Can positive content help?', 'Accurate positive assets can help searchers see a fuller picture over time, but search engines decide what ranks and when.'),
+            ('Does adding my own information help?', 'Accurate, current information about you, such as a work profile, gives people a fuller picture. Search engines decide what shows and in what order.'),
         ],
     },
     'negative-google-results-help': {
         'eyebrow': 'Negative Google results',
-        'title': 'Negative Google Results Help — Private Search Repair | Fix My Name Online',
+        'title': 'Negative Google Results: What You Can Do | Fix My Name Online',
         'h1': 'Negative Google results need evidence, strategy and patience',
-        'description': 'Private help for negative Google results, old links, reviews, complaint pages, snippets and personal or business search reputation problems.',
+        'description': 'What you can do about negative Google results for your name or business: old links, reviews, complaint pages and snippets. Free plan, letters you send yourself.',
         'intro': 'Negative Google results can feel urgent, but the strongest plan starts with evidence and classification. Some problems need a request to the website, some need a platform report, some need accurate information of your own, and some need careful watching before any action.',
         'sections': [
             ('Work from the search page outward', 'Record the exact search phrase, ranking position, title, snippet and source. Then inspect the page itself. Search-page damage can come from the title or snippet even when the underlying article is more balanced.'),
             ('Look for policy or accuracy issues', 'Privacy, impersonation, outdated information, fake reviews, harassment, copyright, defamation concerns or incorrect facts may each have different reporting or correction options.'),
             ('Avoid reputation spam', 'Thin fake profiles, copied articles and aggressive mass posting can look low-quality and may not solve the problem. The better route is truthful, useful information you publish yourself.'),
-            ('Monitor every change', 'Track when Google crawls, when snippets change, when new results appear and which positive assets are discovered. Progress is measured across the whole search footprint.'),
+            ('Keep a record as things change', 'Note the date you sent each request, what came back, and how the search result looks afterwards. Pages and snippets can take weeks to change in Google after the website updates.'),
         ],
         'faqs': [
             ('Is negative Google result help confidential?', 'Fix My Name Online’s free check runs in your browser, so you can plan without telling anyone. Only publish what’s true and what you’re comfortable sharing.'),
-            ('What information should I send?', 'Send the exact search phrase, URLs, screenshots, dates, business/name details and what outcome you are hoping for.'),
+            ('What should I keep a record of?', 'The exact search phrase, the links, dated screenshots, and what you’d like changed. You’ll use them in your own requests. There’s nothing to send to us.'),
         ],
     },
     'how-to-fix-bad-google-search-results': {
         'eyebrow': 'Fix bad Google search results',
         'title': 'How To Fix Bad Google Search Results | Fix My Name Online',
         'h1': 'How to fix bad Google search results without making it worse',
-        'description': 'How to fix bad Google search results safely: document evidence, check removal or correction paths, improve positive assets and monitor search changes.',
-        'intro': 'Fixing bad Google search results is not one button. It is a sequence: evidence, source review, policy pathway, safe communication, positive asset building and monitoring. The wrong shortcut can make the problem louder.',
+        'description': 'How to deal with bad Google search results safely: save evidence, find who runs the page, ask for one specific change, and check back.',
+        'intro': 'There’s no single button for bad Google results. It’s a sequence: save the evidence, find who runs the page, ask them for one specific change, then ask Google to catch up. The wrong shortcut can make it louder.',
         'sections': [
             ('Find the source of the problem', 'Google may be showing a publisher page, review profile, social result, image, court database, complaint page or copied snippet. The source controls many of the next options.'),
-            ('Check removal, update or correction routes', 'Depending on the facts, there may be a publisher request, Google outdated-content request, review report, privacy pathway or legal pathway. Some matters need legal advice outside reputation work.'),
-            ('Build assets that deserve trust', 'Profiles, business pages, articles, FAQs, bios, interviews and proof pages work best when they are truthful, specific, useful and internally linked.'),
+            ('Check removal, update or correction routes', 'Depending on the facts, there may be a publisher request, Google outdated-content request, review report, privacy pathway or legal pathway. Some matters need a lawyer first, for example defamation, which has short time limits.'),
+            ('Keep your own information accurate', 'Profiles and pages you control should be truthful, specific and current. A few genuine ones do more than lots of thin ones.'),
             ('Review results over weeks, not minutes', 'Search engines crawl and rank over time. A sensible plan watches what Google shows over time, instead of expecting instant change.'),
         ],
         'faqs': [
@@ -1505,17 +1434,17 @@ SEO_GUIDES = {
     'bad-search-results-for-my-name': {
         'eyebrow': 'Personal name search problem',
         'title': 'Bad Search Results for My Name — What Can I Do? | Fix My Name Online',
-        'h1': 'Bad search results for your name? Start with a private map',
+        'h1': 'Bad search results for your name? What to do first',
         'description': 'What to do when bad search results appear for your personal name, old name, business name, location or associated search terms.',
-        'intro': 'When bad search results appear for your name, the problem is personal. People may search before hiring, dating, renting, investing, booking or trusting you. The first step is a private map of what appears and why.',
+        'intro': 'When bad search results appear for your name, it feels personal. People may search before hiring, dating, renting or trusting you. Start by seeing exactly what they see, privately, before you do anything public.',
         'sections': [
             ('Search all name variations', 'Check your full name, old names, middle name, nicknames, professional name, business name, city, suburb, occupation and terms people may add when they are suspicious.'),
             ('Look at images, news and suggestions', 'Bad reputation signals are not only blue links. Image results, news tabs, autocomplete, people-also-search boxes and review snippets can shape first impressions.'),
-            ('Decide what should stay private', 'Not every positive asset needs your whole life story. Anything you publish should be true and something you’re comfortable having online.'),
-            ('Build a safer positive footprint', 'Depending on the case, that may include profiles, biographies, service pages, professional proof, helpful articles, FAQs and ongoing monitoring.'),
+            ('Decide what should stay private', 'You don’t need to share your whole story online. Anything you do publish about yourself should be true and something you’re comfortable having out there.'),
+            ('Add accurate information you control', 'A current work profile, a business page or a short bio gives people searching your name something true and up to date to find.'),
         ],
         'faqs': [
-            ('Will people know I used reputation help?', 'The free check is private: it runs in your browser. Anything you publish should look natural and suit your situation, not like a crisis response.'),
+            ('Will anyone know I used this?', 'No. The free check runs in your browser and nothing you type is sent to us. Any request you send is a normal letter from you.'),
             ('Can this help with associated names?', 'Yes. Associated names, old names, nicknames, business names and locations should be mapped because people often search more than one phrase.'),
         ],
     },
@@ -1523,16 +1452,16 @@ SEO_GUIDES = {
         'eyebrow': 'Personal reputation repair',
         'title': 'Personal Online Reputation Repair — Private Name Search Help | Fix My Name Online',
         'h1': 'Personal online reputation repair for name searches that feel unfair',
-        'description': 'Private personal online reputation repair for people dealing with bad Google results, old articles, images, reviews, associated names and damaging search snippets.',
-        'intro': 'Personal online reputation repair starts with a simple reality: people search names before they decide who to trust. If the first page shows old, incomplete or damaging material, the safest response is a private evidence map and a truthful plan for stronger current assets.',
+        'description': 'A private, self-service way to deal with bad Google results, old articles, images and reviews about you. Free plan and letters; you send everything yourself.',
+        'intro': 'People search names before they decide who to trust. If the first page shows old, incomplete or damaging material, start by saving what you see, then ask the people who run each page for one specific change.',
         'sections': [
-            ('Start with what people actually type', 'A personal reputation plan should map your full name, old names, nicknames, locations, business connections, image results and risk phrases. The damaging result may only appear for one combination, but that combination can still affect jobs, relationships, finance or clients.'),
-            ('Separate private facts from public assets', 'Not every positive asset needs to reveal sensitive history. What helps most is accurate information: bios, professional profiles, current work, helpful articles, credentials and business pages.'),
-            ('Review removal pathways without promising outcomes', 'Some pages may have privacy, outdated-content, publisher correction, platform report or legal-review pathways. Others may not. A careful review helps avoid risky messages, public arguments or fake content.'),
-            ('Monitor the whole search footprint', 'Progress is measured across the full search page: web, images, videos, snippets, suggestions and associated names. The goal is a safer, more accurate search footprint over time.'),
+            ('Start with what people actually type', 'Search your full name, old names, nicknames, suburb, business and image results. The damaging result may only appear for one combination, but that one can still affect work, relationships or money.'),
+            ('Keep private things private', 'You don’t have to explain your history in public. Accurate, current information, such as a work profile or a short bio, often helps more.'),
+            ('Check which routes fit before you write', 'Some pages can be corrected by the publisher, reported to a platform, or refreshed in Google once they change. Others can’t. Knowing which applies keeps your request specific and stops you making claims that don’t fit.'),
+            ('Check back now and then', 'Search your name again every month or two, including images and news. Note what has changed. Changes in Google can take weeks after a page is updated.'),
         ],
         'faqs': [
-            ('Is personal online reputation repair confidential?', 'The free check runs in your browser, so your planning stays private. Public assets are only created from information you approve.'),
+            ('Is personal online reputation repair confidential?', 'The free check runs in your browser, so nothing you type is sent to us. Nothing is published or sent unless you do it yourself.'),
             ('Can this help if I am not a public figure?', 'Yes. Everyday people are searched by employers, clients, landlords, partners and communities. Reputation harm is not limited to celebrities.'),
         ],
     },
@@ -1546,28 +1475,28 @@ SEO_GUIDES = {
             ('Check the live page and Google snippet separately', 'A result can be outdated because the publisher page changed but Google still shows the old snippet. It can also be outdated because another site copied or republished old information. Each case needs a different pathway.'),
             ('Collect proof of what changed', 'Save the search phrase, result title, snippet, URL, date, screenshots, original publication date and any current page showing the updated facts. Outdated-content requests are stronger when the difference is clear.'),
             ('Know the limits of Google tools', 'Google may update or remove certain stale results under its policies, but it does not control every publisher page and does not erase every old reference. Publisher contact or legal advice may be needed in some cases.'),
-            ('Build current assets while review is pending', 'If an outdated result keeps ranking, accurate current pages, profiles and articles can help searchers see more context while formal review pathways are assessed.'),
+            ('Keep accurate information about you current', 'While you wait for a reply, make sure the pages you control, like a work profile or business listing, are up to date. They give people searching your name the current picture.'),
         ],
         'faqs': [
             ('Can Google remove outdated results?', 'Sometimes. It depends on the source page, policy, evidence and whether the information is truly outdated or still publicly available.'),
-            ('What should I send for review?', 'Send the exact Google result, URL, screenshot, search phrase, date and any proof showing the information has changed or is incomplete.'),
+            ('What do I need before I ask?', 'The link, the Google result, a dated screenshot, the search phrase, and proof of what has changed. If the page itself has already changed, Google’s Refresh Outdated Content tool only needs the link.'),
         ],
     },
     'reputation-monitoring-alerts': {
-        'eyebrow': 'Reputation monitoring',
-        'title': 'Reputation Monitoring Alerts for Name and Review Risk | Fix My Name Online',
-        'h1': 'Reputation monitoring alerts help you catch search problems early',
-        'description': 'Reputation monitoring alerts for names, old names, businesses, Google reviews, bad results, associated names and search-risk terms before damage spreads.',
-        'intro': 'Many reputation problems are found too late. Reputation monitoring alerts help identify new results, review changes, associated-name issues and search-risk terms before they become a bigger trust problem.',
+        'eyebrow': 'Keeping an eye on your name',
+        'title': 'How to Keep an Eye on What Shows Up for Your Name | Fix My Name Online',
+        'h1': 'How to keep an eye on what shows up for your name',
+        'description': 'Simple, free ways to notice new search results about your name or business: what to search, how often, and which free alert tools to use.',
+        'intro': 'Most people only find a problem result when someone mentions it. A few minutes every month or two, plus a couple of free alert tools, means you’re more likely to see something new before it costs you.',
         'sections': [
-            ('Monitor more than your exact name', 'Search risk often appears through old names, business names, suburbs, job titles, directors, partners, review terms, complaint phrases and image results. A useful watchlist includes the phrases real people might search.'),
-            ('Track new results and changed snippets', 'A page that has existed for years can become harmful if Google changes the title, snippet, image or freshness signal. Monitoring should record what changed and when.'),
-            ('Use alerts to decide the next action', 'A new result may need no action, a quiet evidence file, a review-response plan, a publisher request, a Search Console/indexing check or a fuller plan.'),
-            ('Report in plain English', 'Write down what appeared, why it matters, what you’ve checked and what the next step is. Mystery dashboards do not build trust.'),
+            ('Search more than your exact name', 'Problems often show up for your name plus a suburb, a job title, a business name, an old name, or words like “review” or “complaint”. Keep a short list of the searches a stranger might try, and check images and news too.'),
+            ('Write down what you see', 'Note the date, the search, and the first page of results. Next time, you can see at a glance what’s new or what has changed.'),
+            ('Use free alert tools', 'Google Alerts can email you when new pages mention your name. Google’s “Results about you” tool can tell you about new results showing your phone number, email or home address, where it’s available.'),
+            ('Decide what, if anything, to do', 'Most new results need nothing. If one is wrong, out of date or breaks a platform’s rules, the free check gives you the steps, a letter and the official forms for that kind of result.'),
         ],
         'faqs': [
-            ('Who needs reputation monitoring?', 'Professionals, founders, businesses, public figures and everyday people who cannot afford to be surprised by what appears when their name is searched.'),
-            ('Does monitoring remove results?', 'No. Monitoring detects and documents changes. It helps you decide whether to ask the website, report to the platform, use a Google form, or publish accurate information of your own.'),
+            ('Does Fix My Name Online offer alerts?', 'Our NameWatch alerts are paused while we rebuild them, and new sign-ups are closed. You can join the waitlist for one email when they’re back. In the meantime, Google Alerts and “Results about you” are free.'),
+            ('Does keeping an eye on things remove results?', 'No. It just helps you notice changes sooner. Removing or correcting anything is decided by the website, the platform or Google, and any request is one you send yourself.'),
         ],
     },
     'online-reputation-management-for-business': {
@@ -1579,12 +1508,12 @@ SEO_GUIDES = {
         'sections': [
             ('Audit the branded search page', 'Check the business name, owner names, suburb, service terms, reviews, images, map results, complaint pages, directories and old listings. A business can lose trust before the customer ever reaches the website.'),
             ('Handle reviews with evidence and calm replies', 'Fake, unfair or malicious reviews need screenshots, notes on any pattern, the specific policy they break, and a calm public reply. Fighting in public usually makes the business look less trustworthy.'),
-            ('Strengthen the trust assets', 'Service pages, About pages, case-safe proof, FAQs, location pages, profiles, videos and helpful articles can improve the search footprint around the brand.'),
-            ('Separate reputation management from advertising', 'Ads can bring clicks, but reputation repair needs search assets, review hygiene, monitoring and clear public trust signals that keep working after the ad stops.'),
+            ('Keep your own listings accurate', 'Your website, Google Business Profile and directory listings are the pages you control. Keep the details current and the descriptions plain and true.'),
+            ('Ask for genuine reviews, fairly', 'Ask every customer, not just happy ones, and never offer anything in return. A steady stream of real reviews puts one bad one in context.'),
         ],
         'faqs': [
-            ('Can reputation management help with fake Google reviews?', 'It can help document, report, respond and rebuild trust signals. Google decides whether any review is removed.'),
-            ('Is this only for large businesses?', 'No. Local businesses, professionals, clinics, trades, agencies, restaurants and online brands can all be affected by search trust problems.'),
+            ('Can I do anything about fake Google reviews?', 'You can report a review that breaks one of Google’s rules, with a short factual note, and reply calmly in public. Google decides whether it comes down.'),
+            ('Can a small business do this itself?', 'Yes. Most of it is checking what shows up, reporting reviews that break a rule, replying calmly, and keeping your own listings accurate. The free check covers reviews and other results.'),
         ],
     },
     'what-shows-up-when-someone-googles-my-name': {
@@ -1592,16 +1521,16 @@ SEO_GUIDES = {
         'title': 'What Shows Up When Someone Googles My Name? | Fix My Name Online',
         'h1': 'What shows up when someone Googles your name?',
         'description': 'A private name-search checklist for people worried about what employers, clients, dates, landlords or customers see when they Google a name.',
-        'intro': 'Most people do not know what appears when someone Googles their name until something goes wrong. A private name-search check maps the first impression people see before they meet you, hire you, date you, rent to you or trust you.',
+        'intro': 'Most people don’t know what appears when someone Googles their name until something goes wrong. Searching your own name the way a stranger would shows you the first impression people get before they meet you, hire you, date you or rent to you.',
         'sections': [
             ('Search the way another person would', 'Use your full name, quoted name, old names, nicknames, suburb, business names, job title and risk words. Check web results, images, videos, news, reviews and suggestions.'),
             ('Look at snippets, not only links', 'The headline and snippet can cause the damage even if the page itself is old or more balanced. Screenshots help record exactly what others may be seeing.'),
-            ('Classify the search results', 'Mark each result as positive, neutral, outdated, sensitive, review-related, article-related, image-related, associated-name risk or possible removal-review candidate.'),
-            ('Choose a safe next step', 'Some issues need monitoring, some need a quiet correction request, some need review defence and some need a broader positive-footprint strategy.'),
+            ('Sort what you find', 'For each result, ask: is it about me, is it accurate, is it current? Most will be fine. Note the ones that are wrong, out of date, or about someone else with your name.'),
+            ('Choose a calm next step', 'Some results need nothing. Some need a polite correction request to the website. A review may need reporting and a calm reply. The free check gives you the steps for each kind.'),
         ],
         'faqs': [
             ('Should I Google myself often?', 'Occasionally, yes, but track results calmly. Repeated panic searching does not solve the issue; evidence and a plan do.'),
-            ('Can Fix My Name Online check it for me?', 'Yes. The free check is a quick, private way to get a plan for a name, business, link or review problem.'),
+            ('Can Fix My Name Online search my name for me?', 'No. We don’t search Google or run a scan. You search your name, using the steps above, then tell the free check what you found. It gives you a plan, a letter you can edit and the official forms for that kind of result.'),
         ],
     },
     'google-review-defence-for-small-business': {
@@ -1630,12 +1559,12 @@ SEO_GUIDES = {
         'sections': [
             ('Check exactly what needs cleaning up', 'Write down the search phrase, result title, snippet, URL, image and date. A bad headline, old snippet, review box or copied page can each need a different response.'),
             ('Do not make it louder', 'Avoid public arguments, repeated angry comments, threats or spammy posts. Those reactions can create more search signals around the same problem.'),
-            ('Look for realistic update or removal paths', 'Some results may have an outdated-content, privacy, correction, review-policy or publisher request pathway. Others may need a stronger positive search footprint instead.'),
-            ('Build better results people can trust', 'Useful profiles, bios, business pages, articles, FAQs and proof pages can help Google and searchers see a fuller current picture over time.'),
+            ('Look for realistic update or removal routes', 'Some results can be updated by the publisher, removed under a platform’s rules, or refreshed in Google once the page changes. Others will stay, and then accurate information of your own matters more.'),
+            ('Add accurate information people can trust', 'Profiles and pages you control, kept true and current, help people see a fuller picture over time.'),
         ],
         'faqs': [
-            ('Can you clean up Google results instantly?', 'No. Search engines, publishers and platforms make their own decisions. A safe plan improves evidence, assets, discovery and monitoring over time.'),
-            ('What should I send first?', 'Send the exact search phrase, screenshots, URLs, your name or business name, and what worries you most.'),
+            ('Can Google results be cleaned up instantly?', 'No. Search engines, publishers and platforms make their own decisions, and changes in Google take time even after a page is fixed.'),
+            ('What should I save first?', 'The exact search phrase, the links and dated screenshots, plus a note of what worries you most. Then start the free check for the steps that fit.'),
         ],
     },
     'old-stuff-showing-up-on-google': {
@@ -1647,8 +1576,8 @@ SEO_GUIDES = {
         'sections': [
             ('Work out whether the page or snippet is old', 'Sometimes the website still shows the old information. Sometimes the website changed but Google is showing an old title or snippet. That difference matters.'),
             ('Save proof of the age and context', 'Keep screenshots, original dates, current facts, changed outcomes and the exact Google result. Evidence makes any request stronger.'),
-            ('Check official pathways first', 'There may be a publisher correction, outdated-content request, privacy pathway or platform process. Not every old page qualifies, but it should be checked properly.'),
-            ('Add the current version of the story', 'If old material remains online, accurate current assets can help searchers see who you are now, not only what happened years ago.'),
+            ('Check the official routes first', 'There may be a publisher correction, Google’s refresh tool, a privacy request or a platform process. Not every old page qualifies, so check which fits before you ask.'),
+            ('Add the current version of the story', 'If old material stays online, accurate current information you control, like a work profile or business page, helps people see who you are now.'),
         ],
         'faqs': [
             ('Can old information be removed from Google?', 'Sometimes a result or snippet can be updated or removed under specific policies, but there is no universal right to erase every old result.'),
@@ -1668,8 +1597,8 @@ SEO_GUIDES = {
             ('Do not over-explain publicly', 'Public crisis posts can draw more attention. Keep it calm and private, and only publish what’s true.'),
         ],
         'faqs': [
-            ('Should I contact the person who searched me?', 'Sometimes, but not always. First understand what appeared and whether a quiet fix, evidence pack or better public asset is safer.'),
-            ('Can this be handled discreetly?', 'Yes. The first step is a private free check so the issue can be mapped before any public action.'),
+            ('Should I contact the person who searched me?', 'Sometimes, but not always. First work out what they saw and whether it can be fixed. A calm, short explanation can help; a long defence usually doesn’t.'),
+            ('Can I deal with this quietly?', 'Yes. The free check runs in your browser and nothing you type is sent to us. Any request you send is a private letter from you to the website.'),
         ],
     },
     'bad-review-costing-me-customers': {
@@ -1698,11 +1627,11 @@ SEO_GUIDES = {
         'sections': [
             ('Identify the source and copy sites', 'Check whether Google shows an official court page, publisher article, database, scraper site or copied version. The source affects the options.'),
             ('Collect the missing context', 'Save dates, outcomes, appeal results, corrections, expungement or spent-conviction information where relevant, and screenshots of the search result.'),
-            ('Separate legal advice from reputation planning', 'Some matters need a lawyer. Reputation work can help with search mapping, evidence packs, publisher/platform pathways and truthful current assets.'),
-            ('Build a current search footprint carefully', 'If the record stays online, accurate professional pages can help show more than one old result, without pretending anyone controls the search engine.'),
+            ('Know when to get legal advice first', 'Some matters need a lawyer first, especially if a case is still running, or you want to know whether a spent-conviction scheme or a non-publication order covers you. Legal Aid and community legal centres can help. For copies on other sites, the free check gives you a letter and the official links, and you send them yourself.'),
+            ('Keep accurate information about you current', 'If the record stays online, an accurate work profile or business page gives people more to go on. Nobody controls what Google shows.'),
         ],
         'faqs': [
-            ('Can old court records always be removed?', 'No. It depends on the record, jurisdiction, source, legal status and platform policy. The first step is a careful review.'),
+            ('Can old court records always be removed?', 'No. It depends on the record, where you live, who published it and whether any special rules apply. The free check shows the routes that may fit. If you’re not sure whether a spent-conviction scheme or non-publication order covers you, ask Legal Aid or a lawyer first.'),
             ('Is Fix My Name Online a law firm?', 'No. Fix My Name Online is not a law firm and doesn’t give legal advice. It gives you free, self-service plans and letters you send yourself.'),
         ],
     },
@@ -1711,12 +1640,12 @@ SEO_GUIDES = {
         'title': 'My Name Brings Up Embarrassing Results | Fix My Name Online',
         'h1': 'My name brings up embarrassing results. What are my options?',
         'description': 'Private help for embarrassing Google results tied to your name, old names, photos, articles, comments, reviews or associated search terms.',
-        'intro': 'Embarrassing search results can affect work, dating, family, finance and confidence. The first step is not shame or panic; it is a private map of what appears and what can realistically be done.',
+        'intro': 'Embarrassing search results can affect work, dating, family, money and confidence. The first step isn’t shame or panic. It’s seeing exactly what shows up, and working out what can realistically be done.',
         'sections': [
             ('List every search that triggers it', 'Check full name, old names, nicknames, locations, business names and image searches. Embarrassing results often appear only for certain combinations.'),
             ('Classify the result', 'It may be outdated, inaccurate, sensitive, review-related, image-related, copied, defamatory, private or simply lacking context. Each type has different options.'),
-            ('Keep the response proportionate', 'Avoid public arguments, fake content or mass posting. A quiet, truthful repair plan is usually safer.'),
-            ('Create better public context', 'Accurate bios, profiles, business pages, helpful articles and proof points can help the search page show the person or business as they are now.'),
+            ('Keep your response in proportion', 'Avoid public arguments, fake content or posting lots of new pages. A quiet, specific request to the website is usually safer.'),
+            ('Add accurate information you control', 'A current bio, work profile or business page helps people see you as you are now.'),
         ],
         'faqs': [
             ('Will this make the embarrassing result disappear?', 'No responsible service can promise that. The free check shows the routes that may apply, and you decide what to do.'),
@@ -1727,13 +1656,13 @@ SEO_GUIDES = {
         'eyebrow': 'Remove name from Google',
         'title': 'Can I Remove My Name From Google? | Fix My Name Online',
         'h1': 'Can I remove my name from Google?',
-        'description': 'Plain-English explanation of whether a person can remove their name from Google, what Google controls, and what private reputation repair can check.',
+        'description': 'Can you remove your name from Google? What Google controls, what only the website can change, and the forms you can use yourself.',
         'intro': 'Many people ask if they can remove their name from Google. The honest answer is: sometimes specific results may have pathways, but Google is an index of pages across the web, not a single profile you can simply delete.',
         'sections': [
             ('Google usually shows pages from other websites', 'The result may come from a publisher, review site, social profile, directory, court database, forum or copied page. The source often controls the content.'),
             ('Some personal information has special pathways', 'Certain privacy, outdated-content, explicit image, doxxing, impersonation or policy issues may be reviewable. Evidence and exact URLs matter.'),
-            ('Removing a name is different from repairing a search page', 'If results cannot be removed, the safer goal may be to build accurate current assets and reduce the power of old or incomplete results over time.'),
-            ('Start privately before contacting websites', 'A rushed message to a publisher or platform can backfire. Map the result and options before acting.'),
+            ('Removing a name is different from fixing a search page', 'If a result can’t be removed, you can still ask for it to be corrected or updated, and make sure accurate, current information about you is easy to find.'),
+            ('Plan before you contact anyone', 'A rushed message to a publisher or platform can backfire. Save the result and work out what to ask for first. The free check helps with that.'),
         ],
         'faqs': [
             ('Can Google delete every result about me?', 'No. Google and source websites make their own decisions, and public-interest material may remain online.'),
@@ -1744,17 +1673,17 @@ SEO_GUIDES = {
         'eyebrow': 'Hide bad Google results',
         'title': 'Can You Hide Bad Google Results? Safer Options Explained | Fix My Name Online',
         'h1': 'Can you hide bad Google results? Here is the safer way to think about it',
-        'description': 'For people searching how to hide bad Google results: what is realistic, what to avoid, and safer reputation repair options.',
-        'intro': 'People often search for how to hide bad Google results because they feel exposed. A responsible service should not promise to hide, bury or manipulate Google. The safer question is: what can be reviewed, corrected, updated or balanced with truthful current information?',
+        'description': 'Want to hide bad Google results? What’s realistic, what to avoid, and the honest options you can use yourself.',
+        'intro': 'People often search for how to hide bad Google results because they feel exposed. No honest service can hide, bury or control Google results. The better question is what can be corrected, updated, reported or balanced with true, current information.',
         'sections': [
             ('Avoid anyone promising secret control over Google', 'Guaranteed hiding, burying or instant removal claims are red flags. Search engines decide what ranks.'),
             ('Check whether the result itself has a pathway', 'Some problems may qualify for correction, privacy review, outdated-content review, review reporting or publisher contact. Others will not.'),
-            ('Improve the search page honestly', 'Accurate profiles, pages, articles, FAQs, business proof and monitoring can give searchers a fuller view over time.'),
-            ('Protect future searches', 'Monitoring names, old names, business names and risk terms helps catch new issues early before they become the only thing people see.'),
+            ('Add accurate information honestly', 'A few genuine, current profiles and pages you control give people a fuller view over time.'),
+            ('Keep an eye on new results', 'Search your name, old names and business name every month or two. Free tools like Google Alerts can also tell you about new mentions.'),
         ],
         'faqs': [
-            ('Is hiding bad results the same as removal?', 'No. Removal means a specific result may be taken down, updated or de-indexed. Broader reputation repair focuses on the whole search page.'),
-            ('Can positive content help?', 'Truthful positive assets can help over time, but rankings and search outcomes are decided by search engines.'),
+            ('Is hiding bad results the same as removal?', 'No. Removal means a specific page is taken down, updated or dropped from search by whoever controls it. Nobody can hide results by other means.'),
+            ('Does adding my own information help?', 'True, current information you control can help people see a fuller picture over time. Search engines decide what shows and in what order.'),
         ],
     },
     'what-do-employers-see-when-they-google-me': {
@@ -1766,8 +1695,8 @@ SEO_GUIDES = {
         'sections': [
             ('Search your name like a recruiter', 'Use your full name, city, profession, old names, LinkedIn name, business history and any likely risk words. Check web, images, news and videos.'),
             ('Look for gaps as well as bad results', 'Sometimes the problem is not only a bad link. It’s the lack of accurate, current information that explains who you are now.'),
-            ('Prepare accurate professional pages', 'A clear bio, service page, portfolio, profiles, articles, FAQs and proof points can make the search page more useful and current.'),
-            ('Handle sensitive results quietly', 'If an old article, record or complaint appears, review options and evidence before trying to explain it publicly.'),
+            ('Keep your professional information current', 'A clear bio, an up-to-date work profile and a business page if you have one make the search page more useful and current.'),
+            ('Handle sensitive results quietly', 'If an old article, record or complaint appears, save it and check your options before trying to explain it in public.'),
         ],
         'faqs': [
             ('Should I clean my results before applying for jobs?', 'It is wise to check early. Changes take time, so checking your name before a major application can prevent surprises.'),
@@ -1784,10 +1713,10 @@ SEO_GUIDES = {
             ('First: freeze the evidence', 'Screenshot the results, URLs, snippets, reviews, images and dates before anything changes. Good evidence prevents guesswork.'),
             ('Second: stop risky reactions', 'Do not threaten, spam, fake reviews, make public accusations or publish panic posts. Those actions can become new reputation problems.'),
             ('Third: triage the pathway', 'Decide whether the issue needs a request to the website, a platform report, watching for changes, accurate information of your own, or legal advice. Different problems need different tools.'),
-            ('Fourth: build the next visible proof', 'Even while review pathways are checked, useful current assets can be prepared so the search page has better material to discover.'),
+            ('Fourth: update what you control', 'While you wait for replies, update your own profiles and pages so the current picture is easy to find.'),
         ],
         'faqs': [
-            ('What can be done quickly?', 'Evidence capture, risk triage, review-response drafts, profile cleanup and preparation of accurate pages of your own can happen quickly. Search ranking changes usually take longer.'),
+            ('What can be done quickly?', 'Saving evidence, working out who decides, writing your requests and updating your own profiles can all happen today. Changes in Google usually take longer.'),
             ('Is urgent reputation help private?', 'Yes. The first step can be a private free check before any public move is made.'),
         ],
     },
@@ -2050,12 +1979,12 @@ def fix_your_name_online_guide():
             'Write the exact sentence, date, image or claim that is wrong or outdated',
             'Collect documents or source links that support a correction',
             'Avoid threats, fake reviews, duplicate pages and public arguments',
-            'Monitor the query after any source update or formal request',
+            'Search the same phrase again after any change or request',
         ],
         [
             ('Can I legally change my name through Fix My Name Online?', 'No. Legal identity changes belong with government authorities. FMNO focuses on what appears when a person or business name is searched online.'),
             ('Can Google correct my name in a search result?', 'Sometimes Google can refresh or review a result, but many corrections must first happen on the source website. The right route depends on where the wrong information originates.'),
-            ('What if the bad page cannot be removed?', 'Monitor it, correct any inaccurate surrounding information, and build accurate current assets that help searchers understand the fuller picture.'),
+            ('What if the bad page cannot be removed?', 'Write down the answer, try the complaint routes for your country, and make sure accurate, current information about you is easy to find, such as a work profile or business listing.'),
             ('How quickly can name-search results change?', 'A source page may update quickly, while Google recrawling and broader ranking movement can take longer. Timing depends on the source, crawl frequency and competition around the name.'),
         ],
     )
@@ -2066,15 +1995,15 @@ def how_to_fix_your_reputation_online_guide():
     return authority_guide_page(
         'how-to-fix-your-reputation-online',
         'How to Fix Your Reputation Online: A Practical Search Plan | FMNO',
-        'A practical guide to fixing your reputation online: audit search results, preserve evidence, use the right correction pathway, strengthen trusted profiles and monitor change.',
+        'A practical guide to fixing your reputation online: see what shows up, save evidence, ask the right people for the right thing, keep your own profiles accurate, and check back.',
         'How to fix your reputation online without making the problem worse',
         'Online reputation repair starts with diagnosis, not a burst of generic content. The useful question is not “How do I hide everything?” It is “Which results are wrong, outdated, removable, reviewable or missing important current context?”',
         [
             ('Audit what is actually visible', 'Search the exact personal or business name in a clean browser and record the first two pages, image results, review profiles and autocomplete phrases. Note which results are controlled by you, controlled by a platform, or published by an independent source.'),
             ('Prioritise by real-world harm', 'A page that appears first for the exact name usually deserves more attention than a result found only through an obscure phrase. Rank each issue by visibility, accuracy, source authority, urgency and the decision it may affect, such as employment, customers or finance.'),
             ('Choose correction before confrontation', 'If information is factually wrong, prepare a short request showing the exact error and reliable supporting evidence. If it is a review, use the platform policy and a calm owner response. Public threats and emotional arguments can create additional searchable material.'),
-            ('Repair weak trust signals', 'Claim and complete legitimate profiles, keep names and business details consistent, publish useful current information, and link official properties together. A sparse identity makes one negative result look more important because Google has little reliable current material to compare.'),
-            ('Measure the search page over time', 'Track the same query, location and device pattern. Record source changes, indexing status, snippet changes and movement of your own pages. Reputation repair is an evidence loop: observe, act, verify and adjust.'),
+            ('Keep your own profiles accurate', 'Complete the profiles that are genuinely yours, such as a work profile or business listing, and keep your name and details consistent. When there’s little accurate, current information about you, one bad result stands out more.'),
+            ('Check back over time', 'Search the same phrases every month or two and note what has changed. Record what you sent, when, and what came back, so you know what to do next.'),
         ],
         [
             'List the first 20 results for the exact name or business',
@@ -2082,13 +2011,13 @@ def how_to_fix_your_reputation_online_guide():
             'Preserve URLs, screenshots, dates and source evidence',
             'Identify the correct publisher, platform or Google tool for each issue',
             'Complete official profiles and current business information consistently',
-            'Track impressions, clicks, indexed pages and exact-name results monthly',
+            'Search your name again each month or two and note what has changed',
         ],
         [
             ('What is the first step in online reputation repair?', 'Audit the exact search result page and preserve the evidence. Without that map, it is easy to work on content or requests that do not address the visible problem.'),
-            ('Should I respond publicly to a negative result?', 'Only when a calm factual response serves a clear purpose. Some issues are better handled through evidence, publisher contact, platform reporting, monitoring or professional advice.'),
-            ('Can positive profiles help an online reputation?', 'Accurate, useful and well-maintained profiles can strengthen trust and give search engines current entity information. They should be truthful and complete rather than mass-produced.'),
-            ('Is reputation repair a one-time action?', 'Usually not. Search results change as pages are updated, indexed and linked. Monitoring is needed to verify changes and catch new risks.'),
+            ('Should I respond publicly to a negative result?', 'Only when a calm, factual reply serves a clear purpose, such as replying to a review. Most issues are better handled with a private request to the website or a report to the platform.'),
+            ('Can my own profiles help?', 'Accurate, current profiles give people something true to find. Keep them genuine and complete rather than making lots of thin ones.'),
+            ('Is this a one-time job?', 'Usually not. Pages change, and new ones appear. Checking back every month or two lets you see whether a request worked and catch anything new.'),
         ],
     )
 
@@ -2159,7 +2088,7 @@ def google_alerts_for_my_name_redirect():
 def name_watch_alerts_page():
     return page('NameWatch is coming back', site_pages.namewatch(),
                 'NameWatch alerts are being rebuilt. New sign-ups are paused. Join the waitlist for one email when it’s back, or use the free check now.',
-                canonical_path='/name-watch-alerts')
+                canonical_path='/name-watch-alerts', analytics=False)
 
 
 WAITLIST_DB = DATA_DIR / 'namewatch_waitlist.sqlite3'
@@ -2204,16 +2133,6 @@ def google_your_name_landing():
 def ad_free_snapshot_form():
     # The Free Search Snapshot is now the free check. Old links and ads land there.
     return redirect('/self-service?from=snapshot', code=301)
-
-
-def render_snapshot_form(values=None, errors=None):
-    if values is None:
-        values = {key: request.args.get(key, '')[:500] for key in ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']}
-        values['source_page'] = (request.args.get('source') or 'snapshot_form')[:160]
-        values['name'] = (request.args.get('name') or request.args.get('names_to_check') or '')[:160]
-    return page('Free Search Snapshot™ — FixMyNameOnline™', snapshot_form_body(values, errors),
-                'Explain one reputation concern. Get automated next-step guidance from your answers, then choose your own action.',
-                canonical_path='/free-search-snapshot', analytics=False)
 
 
 @app.route('/free-snapshot')
@@ -2303,63 +2222,18 @@ def api_concierge_voice():
 
 @app.route('/api/concierge/submit', methods=['POST'])
 def api_concierge_submit():
-    payload = request.get_json(silent=True) or {}
-    if not isinstance(payload, dict):
-        return jsonify({'ok': False, 'error': 'Invalid intake format.'}), 400
-    collected = payload.get('collected') or {}
-    if not isinstance(collected, dict):
-        return jsonify({'ok': False, 'error': 'Invalid intake format.'}), 400
-    transcript = payload.get('transcript') if isinstance(payload.get('transcript'), list) else []
-    collected = {k: str(v or '').strip()[:10000] for k, v in collected.items()}
-    name = collected.get('contact_name') or collected.get('names_to_check') or ''
-    email = (collected.get('email') or '').lower()
-    validation_data = {**collected, 'name': name, 'email': email,
-                       'authority': collected.get('authority', '').lower(),
-                       'consent': collected.get('consent', '').lower()}
-    errors = validate_snapshot(validation_data)
-    if errors:
-        return jsonify({'ok': False, 'error': next(iter(errors.values())), 'fields': list(errors)}), 400
-    if free_snapshot_used(email):
-        return jsonify({'ok': False, 'error': 'One free intake is available per email. The free self-service desk remains available.', 'upgrade_url': '/self-service'}), 429
-    issue_label = collected.get('issue_label') or CONCIERGE_TOPIC_LABELS.get(collected.get('issue_type'), collected.get('issue_type', 'Private search issue'))
-    data = {
-        'name': name,
-        'email': email,
-        'phone': collected.get('phone', ''),
-        'case_type': issue_label,
-        'names_to_check': collected.get('names_to_check', ''),
-        'problem_links': collected.get('problem_links', ''),
-        'country_state': collected.get('country_state', ''),
-        'authority': validation_data['authority'],
-        'consent': validation_data['consent'],
-        'goal': collected.get('goal', ''),
-        'source_page': 'private_search_concierge_agent_v1',
-    }
-    triage = triage_snapshot(data)
-    queue_item = make_queue_item('free_snapshot', data, triage)
-    source = {**data, 'triage': triage, 'queue_id': queue_item['id'], 'concierge_collected': collected, 'concierge_transcript': transcript[-20:]}
-    queue_item['status'] = 'automated_guidance_available'
-    append_jsonl(LEADS_FILE, {**source, 'searched_name': data.get('names_to_check') or data.get('name'), 'submitted_at': utc_now()})
-    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': 'homepage_private_concierge', 'href': '/api/concierge/submit', 'location': request.path, 'source': data.get('source_category'), 'queue_id': queue_item['id']})
-    append_jsonl(CONCIERGE_TRANSCRIPTS_FILE, {'queue_id': queue_item['id'], 'collected': collected, 'transcript': transcript[-40:]})
-    append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
-    case_room = save_case_room(queue_item, data, triage, transcript=transcript)
-    send_snapshot_emails(data, triage, queue_item, case_room=case_room)
-    return jsonify({
-        'ok': True,
-        'queue_id': queue_item['id'],
-        'case_id': '',
-        'case_room_url': case_room.get('case_room_url'),
-        'message': 'Your Free Search Snapshot™ intake is saved. Open your on-screen guidance; this is based on your answers, not a live Google search.',
-        'redirect': f"/private-case-room/{queue_item['id']}?access_token={case_room.get('access_token')}",
-    })
+    """Retired with the Free Search Snapshot (October 2026). Nothing is stored or emailed."""
+    return jsonify({'ok': False, 'retired': True,
+                    'error': 'This form has been replaced by the free check, which runs in your browser. Nothing you typed was saved.',
+                    'redirect': '/self-service?from=snapshot'}), 410
 
 
 @app.route('/snapshot-received')
 def snapshot_received_light():
     ref = request.args.get('ref', '')
-    body = f'''<div class="card"><span class="pill">Free Search Snapshot™</span><h1>Keep control of your next step.</h1><p class="sub">Use the private link shown after a successful intake to revisit your guidance. This page alone does not confirm a submission.</p><p class="note">Reference supplied: {safe(ref)}<br>Guidance is based on submitted information, not a live Google search.</p><p><a class="btn" href="/self-service">Open free self-service →</a></p></div>'''
-    return page('Snapshot received — FixMyNameOnline™', body)
+    ref_line = f'<p class="note">Reference: {safe(ref)}</p>' if ref else ''
+    body = f'''<div class="card"><span class="pill">Earlier tool</span><h1>The Free Search Snapshot is now the free check.</h1><p class="sub">If you used the Snapshot before October 2026, your private link still opens what you entered then. For anything new, the free check gives you a plan, a letter you can edit and the official forms. It runs in your browser and nothing you type is sent to us.</p>{ref_line}<p><a class="btn" href="/self-service">Start the free check →</a></p></div>'''
+    return page('The Snapshot is now the free check', body, robots='noindex,nofollow')
 
 
 @app.route('/private-case-room/<queue_id>')
@@ -2367,31 +2241,31 @@ def private_case_room(queue_id):
     record = find_case_room(queue_id)
     supplied = (request.args.get('access_token') or '').strip()
     if not record or not supplied or not hmac.compare_digest(supplied, record.get('access_token', '')):
-        body = '''<div class="card"><span class="pill err">Private access</span><h1>Private Case Room™ link required.</h1><p class="sub">For privacy, this room only opens from the secure link created after a Free Search Snapshot™ intake.</p><p><a class="btn" href="/">Back to FixMyNameOnline™</a></p></div>'''
-        return page('Private Case Room™ — secure link required', body), 403
+        body = '''<div class="card"><span class="pill err">Private link needed</span><h1>This page needs your private link.</h1><p class="sub">For privacy, it only opens from the link you were given when you used the earlier Free Search Snapshot. For anything new, use the free check.</p><p><a class="btn" href="/self-service">Start the free check</a></p></div>'''
+        return page('Private link needed', body), 403
 
     previous_triage = record.get('triage') or {}
     triage = TRIAGE_NEXT_STEPS.get(previous_triage.get('key') or '', TRIAGE_NEXT_STEPS['repair-plan'])
     preview = record.get('intake_preview') or {}
     timeline = [
-        ('1', 'Intake saved', 'Your submitted information is recorded here.'),
-        ('2', 'Guidance available', 'An automated route is suggested from your answers, not verified search findings.'),
-        ('3', 'Your decision', 'Confirm the facts, review the official requirements, and decide whether to act.'),
-        ('4', 'Your action record', 'Use the free self-service desk to organise notes and track any submission you make.'),
+        ('1', 'What you told us', 'What you entered at the time is shown below. Nobody here has reviewed it or searched for you.'),
+        ('2', 'A suggested route', 'The route above was picked from your answers by a simple matching rule, not from a search of Google.'),
+        ('3', 'Your decision', 'Check the facts, read the official requirements, and decide whether to act.'),
+        ('4', 'Your plan and tracker', 'The free check gives you a step-by-step plan, a letter you can edit and a tracker for anything you send.'),
     ]
     timeline_html = ''.join(f'<div class="card"><span class="pill">Step {n}</span><h2>{safe(title)}</h2><p class="sub">{safe(text)}</p></div>' for n, title, text in timeline)
     body = f'''
-    <div class="card"><span class="pill ok">Private Case Room™</span><h1>Your private reputation snapshot room is open.</h1>
-      <p class="sub">Your intake, {safe(record.get('name'))}. This is automated guidance based on your answers, not a live Google search or verified reputation score. No public action has been taken.</p>
+    <div class="card"><span class="pill ok">Earlier tool · Free Search Snapshot</span><h1>Your Snapshot answers</h1>
+      <p class="sub">Hi {safe(record.get('name'))}. This is what you entered in the Free Search Snapshot, which has since been replaced by the free check. The suggestion below came from your answers, not a live Google search. Nothing has been sent to anyone.</p>
       <div class="grid"><div class="card"><h2>A route to consider</h2><p class="sub">{safe(triage.get('label'))}</p><p>{safe(triage.get('summary'))}</p><p><a class="btn" href="{safe(triage.get('url', '/self-service'))}">{safe(triage.get('cta', 'View next step'))} →</a></p><p class="note">Only buy a tool if its exact scope fits your concern.</p></div>
       <div class="card"><h2>Private reference</h2><p class="note">Reference: {safe(record.get('queue_id'))}<br>Case: {safe(record.get('case_id'))}<br>Status: {safe(record.get('status'))}</p></div></div>
       <h2 style="margin-top:22px">What you gave us</h2>
       <div class="card"><p><strong>Names/search:</strong><br>{safe(preview.get('names_to_check'))}</p><p><strong>Links/search clues:</strong><br>{safe(preview.get('problem_links'))}</p><p><strong>Goal:</strong><br>{safe(preview.get('goal'))}</p></div>
       <h2 style="margin-top:22px">Your next-step checklist</h2><div class="grid">{timeline_html}</div>
-      <p><a class="btn btn2" href="/self-service">Open free self-service →</a></p>
-      <p class="note">Keep this link private: anyone with it can access this room. The separate self-service desk does not automatically copy these details. FixMyNameOnline™ is operated by MadisonJade Pty Ltd. Publishers, platforms and search engines decide outcomes.</p>
+      <p><a class="btn btn2" href="/self-service">Start the free check →</a></p>
+      <p class="note">Keep this link private: anyone with it can open this page. The free check doesn’t copy these details across. To have this record deleted, email admin@fixmynameonline.com. Fix My Name Online is run by Madison Jade Pty Ltd. Publishers, platforms and search engines make their own decisions.</p>
     </div>'''
-    return page('Private Case Room™ — FixMyNameOnline™', body, 'Secure private reputation snapshot room for FixMyNameOnline™ Free Search Snapshot™ intake.', canonical_path='/private-case-room')
+    return page('Your Snapshot answers', body, 'Your answers from the earlier Free Search Snapshot.', canonical_path='/private-case-room')
 
 
 @app.route('/app')
@@ -2424,42 +2298,24 @@ def self_serve_alias():
 
 @app.route('/submit-snapshot', methods=['GET', 'POST'])
 def submit_snapshot():
+    """Retired with the Free Search Snapshot (October 2026).
+
+    Old cached forms may still POST here. Nothing is read, stored or emailed:
+    the visitor goes straight to the free check, which runs in their browser.
+    """
     if request.method == 'GET':
         return redirect('/self-service', code=303)
-    base_fields = list(SNAPSHOT_LIMITS) + ['source_page', 'referrer', 'landing_url', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid']
-    data = {k: request.form.get(k, '').strip()[:10000] for k in base_fields}
-    data['email'] = data['email'].lower()
-    errors = validate_snapshot(data)
-    if errors:
-        return render_snapshot_form(data, errors), 400
-    data.pop('website', None)
-    attribution = attribution_from_request(request.form)
-    data.update(attribution)
-    if free_snapshot_used(data['email']):
-        body = '<div class="card"><span class="pill">Free intake already used</span><h1>You can still work through your next step.</h1><p class="sub">One free intake is available per email. If you saved your private room link, use it to revisit your guidance. Our free self-service desk is also available without submitting another intake.</p><p><a class="btn" href="/self-service">Open free self-service →</a></p></div>'
-        return page('Free snapshot already used — FixMyNameOnline™', body), 429
+    return redirect('/self-service?from=snapshot', code=303)
 
-    triage = triage_snapshot(data)
-    queue_item = make_queue_item('free_snapshot', data, triage)
-    queue_item['status'] = 'automated_guidance_available'
-    append_jsonl(LEADS_FILE, {**data, 'searched_name': data.get('names_to_check') or data.get('name'), 'submitted_at': utc_now(), 'triage': triage, 'queue_id': queue_item['id']})
-    append_jsonl(CLICK_EVENTS_FILE, {'event': 'snapshot_submit', 'label': data.get('source_page'), 'href': '/submit-snapshot', 'location': request.path, 'source': data.get('source_category'), 'queue_id': queue_item['id']})
-    append_jsonl(FULFILMENT_QUEUE_FILE, queue_item)
-    case_room = save_case_room(queue_item, data, triage)
-    send_snapshot_emails(data, triage, queue_item, case_room=case_room)
 
-    body = f"""
-    <div class="card"><span class="pill ok">Intake saved</span><h1>Your next step. Your decision.</h1>
-      <p class="sub">Thanks {safe(data['name'])}. Your Free Search Snapshot™ intake is saved. This is automated guidance based on your answers, not a live Google search or verified findings about you.</p>
-      <div class="recommend"><h2>A route to consider: {safe(triage['label'])}</h2><p>{safe(triage['summary'])}</p><p><a class="btn" href="{safe(triage['url'])}">{safe(triage['cta'])} →</a></p></div>
-      <h2>Keep control of the next step</h2><ol><li>Confirm the result actually relates to you before acting.</li><li>Keep the public URL, dates and evidence for any correction.</li><li>Review the relevant official requirements and submit requests yourself.</li></ol>
-      <p><a class="btn btn2" href="/self-service">Use the free self-service desk →</a></p>
-      <p><a href="{safe('/private-case-room/' + queue_item['id'] + '?access_token=' + case_room['access_token'])}">Open your private intake room</a></p>
-      <p class="note">Private reference: {safe(queue_item['id'])}<br>Save this reference and your private link. Do not share the link: anyone with it can access the intake room. Email delivery is not confirmed by this screen. No public action has been taken and no payment is required.</p>
-    </div>"""
-    body += conversion_tracking_event('snapshot_submit', {'content_name': 'Free Search Snapshot', 'source_category': data.get('source_category')})
-    body += conversion_tracking_event('Lead', {'content_name': 'Free Search Snapshot'})
-    return page('Snapshot received — FixMyNameOnline™', body)
+LEGACY_PACKAGE_NOTICE = (
+    '<div class="card"><span class="pill">Older package</span><h1>This package is no longer offered.</h1>'
+    '<p class="sub">Fix My Name Online is now a self-service tool. Nobody here works on cases, reviews links or contacts anyone for you, '
+    'so we can’t provide this older package.</p>'
+    '<p>If you paid for it, please email <a href="mailto:admin@fixmynameonline.com">admin@fixmynameonline.com</a> with the email you paid with. '
+    'If we can’t provide what you paid for, you’re entitled to a refund under the Australian Consumer Law.</p>'
+    '<p>In the meantime, the free check gives you a step-by-step plan, a letter you can edit and the official forms.</p>'
+    '<p><a class="btn" href="/self-service">Start the free check</a></p></div>')
 
 
 @app.route('/onboarding')
@@ -2489,18 +2345,7 @@ def onboarding_form():
           <div class="full"><button class="btn" type="submit">Activate NameWatch monitoring →</button><p class="note">Scheduled private monitoring and change alerts. A newly observed result is not automatically harmful or newly published.</p></div>
         </form></div>"""
         return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
-    body = f"""
-    <div class="card"><span class="pill">Private onboarding</span><h1>{safe(plan_label)}</h1><p class="sub">Use this after payment or if we ask for more detail. Give us the links, names, reviews and context we need to start safely.</p>
-    <form method="post" action="/submit-onboarding" class="grid"><input type="hidden" name="plan" value="{safe(plan)}"><input type="hidden" name="session_id" value="{safe(session_id)}">
-      <div><label>Name</label><input name="name" required></div><div><label>Email</label><input type="email" name="email" required></div>
-      <div><label>Phone</label><input name="phone"></div><div><label>Business / brand if any</label><input name="business"></div>
-      <div class="full"><label>Names, old names, associated names, business names</label><textarea name="names"></textarea></div>
-      <div class="full"><label>Links/reviews/articles/search terms</label><textarea name="links"></textarea></div>
-      <div class="full"><label>What is the real story / context?</label><textarea name="context"></textarea></div>
-      <div class="full"><label>Anything we must avoid saying publicly?</label><textarea name="avoid"></textarea></div>
-      <div class="full"><button class="btn" type="submit">Submit private onboarding →</button></div>
-    </form></div>"""
-    return page('Private onboarding — FixMyNameOnline™', body)
+    return page('This package is no longer offered', LEGACY_PACKAGE_NOTICE, robots='noindex,nofollow')
 
 
 @app.route('/submit-onboarding', methods=['POST'])
@@ -2513,6 +2358,9 @@ def submit_onboarding():
         return jsonify({'ok': False, 'error': 'A verified existing purchase is required.'}), 402
     if not data['name'] or not data['email']:
         return jsonify({'ok': False, 'error': 'Missing name/email'}), 400
+    if data.get('plan') != 'sentinel':
+        # Older managed packages are no longer offered: store nothing, email nothing.
+        return page('This package is no longer offered', LEGACY_PACKAGE_NOTICE, robots='noindex,nofollow')
     if data.get('plan') == 'sentinel':
         paid_session = verify_paid_checkout(data.get('session_id'), expected_tier='sentinel')
         if not paid_session:
@@ -2544,10 +2392,7 @@ def submit_onboarding():
     record_email_alert_status('onboarding', f"FMNO onboarding: {plan_label} — {data.get('name', '')}", email_status.get('internal_email_sent') if isinstance(email_status, dict) else {}, {'queue_id': queue_item['id'], 'plan': data.get('plan'), 'email': data.get('email')})
     app.logger.info('Onboarding %s email status: %s', queue_item['id'], email_status)
 
-    if data.get('plan') == 'sentinel':
-        body = f"""<div class="card"><span class="pill ok">NameWatch activated</span><h1>Your private monitoring file is queued.</h1><p class="sub">The first scheduled sweep establishes the baseline. We email you when a newly observed result needs attention and send a simple private status note.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Monitoring case: ' + safe(case.get('id')) if case else ''}<br>A newly observed result is not automatically harmful or newly published.</p><a class="btn" href="/">Back to FixMyNameOnline™</a></div>"""
-    else:
-        body = f"""<div class="card"><span class="pill ok">Received</span><h1>Private onboarding received.</h1><p class="sub">Your details are saved. We’ll use this to begin the correct review/repair path.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Fulfilment case: ' + safe(case.get('id')) if case else ''}</p><a class="btn" href="/">Back to site</a></div>"""
+    body = f"""<div class="card"><span class="pill ok">NameWatch activated</span><h1>Your private monitoring file is queued.</h1><p class="sub">The first scheduled sweep establishes the baseline. We email you when a newly observed result needs attention and send a simple private status note.</p><p class="note">Private reference: {safe(queue_item['id'])}{'<br>Monitoring case: ' + safe(case.get('id')) if case else ''}<br>A newly observed result is not automatically harmful or newly published.</p><a class="btn" href="/">Back to FixMyNameOnline™</a></div>"""
     return page('Onboarding received — FixMyNameOnline™', body)
 
 
@@ -2669,8 +2514,7 @@ def success():
         onboarding_url = f'/onboarding?plan=sentinel&amp;session_id={safe(session_id)}'
         body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>One step left to activate NameWatch Alert™</h1><p class="sub">Add the exact names, associated names and location context to monitor. This securely connects the paid checkout to your private monitoring file.</p><ol><li>Open the private activation form.</li><li>Add each exact name or search phrase.</li><li>FMNO creates the first baseline and scheduled sweep.</li><li>We email you when a newly observed result needs attention.</li></ol><p><a class="btn" href="{onboarding_url}">Activate NameWatch monitoring →</a></p><p class="note">A newly observed result is not automatically harmful or newly published. Search engines decide what appears.</p></div>"""
         return page('Activate NameWatch Alert™ — FixMyNameOnline™', body, robots='noindex,nofollow')
-    body = f"""<div class="card"><span class="pill ok">Payment received</span><h1>Welcome to {safe(plan_name)}</h1><p class="sub">Your payment has been processed. The important next step is private onboarding so we have the names, links, reviews, and context needed to handle this safely.</p><ol><li>Complete the private onboarding form.</li><li>Paste the links/reviews/search terms you want reviewed.</li><li>Tell us what is true, outdated, unfair, or sensitive.</li></ol><p><a class="btn" href="/onboarding?plan={safe(tier)}">Complete private onboarding →</a></p><p class="note">No removal, ranking, or platform outcome is guaranteed. We use careful, documented reputation repair pathways.</p></div>"""
-    return page('Welcome — FixMyNameOnline™', body)
+    return page('This package is no longer offered', LEGACY_PACKAGE_NOTICE, robots='noindex,nofollow')
 
 
 @app.route('/cancel.html')
@@ -2739,7 +2583,7 @@ def send_question_emails(data, queue_item, case_id=None):
       <p>Thank you — we received your question. We will review it privately and reply by email before any public action is taken.</p>
       <p>If the question involves legal issues, media allegations, court matters, criminal allegations, defamation, reviews, platform reports or removals, we may need to review it manually before giving a process answer.</p>
       <p><strong>Your reference:</strong> {safe(queue_item['id'])}</p>
-      <p style=\"font-size:12px;color:#666\">FixMyNameOnline™ · MadisonJade Pty Ltd<br>No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed. We do not provide legal advice.</p>
+      <p style=\"font-size:12px;color:#666\">FixMyNameOnline™ · Madison Jade Pty Ltd<br>No ranking, removal, review-removal, de-indexing or platform outcome is guaranteed. We do not provide legal advice.</p>
     </div>
     """
     internal_html = f"""

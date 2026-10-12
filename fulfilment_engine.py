@@ -2,8 +2,8 @@
 FixMyNameOnline™ — Paid Plan Fulfilment Engine
 Structured agent pipeline, QC gates, and fulfilment case state.
 
-Copyright (c) 2026 MadisonJade Pty Ltd. All rights reserved.
-FixMyNameOnline™ is a trademark of MadisonJade Pty Ltd.
+Copyright (c) 2026 Madison Jade Pty Ltd. All rights reserved.
+FixMyNameOnline™ is a trademark of Madison Jade Pty Ltd.
 """
 from __future__ import annotations
 

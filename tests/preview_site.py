@@ -7,7 +7,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ['FMNO_DATA_DIR'] = tempfile.mkdtemp(prefix='fmno-preview-')
 import server
 server.stripe.api_key = ''
-server.send_snapshot_emails = lambda *args, **kwargs: {}
 server.tracking_head = lambda: ''
 server.safe_create_fulfilment_case = lambda *args, **kwargs: None
 server.run_free_snapshot_pipeline = lambda *args, **kwargs: None

@@ -320,7 +320,7 @@ PLANS = {
         'lede': [
             {'when': {'who': ['same-name']}, 'text': 'The story isn’t about you, so you’re not asking anyone to change the reporting. You’re asking for a small detail that stops people confusing the two of you.'},
             {'when': {'now': ['wrong']}, 'text': 'A factual error is the clearest thing you can ask a publisher to fix. Here’s the order to do it in.'},
-            {'when': {'now': ['old']}, 'text': 'Being old usually isn’t enough on its own, but many publishers will consider anonymising or de-listing old stories about private people. Here’s how to ask.'},
+            {'when': {'now': ['old']}, 'text': 'Being old usually isn’t enough on its own. You can still ask the publisher to consider anonymising or de-listing an old story about a private person. Here’s how to ask.'},
             {'text': 'The story leaves out what happened next, so you have a clear and reasonable thing to ask for. Here’s the order to do it in.'},
         ],
         'who_decides': 'The publisher decides what’s on the page. Google decides what shows in search, and only updates once the page changes.',
@@ -407,7 +407,7 @@ PLANS = {
     },
     'people-search': {
         'title': [{'text': 'Opt out of each site, then ask Google to drop your contact details.'}],
-        'lede': [{'text': 'People-search sites usually have an opt-out page. It’s tedious but it works more often than not. Do the sites first, then Google.'}],
+        'lede': [{'text': 'Most people-search sites have an opt-out page you can use yourself. It’s tedious, and listings can come back, so keep a record. Do the sites first, then Google.'}],
         'who_decides': 'Each site decides its own listing. Google decides whether your phone, email or home address show in search.',
         'time': 'About 10 minutes per site. Listings can take up to 30 days to go, and some come back, so check again later.',
         'order': 'Use a separate email address for opt-outs if you can. Never pay a site to remove your own listing.',
@@ -598,6 +598,13 @@ def pick(variants, answers):
         if matches(item.get('when'), answers):
             return item['text']
     return ''
+
+
+def nice_date(iso):
+    """'2026-10-12' -> '12 October 2026'."""
+    import datetime
+    d = datetime.date.fromisoformat(iso)
+    return f'{d.day} {d.strftime("%B")} {d.year}'
 
 
 def client_payload():

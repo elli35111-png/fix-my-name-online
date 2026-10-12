@@ -2,11 +2,13 @@
 import re
 import sqlite3
 import threading
+from pathlib import Path
 
 import pytest
 from bs4 import BeautifulSoup
 from werkzeug.serving import make_server
 
+import plans
 import server
 
 DOMAIN = 'https://fixmynameonline.com'
@@ -15,7 +17,13 @@ DOMAIN = 'https://fixmynameonline.com'
 BANNED = ['we review', 'we check', 'we map', 'what we check', 'what we privately check', 'our team',
           'managed process', 'private campaign', 'approved assets', 'search protection', 'suppress',
           'risk score', 'private score', 'we guarantee', 'guaranteed removal', 'we remove',
-          'we will respond', 'supports clients', 'snapshot™', 'removal review™', 'review defence™']
+          'we will respond', 'supports clients', 'snapshot™', 'removal review™', 'review defence™',
+          # 12 Oct 2026 review: nothing that implies we take cases in, map results or build content for people
+          'send first', 'send for review', 'should i send', 'review is needed', 'careful review', 'private map',
+          'evidence map', 'private search snapshot', 'reputation work', 'authority assets', 'search-risk',
+          'removal-pathway', 'useful deliverable', 'operator base', 'mystery dashboards', 'track impressions',
+          'it works more often than not', 'can usually be removed', 'can fix my name online check',
+          'public assets are only created', 'automated tool’s safety scope']
 
 
 @pytest.fixture(scope='module')
@@ -183,3 +191,62 @@ def test_phone_layout_has_no_horizontal_scroll(origin):
             assert not errors, errors
             page.close()
         browser.close()
+
+
+# ---- 12 Oct 2026 review ----
+
+def test_no_analytics_where_people_type(monkeypatch):
+    monkeypatch.setenv('FMNO_GA_MEASUREMENT_ID', 'G-TEST')
+    monkeypatch.setenv('FMNO_META_PIXEL_ID', '12345')
+    c = server.app.test_client()
+    for path in ('/name-watch-alerts', '/self-service', '/self-service/tracker'):
+        body = c.get(path).get_data(as_text=True)
+        assert 'googletagmanager.com' not in body and 'connect.facebook.net' not in body, path
+    assert 'googletagmanager.com' in c.get('/pricing').get_data(as_text=True)
+    site_js = (Path(server.BASE_DIR) / 'assets' / 'site.js').read_text()
+    assert 'gtag(' not in site_js and 'choose_problem' not in site_js
+    privacy = visible_text(c.get('/privacy').get_data(as_text=True))
+    assert 'namewatch page and its waitlist form' in privacy
+    assert 'which problem you pick' in privacy
+
+
+def test_every_guide_reads_as_self_service_including_noindexed_ones():
+    import json as _json
+    for slug, guide in server.SEO_GUIDES.items():
+        text = ' '.join([guide['title'], guide['h1'], guide['description'], guide['intro']] +
+                        [a + ' ' + b for a, b in guide['sections']] + [a + ' ' + b for a, b in guide['faqs']]).lower()
+        hits = [b for b in BANNED if b in text]
+        assert not hits, (slug, hits)
+        assert 'snapshot' not in text, slug
+        assert not guide['h1'].istitle(), (slug, guide['h1'])  # sentence case, not Title Case
+    generated = _json.loads((Path(server.BASE_DIR) / 'generated_seo_guides.json').read_text())
+    assert not any(g['intro'].startswith('If ') and ' is the problem' in g['intro'] for g in generated.values())
+
+
+def test_link_check_dates_are_not_claimed_for_unchecked_links(client):
+    text = visible_text(client.get('/help/fake-profiles').get_data(as_text=True))
+    assert 'official links last checked' in text
+    assert 'haven’t been able to check facebook: report an impersonation account' in text
+    unchecked = [l for l in plans.OFFICIAL_LINKS.values() if not l['checked']]
+    assert unchecked  # if they all get checked one day, this test can go
+    about = visible_text(client.get('/about').get_data(as_text=True))
+    assert 'every official link shows the date' not in about
+
+
+def test_pricing_does_not_undersell_the_free_letter(client):
+    text = visible_text(client.get('/pricing').get_data(as_text=True))
+    assert 'request letter built from the facts you enter' not in text
+    assert 'letters written out in full from a short form' in text
+
+
+def test_older_managed_packages_promise_no_work(monkeypatch):
+    monkeypatch.setattr(server, 'verify_paid_checkout', lambda *a, **k: {'id': 'cs_test_legacy', 'payment_status': 'paid'})
+    c = server.app.test_client()
+    for res in (c.get('/success.html?tier=starter&session_id=cs_test_legacy'),
+                c.get('/onboarding?plan=starter&session_id=cs_test_legacy'),
+                c.post('/submit-onboarding', data={'plan': 'starter', 'session_id': 'cs_test_legacy', 'name': 'x', 'email': 'x@example.com'})):
+        text = visible_text(res.get_data(as_text=True))
+        assert 'no longer offered' in text and 'australian consumer law' in text
+        for managed in ('we use careful', 'handle this safely', 'private onboarding', 'reputation repair pathways'):
+            assert managed not in text
+    assert server.send_onboarding_emails({'plan': 'starter', 'name': 'x', 'email': 'x@example.com'}, {'id': 'q'}) == {}
